@@ -1427,6 +1427,32 @@ Gamma 与 Bessel 的边界也按 §1.5 执行：Gamma 直接拒绝（native-only
 6. **per-scale C/gm 是 trade-off，不是 κ 降低。** L=6 的 pole spread 在两种 mode 下都是 1024；mode C 把跨度放在噪声（1024），mode gm 放在 g_m（1024）。两种 model time 都精确；`κ_t` 不变，变的只是跨度落在哪个物理量上。
 7. **undecimated wavelet 的 adjoint 是局部的。** stationary Haar 的平移误差 0、逆变换 8.9e-16；3 级只多 4 个数组，不需要 ↓2 的隐藏 S/H。lifting 的 predict/update 与 `TRANSPOSEABLE` edge 是同一个原语。
 
+### 6.17 编译器证书链：P3→P6 物理时间衔接与 ΔA 量纲一致性（`results/compiler.json`、`pipeline.json`、`constraint.json`）
+
+P0–P6 全链在三锚上跑通（`python3 -m bench.run_pipeline`，30/30，记录 `results/pipeline.json`）。**P3→P6 的衔接有一个必须钉死的方向与一个量纲陷阱**，两者都已修复并写入验收：
+
+| 项目 | 错误写法 | 修复后 | 实测 |
+|---|---|---|---|
+| 时间缩放方向 | `α·A`（eig 放大 α 倍，poisson scaled bw=2e18，反向） | `α⁻¹·S·A·S⁻¹`（`t_phys=α·t_model` ⇒ `λ_phys=λ/α`；α=1.58e6 ⇒ 硬件比模型慢） | scaled.bandwidth()=B_hw·margin ≤ B_hw |
+| 状态缩放 | `A·S⁻¹`（单边右乘，非预条件） | 双边相似 `S·A·S⁻¹`（V=Sx，x=S⁻¹V，左乘 S） | Γ_after=1.60 < Γ_before=2.00 —— 预条件真正生效 |
+| ΔA 量纲 | scaled 系统直接吃 model-time 绝对 `delta_A_norm` ⇒ "缩时间白嫖失配裕度"（naive 得 4e-10 伪裕度） | `delta_A_norm` 按**相对失配**解释：`δ_rel=‖ΔA‖/‖A‖ ⇒ ‖ΔA_v‖=δ_rel·‖A_v‖`，`evaluate_sys(scaling=)` 内部自动缩放（`budget.py`） | shear：raw robA=0.0512，scaled=0.0020（真实预条件增益，非伪值）；naive-absolute 会是 3.98e-10 |
+
+关键语义：`sc.scaled` 是 slack/Γ/σ_y/‖H‖∞ 的唯一一致物理时间入口（`evaluate_sys(sys, spec, scaling=sc)`）；不给 scaling 就退化为 model-time 原始系统。poisson 的 `delta_A_norm=None` 是**正确声明**——KCL 松弛网格的失配是泄漏/漂移型扰动（slack.py：判 drift budget 不用 Γ_proj），`robustness_A` 轴对它"不适用/未评估"，其误差进 `floor_bound`（`results/constraint.json`：floor_meas=1.38e-4 ≤ bound 3.63e-3）。
+
+`results/compiler.json`（22/22）覆盖证书聚合的独立验收：结构化拒绝优先于 slack 违规、NaN 轴不记"feasible"、manifold/loop/multirate/sde_cert 各证据的 verdict 聚合。`results/constraint.json`（44/44）是 T10 KCL 松弛孪生：`τ_relax=C/λ_min` 解析命中（Δ0.00%）、大 C 在 `τ_state` 视界残差 11.31≈‖I‖（椭圆变抛物）vs 在自身 `τ_relax` 收敛到 0.87、`mismatch_floor` 失配地板 ∝1/λ_min。
+
+### 6.18 Stage A 收口：回退率口径与"加速器不是求解器"定位（`results/stagea.json`、`ledger.json`、`substrate.json`）
+
+`python3 -m bench.run_stagea`（26/26，记录 `results/stagea.json`）关闭退出条件 4/5/7；`bench/run_substrate`（40/40，`results/substrate.json`）关闭 A7。
+
+**退出条件 5（数字回退率）**：11 个 workload（phase0 五系统 + 3 anchors + shear/VdP/viscoelastic），规则 = certificate infeasible/rejected ⇒ 回退。**原始 6/11 = 54.5% ⇒ 按 §9 风险 4 的口径，这台机器是"连续时间混合加速器/协处理器"，不是通用全模拟求解器**；剔除故意不可行探针（biharmonic、两个 Burgers 激波探针、VdP 平衡点探针）后 2/7 = 28.6%。两个数字都如实进正文——语料偏向失败模式探针，不挑好看的。真实 workload 的回退原因集中在 stiffness（diffusion N=1024、Robertson）与 representation（Burgers），正是 §8 表预测的绑定轴。
+
+**退出条件 7（假设敏感度账本，`results/ledger.json`）**：七项假设每项给敏感度数字（现场算自既有机制或引用 results/*.json，不新增拟合）：κ_hw 0.0486（−4.86% 翻 diffusion N=1024）、alpha_B_hw 0.8（margin=0.8 ⇒ B_hw 缩 20% 翻判）、noise_psd 0.0063、mismatch 5.22/unit ε_dev（floor 线性 + 1/λ_min 放大）、parasitics 2.86°/buffer level、calibration_residual 17.1/unit（isometry 0.342@2% vs 标定后 3.46e-15）、excess_noise_gamma 0.5（σ²=αkT/C 的精确对数敏感度）。每项带 `falsification_observation`——账本不是免责清单，每条都写明"哪个观测会推翻它"。
+
+**A7 异构介质（`results/substrate.json`，40/40）**：MEMS `ω0=√(k/m)`/`Q=mω0/c` 精确 + Duffing 骨架线 vs RK4 <1%；gm/C 锁 ω_ref 后残差≈10ppm 测量底（非 1000ppm 温漂）；photonic MVM shot ∝1/√N、漂移地板 N-无关。**诚实边界：transducer 数字是 TARGET-标注（待 §8B 实测替换），MEMS transducer NaN+"no model fabricated"——A7 验收过的是物理/映射，不是器件实测。**
+
+**Stage A 签字口径**：所有判定与敏感度都引用 `results/*.json` 的实测数；§10 skeleton 是文件地图，`results/*.json` 是机器可读判据。进入 Stage B0 前 §8 表剩余行（airfoil/bore/front 等）是**待补**——它们不改变已验收的三类锚点结论。
+
 ---
 
 ## 7. 分阶段落地（每阶段都有可证伪的验收）

@@ -30,6 +30,7 @@ assumptions 列出会让证书失效的假设合同（§1.2/§4.3/§4.4/§6）�
 
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -59,7 +60,9 @@ class BudgetInput:
     sde_cert: dict | None = None           # noise_realizability 输出（随机证书，§4.4）
     metric: object | None = None           # Γ 的度量矩阵 / "energy"（§5.8）
     scaling: object | None = None          # ScalingResult：给定时 slack/Γ/σ_y/‖H‖∞
-                                           # 在其 .scaled（物理时间）descriptor 上评
+                                           # 在其 .scaled（物理时间）descriptor 上评；
+                                           # delta_A_norm 按相对失配自动缩放
+                                           # （δ_rel·‖A_v‖），防"缩时间白嫖裕度"
 
 
 # ‖S‖∞ 的阈值（loop 轴）：§6.15 的必要条件探针。靠近失稳时 S_peak 发散，
@@ -206,8 +209,24 @@ def compile_budget(inp: BudgetInput, s_max_threshold: float = S_PEAK_THRESHOLD) 
         # bandwidth/κ 值不是物理量；没有 scaling 就回退原始 sys（§6.17 待办：
         # slack 轴目前不接受单独 α，scaled-descriptor 是唯一一致入口）。
         eval_sys = sys
+        spec_eval = spec
         if inp.scaling is not None and getattr(inp.scaling, "scaled", None) is not None:
             eval_sys = inp.scaling.scaled
+            # ΔA 量纲一致性陷阱：物理器件失配是**相对**的（δ_rel·A），在
+            # scaled 系统上 ‖ΔA_v‖ = δ_rel·‖A_v‖ 会随 ‖A_v‖ 同步放大
+            # （≈α⁻¹，叠加 S 的范数变化）。若直接把 model-time 的绝对
+            # delta_A_norm 传给 scaled slack，等于"缩快时间白嫖失配裕度"。
+            # 口径：delta_A_norm 始终按**原始**系统的相对失配解释
+            #   δ_rel = delta_A_norm/‖A‖  ⇒  ‖ΔA_v‖ = δ_rel·‖A_v‖，
+            # 使 Γ·‖ΔA‖ 对 scaling 保持量纲一致（Γ 的真实变化来自 S 的
+            # 预条件，不是单位换算）。delta_A_norm=None ⇒ 轴不评估，跳过。
+            if spec.delta_A_norm is not None:
+                nA = float(np.linalg.norm(sys.A, 2))
+                nAv = float(np.linalg.norm(eval_sys.A, 2))
+                if nA > 0 and np.isfinite(nAv):
+                    d_rel = float(spec.delta_A_norm) / nA
+                    spec_eval = dataclasses.replace(
+                        spec, delta_A_norm=d_rel * nAv)
         lyap = inp.lyap
         if lyap is None:
             lyap = solve_generalized_lyapunov(eval_sys)
@@ -222,7 +241,7 @@ def compile_budget(inp: BudgetInput, s_max_threshold: float = S_PEAK_THRESHOLD) 
         hi = inp.hinf
         if hi is None:
             hi = hinf_norm(eval_sys)["value"]
-        sl = slack_evaluate(eval_sys, spec, lyap=lyap, reg=inp.reg,
+        sl = slack_evaluate(eval_sys, spec_eval, lyap=lyap, reg=inp.reg,
                             gamma_proj=gamma_proj, hinf=hi)
         slack_block = sl.as_dict()
         items["slack"] = dict(

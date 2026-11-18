@@ -51,7 +51,10 @@ class HardwareSpec:
     kappa_hw: float = 1e6          # ω_max/ω_min
     B_hw: float = 10e6             # Hz
     sigma_req: float | None = None  # 输出 RMS 要求；None ⇒ noise 轴不评估
-    delta_A_norm: float | None = None      # ‖ΔA‖（器件失配界）
+    delta_A_norm: float | None = None      # ‖ΔA‖（器件失配界，**相对原始 A**：
+                                           # lowering.budget 在 sc.scaled 上评时
+                                           # 按 δ_rel=‖ΔA‖/‖A‖ → ‖ΔA_v‖=δ_rel‖A_v‖
+                                           # 缩放，保持 Γ·‖ΔA‖ 量纲一致）
     delta_input_norm: float | None = None  # ‖Δu‖（接口扰动界）
     eta_route: float | None = None   # 已算好的路由误差
     tol_l2: float = 1e-2             # 允许的 L2 表示误差（默认 1%）
