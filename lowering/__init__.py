@@ -14,6 +14,7 @@ from .reduce import (Canonical, Expr, Reduced, System, add, besselj, C,
                      tanh, V)
 from .scaling import (ScalingResult, alpha_for_bandwidth, gramian_scaling,
                       state_scale_from_ranges)
+from .p7 import CalibPlan, Config, ElementConfig, generate_config
 
 __all__ = [
     "Expr", "C", "V", "add", "mul", "pow", "sub", "div",
@@ -25,4 +26,5 @@ __all__ = [
     "PDESpec", "Discretized", "discretize", "linearize_rhs",
     "ScalingResult", "gramian_scaling", "alpha_for_bandwidth",
     "state_scale_from_ranges",
+    "ElementConfig", "CalibPlan", "Config", "generate_config",
 ]

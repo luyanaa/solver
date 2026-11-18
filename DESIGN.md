@@ -1530,6 +1530,8 @@ P0–P6 全链在三锚上跑通（`python3 -m bench.run_pipeline`，30/30，记
 - **calibration-in-the-loop**：SPICE 给出 g_m/C，pilot 测量，DAC 更新，再测；报告 post-calibration 分布，不是 raw。
 - **第一颗芯片是 Characterization Vehicle，不是 processor**：primitive bank + 不同长度/扇出/模式的 route + C bank + 器件 bank + replica/温度/噪声/loopback + 同一 cell 的 32 份不同位置。目标是把“PDK model → measured primitive → calibration residual → system error”闭环跑通，而不是跑 CFD。
 
+**已实现（B1，`twin/calib.py` + `lowering/p7.py`，验收 `bench/run_calib.py` 43/43，`results/calib.json`）**：前台标定残差 = **测量噪声底**（合同：不低于底；FSM IDLE→STIMULATE→MEASURE→CORRECT→VERIFY）；后台标定残差 = `rate·interval/(1+loop_gain) + 底`（与 A7 `gm_c_calibrate` 同语义；间隔加倍 ⇒ 漂移残差加倍——诚实的调度权衡）；温漂孪生更新 `drift_update(p, ΔT, tempco)` 把当前这颗芯片的实测参数交给 compiler（不是 TT_25C）。P7 把 (Discretized, Certificate, ScalingResult, CalibratedTwin) 编成 per-element 配置（`target_gm_over_c = max|λ|/alpha`、`S_x`/`alpha` 直取 ScalingResult、噪声 σ_scale 不自造裕度）+ 校准计划（foreground 清单含 Gram `G_T=T̃^*T̃` 右标定；background reference = replica/MEMS ω_ref；`residual_budget = floor/noise_axis`——噪声轴 ≤1 才承诺预算，>1 置 None；证书判 infeasible 的量 **flagged，不悄悄计划**）。仍是 plan，不是 netlist；per-edge route-contract 未含。
+
 **投入顺序**：behavioral → primitive SPICE → PEX/EM/substrate/thermal → calibration loop → 小规模 test chip → 完整 VLSI。分立器件 PCB 原型只验证 compiler/time scaling/校准流程，不验证片上 mismatch、kT/C、switch 寄生和 substrate coupling。
 
 ### Phase 8：heterogeneous substrates（研究阶段，按 §3.7 的优先级）
@@ -1732,6 +1734,11 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                           # + loop ‖S‖∞ + multirate k_max + sde_cert →
                           # Certificate（rejected/infeasible/no-violation/feasible）
         interface.py      # §6.4 单通量源+镜像；§6.5 fitting/capturing selector
+        ✅ p7.py          # P7 配置+校准计划：Certificate+ScalingResult+
+                          # CalibratedTwin → per-element {primitive,
+                          # target_gm_over_c=max|λ|/alpha, S_x, alpha,
+                          # noise_setting} + plan（foreground/background/
+                          # residual_budget=floor/noise轴，不可行 ⇒ flag）
       twin/
         ✅ spice/extract.py  # 真实 PDK 提取：ngspice 电流镜 → λ, g_m/I_D, r_o, ratio
         ✅ noise.py        # OU 滤波色噪声 + replay + ρ_ij 相关矩阵；色噪声/白噪声极限
@@ -1740,7 +1747,11 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                           # τ_relax=C/λ_min(G_sym)、非对称时全谱横坐标守卫、
                           # mirror 失配静差下界 ‖G⁻¹‖·‖δI‖（∝1/λ_min，κ trade-off）、
                           # kcl_relaxation_descriptor → 复用 analysis 栈（44/44）
-        calib.py          # primitive behavioral model、replica、pilot、物理残差、placement
+        calib.py          # ✅ 校准 FSM：前/后台 + 温漂数字孪生更新
+                          # （foreground 残差 = 测量噪声底合同；background
+                          # 残差 = rate·interval/(1+T) + 底，间隔↑残差↑；
+                          # CalibrationFSM IDLE→STIMULATE→MEASURE→CORRECT→
+                          # VERIFY；CalibratedTwin 是 compiler 的输入）
         ✅ coupling.py     # spectral↔local 接口守恒：单通量源 + 电流镜像
         ✅ qoi.py          # W_d → ν_num；Osborn–Cox → κ_num；x_s(t) 对比
         ✅ route.py        # H(s)=wire+buffer+delay；η/J_H/J_τ、S_τ,ij、latency class、route_closure
@@ -1774,6 +1785,13 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                                     # Lorentzian 粘弹性（n=2+m 有限嵌入）+
                                     # 数字回退率 tally（6/11=54.5%，剔探针
                                     # 2/7=28.6%）+ 假设账本（26/26）
+        ✅ run_calib.py             # B1 校准验收：前台标定修回噪声底 /
+                                    # 后台残差 = rate·interval/(1+T) + 底
+                                    # （间隔↑残差↑，A7 同语义）/
+                                    # P7 diffusion-1d 配置+校准计划
+                                    # （gm/C=max|λ|/alpha、S_x、残差预算
+                                    # = floor/noise轴、不可行 ⇒ flagged）
+                                    # （43/43）
         ✅ ledger.py                # 七项假设敏感度账本 → results/ledger.json
                                     # （κ_hw 4.86% 翻判 / B_hw margin 0.8 /
                                     # 噪声 0.63%/unit / 失配线性 / 2.86°/级 /
@@ -1790,6 +1808,7 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                                   # sde.json / sde_report.txt（Phase 6）/
                                   # substrate.json / substrate_report.txt（A7 异构介质）/
                                   # stagea.json / stagea_report.txt（A4/A8/A9 收尾）/
+                                  # calib.json / calib_report.txt（B1 校准+P7）/
                                   # ledger.json（七项假设账本）
 
 关键 API（✅ 已实现；SDE 三行是 Phase 6 的目标接口）：

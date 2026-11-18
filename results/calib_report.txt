@@ -1,0 +1,67 @@
+B1 校准验收：calib FSM + 温漂孪生 + P7 配置/校准计划（DESIGN.md §C3 / §4 P7）
+
+==============================================================================
+FG  foreground calibration：已知激励 → 修回噪声底
+==============================================================================
+
+==============================================================================
+BG  background calibration：漂移跟踪 + 重标调度
+==============================================================================
+
+==============================================================================
+P7  config + calibration plan（diffusion-1d 锚点）
+==============================================================================
+
+==============================================================================
+NEG  证书判不可行的量：flagged，不悄悄计划
+==============================================================================
+
+==============================================================================
+VERDICT
+==============================================================================
+                                                          check                                         got                 expected pass
+            fg: residual >= measurement floor (honest contract)                                  100.00 ppm               >= 100 ppm  yes
+               fg: residual ~ noise-floor scale (not raw error)                                  100.00 ppm  <= 10x floor (1000 ppm)  yes
+                 fg: clean-signal post-cal error at floor level                                  45.345 ppm              <= 5x floor  yes
+             fg: gain recovered within noise of true 1.02 (rel)                                    62.2 ppm <= ~2000 ppm (fit noise)  yes
+              fg: single-point stimulus degrades to offset-only                                      offset                   offset  yes
+                      fg: FSM ends IDLE and covers all 5 states                                        IDLE                     IDLE  yes
+                    fg: FSM result equals direct foreground cal                                      100.00                   100.00  yes
+                         fg: verify history recorded and passed                                        True                     True  yes
+         fg: twin param updated by correction (gain*old+offset)                                   1.961e+06                1.961e+06  yes
+                             fg: twin records source + residual                       ('foreground', 100.0)    ('foreground', 100.0)  yes
+                                fg: CalibrationResult JSON-safe                                          ok                       ok  yes
+     bg: residual = rate*interval/(1+T) + floor (exact formula)                                     100.500                  100.500  yes
+       bg: longer interval => larger residual (honest tradeoff)                          100.500 -> 102.500        monotone increase  yes
+          bg: interval scaling is linear in (1+T)-trimmed drift                                        5.00                     5.00  yes
+       bg: zero interval collapses to meas floor (A7 semantics)                                      100.00                   100.00  yes
+           bg: matches A7 gm_c_calibrate residual (interval 10)                                      100.50                   100.50  yes
+                 bg: update_interval_for_budget closes the loop                            150.00 <= 150.00       residual <= budget  yes
+         bg: budget below floor => interval 0 (foreground only)                                        0.00                     0.00  yes
+         bg: drift_update scales param by (1+tempco*dT) exactly                                   2.002e+06                2.002e+06  yes
+                       bg: drift_ppm = |tempco*dT|*1e6 returned                                      1000.0                   1000.0  yes
+              bg: twin background bookkeeping (source/residual)                       ('background', 100.5)    ('background', 100.5)  yes
+                                   bg: CalibratedTwin JSON-safe                                          ok                       ok  yes
+             p7: one integrator element per state (+route edge)                                          64                       64  yes
+               p7: alpha matches ScalingResult on every element                                   8.149e-07                8.149e-07  yes
+                            p7: s_x elementwise matches S_x_vec                                     0.01491                  0.01491  yes
+    p7: target gm/C = max|lambda|/alpha (fastest physical pole)                                   5.027e+06                5.027e+06  yes
+  p7: noise axis <= 1 => sigma_scale 1.0 (no invented headroom)                                         1.0                      1.0  yes
+        p7: plan residual budget >= meas floor and = floor/axis                                   1.486e+05                1.486e+05  yes
+        p7: noise axis actually evaluated and <= 1 in this case                                       0.001                   <= 1.0  yes
+              p7: foreground plan covers offset/gain + Gram G_T integrator offset/gain (per element) | t...             both present  yes
+      p7: background plan has reference + rate from twin ledger                             (True, '500.0')  reference set, rate > 0  yes
+               p7: twin drift-rate ledger feeds background rate                                       500.0                    500.0  yes
+     p7: update_interval scheduled for twin drift within budget                                    2.97e+06  > 0 and residual closes  yes
+                            p7: Config round-trips through JSON                                     (65, 2)                  (65, 2)  yes
+                p7: no unhandled callables/objects in JSON blob                                     json-ok                  json-ok  yes
+              p7: no twin drift data => interval not fabricated                                        None                     None  yes
+                   neg: certificate is infeasible by noise axis                     ('infeasible', '20.19')    ('infeasible', '> 1')  yes
+    neg: all integrator elements flagged (not silently planned)                               64/64 flagged              all flagged  yes
+                         neg: flag reason cites the certificate           certificate infeasible; bindin...      mentions infeasible  yes
+          neg: flagged elements fall back to nominal cal method                                     nominal                  nominal  yes
+       neg: residual budget NOT promised on violated noise axis                                        None                     None  yes
+                  neg: flags list carries the violation message      (1, 'noise axis 20.2 > 1: residua...')                non-empty  yes
+                  neg: feasible config by contrast has no flags                                           0                        0  yes
+
+  43/43 checks passed
