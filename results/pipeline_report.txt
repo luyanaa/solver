@@ -22,44 +22,48 @@ Stage A5 step-3：3 锚定基准 e2e（符号 → 证书 → 孪生对账）
 ==============================================================================
 5. 对账汇总
 ==============================================================================
-       problem                    cert status   binding axis                                                  predicted                                             measured                                                    verdict
-  diffusion-1d no violation on evaluated axes   robustness_A          sigma_y=2.236e+01 (noise floor; no axis violated)       det_err=1.776e-15 meas_sigma=22.48507078790137             within-band: algorithm error below noise floor
-    poisson-2d no violation on evaluated axes      bandwidth eps_c=1.17e+08 >= 0.01 ⇒ FAIL (elliptic becomes parabolic) res(t=τ_state)=1.131e+01 vs res(t=τ_relax)=8.695e-01 bound-holds: nonconverged at τ_state, converged at τ_relax
-    burgers-1d                     infeasible representation     E_tail^(1/2)=1.604e-02 (representation violation size)                                   l2_blend=2.334e-02                  within-band (scaling claim, not identity)
+       problem                    cert status   binding axis                                                                                                          predicted                                                                                            measured                                                                                                  verdict
+  diffusion-1d no violation on evaluated axes   robustness_A                                                                  sigma_y=2.236e+01 (noise floor; no axis violated)                                                      det_err=1.776e-15 meas_sigma=22.48507078790137                                                           within-band: algorithm error below noise floor
+    poisson-2d no violation on evaluated axes      bandwidth eps_c=1.47e+03 >= 0.01 against declared external τ=1e-08 ⇒ FAIL (elliptic becomes parabolic for the coupled state) res(τ_external)=1.128e+01 (τ_relax(1e-6)=1.470e-05, pure-steady converged at T=1e-9: res=3.658e-14) bound-holds: coupled FAIL surfaced in certificate; pure-steady judged on deadline+residual, no bogus ε_c
+    burgers-1d                     infeasible representation                                                             E_tail^(1/2)=1.604e-02 (representation violation size)                                                                                  l2_blend=2.334e-02                                                                within-band (scaling claim, not identity)
 
 ==============================================================================
 6. 验收
 ==============================================================================
-                                                                      check                                            got                                     expected PASS
-                       diffusion-1d: spec recorded (spec_meta from PDESpec)   keys=L,T,hinf_analytic,kappa_analytic,kind,n                          non-empty spec_meta  yes
-                 diffusion-1d: P1 check: finite modes (stable iff expected)                        n_finite=64 stable=True                          n_finite>=1, stable  yes
-                          diffusion-1d: P3 scaling: alpha & method recorded               alpha=8.149e-07 method=rms3sigma          alpha>0, fallback recorded honestly  yes
-                                        diffusion-1d: P6 certificate status                 no violation on evaluated axes                        feasible/no-violation  yes
-                                                 diffusion-1d: kappa = 4096                                           4096                                         4096  yes
-                diffusion-1d: det_err < predicted sigma_y (machine-limited)                         1.776e-15 vs 2.236e+01                            det_err < sigma_y  yes
-                          diffusion-1d: meas_sigma vs Lyapunov sigma_y (×2)                 2.249e+01 vs 2.236e+01 (×1.01)                              within factor 2  yes
-                         poisson-2d: spec recorded (spec_meta from PDESpec)       keys=analytic,bc,c_node,conductance,h,hy                          non-empty spec_meta  yes
-                   poisson-2d: P1 check: finite modes (stable iff expected)                       n_finite=256 stable=True                          n_finite>=1, stable  yes
-                            poisson-2d: P3 scaling: alpha & method recorded               alpha=1.578e+06 method=rms3sigma          alpha>0, fallback recorded honestly  yes
-                                          poisson-2d: P6 certificate status                 no violation on evaluated axes                        feasible/no-violation  yes
-                                          poisson-2d: twin steady_err small                                      0.000e+00                                      < 1e-09  yes
-                                            poisson-2d: twin residual small                                      6.158e-17                                      < 1e-07  yes
-                              poisson-2d: floor_meas <= deterministic bound                         1.381e-04 vs 3.627e-03                             measured ≤ bound  yes
-                                   poisson-2d: tau_fit vs C/lambda_min (5%)                  1.47e-11 vs 1.47e-11 (Δ0.00%)                                    within 5%  yes
-  poisson-2d: second cert @c_node=1e-6 flags FAIL (eps_c = tau_c/tau_state)                    verdict=FAIL eps_c=1.17e+08                      FAIL with eps_c >= 0.01  yes
-         poisson-2d: large-C nonconvergence at t=tau_state vs own tau_relax res(τ_state)=1.131e+01  res(τ_relax)=8.695e-01 res(τ_state) > 0.5‖I‖, res(τ_relax) < 0.5‖I‖  yes
-                         burgers-1d: spec recorded (spec_meta from PDESpec)          keys=alpha,cfl,dx,kind,linearize_at,n                          non-empty spec_meta  yes
-                   burgers-1d: P1 check: finite modes (stable iff expected)                      n_finite=128 stable=False                                  n_finite>=1  yes
-                            burgers-1d: P3 scaling: alpha & method recorded               alpha=3.398e-05 method=rms3sigma          alpha>0, fallback recorded honestly  yes
-                                          burgers-1d: P6 certificate status                                     infeasible    infeasible w/ binding_axis=representation  yes
-             burgers-1d: conservation ~1e-16 despite representation failure                                       2.22e-16                              |drift| < 1e-12  yes
-                                  burgers-1d: shock position within ~1 cell |0.74609 - 0.74902| = 2.930e-03 vs h=7.812e-03                                  <= 1.5 cell  yes
-                                     burgers-1d: entropy inequality sign ok                                           True                                         True  yes
-                             burgers-1d: l2_blend / l2_weno5 (§6.16 ~1.34x)                                          1.088                                in [1.0, 2.0]  yes
-          burgers-1d: WENO reg E_tail < physical-state E_tail (tail hidden)                         4.446e-05 vs 2.573e-04                  E_tail(WENO) < E_tail(phys)  yes
-       burgers-1d: E_tail^(1/2) ~ l2_blend (order-of-magnitude, <=1 decade)             1.604e-02 vs 2.334e-02 (Δ0.16 dec)                              within 1 decade  yes
-                                            diffusion κ_hw=1e3 → infeasible               status=infeasible axis=stiffness           infeasible, binding_axis=stiffness  yes
-                     burgers smooth state T=0.2: representation NOT binding       E_tail=3.793e-12 rep=0.13154431737776456             representation axis not violated  yes
-                                            malformed problem name rejected                                         raises                                        raise  yes
+                                                                     check                                                  got                                             expected PASS
+                      diffusion-1d: spec recorded (spec_meta from PDESpec)         keys=L,T,hinf_analytic,kappa_analytic,kind,n                                  non-empty spec_meta  yes
+                diffusion-1d: P1 check: finite modes (stable iff expected)                              n_finite=64 stable=True                                  n_finite>=1, stable  yes
+                         diffusion-1d: P3 scaling: alpha & method recorded                     alpha=8.149e-07 method=rms3sigma                  alpha>0, fallback recorded honestly  yes
+                                       diffusion-1d: P6 certificate status                       no violation on evaluated axes                                feasible/no-violation  yes
+                                                diffusion-1d: kappa = 4096                                                 4096                                                 4096  yes
+               diffusion-1d: det_err < predicted sigma_y (machine-limited)                               1.776e-15 vs 2.236e+01                                    det_err < sigma_y  yes
+                         diffusion-1d: meas_sigma vs Lyapunov sigma_y (×2)                       2.249e+01 vs 2.236e+01 (×1.01)                                      within factor 2  yes
+                        poisson-2d: spec recorded (spec_meta from PDESpec)             keys=analytic,bc,c_node,conductance,h,hy                                  non-empty spec_meta  yes
+                  poisson-2d: P1 check: finite modes (stable iff expected)                             n_finite=256 stable=True                                  n_finite>=1, stable  yes
+                           poisson-2d: P3 scaling: alpha & method recorded                     alpha=1.578e+06 method=rms3sigma                  alpha>0, fallback recorded honestly  yes
+                                         poisson-2d: P6 certificate status                       no violation on evaluated axes                                feasible/no-violation  yes
+                                         poisson-2d: twin steady_err small                                            0.000e+00                                              < 1e-09  yes
+                                           poisson-2d: twin residual small                                            6.158e-17                                              < 1e-07  yes
+                             poisson-2d: floor_meas <= deterministic bound                               1.381e-04 vs 3.627e-03                                     measured ≤ bound  yes
+                                  poisson-2d: tau_fit vs C/lambda_min (5%)                        1.47e-11 vs 1.47e-11 (Δ0.00%)                                            within 5%  yes
+           poisson-2d: pure steady-state: no ε_c fabricated from own poles                                                 None                        None (deadline+residual path)  yes
+                  poisson-2d: pure steady-state: converged within deadline        verdict=PASS res(T)=3.658e-14 (tol 1.000e-06)                                      PASS, res < tol  yes
+    poisson-2d: coupled negative control: eps_c = tau_c/tau_external FAILs verdict=FAIL eps_c=1.47e+03 (tau_ext=1e-08 declared)                              FAIL with eps_c >= 0.01  yes
+              poisson-2d: constraint FAIL reaches certificate (not buried)                                             rejected    rejected, feasible=False, reason names constraint  yes
+  poisson-2d: coupled FAIL manifests physically: res(tau_external) ~ ||I||                               1.128e+01 vs 1.131e+01 res > 0.5||I|| (unconverged when the state needs it)  yes
+      poisson-2d: coupled PASS control: eps_c<0.01 keeps certificate clean      eps_c=0.001 cert=no violation on evaluated axes    PASS, cert still 'no violation on evaluated axes'  yes
+                        burgers-1d: spec recorded (spec_meta from PDESpec)                keys=alpha,cfl,dx,kind,linearize_at,n                                  non-empty spec_meta  yes
+                  burgers-1d: P1 check: finite modes (stable iff expected)                            n_finite=128 stable=False                                          n_finite>=1  yes
+                           burgers-1d: P3 scaling: alpha & method recorded                     alpha=3.398e-05 method=rms3sigma                  alpha>0, fallback recorded honestly  yes
+                                         burgers-1d: P6 certificate status                                           infeasible            infeasible w/ binding_axis=representation  yes
+            burgers-1d: conservation ~1e-16 despite representation failure                                             2.22e-16                                      |drift| < 1e-12  yes
+                                 burgers-1d: shock position within ~1 cell       |0.74609 - 0.74902| = 2.930e-03 vs h=7.812e-03                                          <= 1.5 cell  yes
+                                    burgers-1d: entropy inequality sign ok                                                 True                                                 True  yes
+                            burgers-1d: l2_blend / l2_weno5 (§6.16 ~1.34x)                                                1.088                                        in [1.0, 2.0]  yes
+         burgers-1d: WENO reg E_tail < physical-state E_tail (tail hidden)                               4.446e-05 vs 2.573e-04                          E_tail(WENO) < E_tail(phys)  yes
+      burgers-1d: E_tail^(1/2) ~ l2_blend (order-of-magnitude, <=1 decade)                   1.604e-02 vs 2.334e-02 (Δ0.16 dec)                                      within 1 decade  yes
+                                           diffusion κ_hw=1e3 → infeasible                     status=infeasible axis=stiffness                   infeasible, binding_axis=stiffness  yes
+                    burgers smooth state T=0.2: representation NOT binding             E_tail=3.793e-12 rep=0.13154431737776456                     representation axis not violated  yes
+                                           malformed problem name rejected                                               raises                                                raise  yes
 
-  30/30 checks passed
+  34/34 checks passed

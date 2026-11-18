@@ -164,6 +164,7 @@
           }
         },
         "binding_axis": "robustness_A",
+        "constraint": null,
         "rejection_reasons": [],
         "assumptions": [
           "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
@@ -458,6 +459,7 @@
           }
         },
         "binding_axis": "bandwidth",
+        "constraint": null,
         "rejection_reasons": [],
         "assumptions": [
           "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
@@ -994,18 +996,35 @@
           0.0024595516749931342
         ]
       },
+      "constraint_steady": {
+        "verdict": "PASS",
+        "eps_c": null,
+        "tau_relax": 1.4702420309406704e-11,
+        "solve_deadline": 1e-09,
+        "residual_at_deadline": 3.6582883599705646e-14,
+        "residual_tol": 1e-06,
+        "converged": true
+      },
       "constraint_big_c": {
         "verdict": "FAIL",
-        "eps_c": 116617308.04677722,
+        "eps_c": 1470.2420309406702,
         "tau_relax": 1.4702420309406704e-05,
-        "res_at_tau_state": 11.313708114804093,
-        "res_at_own_tau_relax": 0.8695237966395615
+        "external_state_timescale": 1e-08,
+        "cert_status": "rejected",
+        "cert_feasible": false,
+        "res_at_tau_external": 11.283412550643622
+      },
+      "constraint_coupled_pass": {
+        "eps_c": 0.001,
+        "external_state_timescale": 0.014702420309406704,
+        "verdict": "PASS",
+        "cert_status": "no violation on evaluated axes"
       },
       "reconciliation": {
-        "predicted": "eps_c=1.17e+08 >= 0.01 \u21d2 FAIL (elliptic becomes parabolic)",
-        "measured": "res(t=\u03c4_state)=1.131e+01 vs res(t=\u03c4_relax)=8.695e-01",
-        "verdict": "bound-holds: nonconverged at \u03c4_state, converged at \u03c4_relax",
-        "cert_note": "cert on P3 physical-time descriptor (eig=lambda/alpha): bandwidth = B_hw*margin within window; robustness_A unevaluated (delta_A_norm =None \u2014 mismatch is a leakage/drift perturbation judged by floor_bound, not Gamma_proj); feasible on evaluated axes"
+        "predicted": "eps_c=1.47e+03 >= 0.01 against declared external \u03c4=1e-08 \u21d2 FAIL (elliptic becomes parabolic for the coupled state)",
+        "measured": "res(\u03c4_external)=1.128e+01 (\u03c4_relax(1e-6)=1.470e-05, pure-steady converged at T=1e-9: res=3.658e-14)",
+        "verdict": "bound-holds: coupled FAIL surfaced in certificate; pure-steady judged on deadline+residual, no bogus \u03b5_c",
+        "cert_note": "cert on P3 physical-time descriptor (eig=lambda/alpha): bandwidth = B_hw*margin within window; robustness_A unevaluated (delta_A_norm =None \u2014 mismatch is a leakage/drift perturbation judged by floor_bound, not Gamma_proj); feasible on evaluated axes. Constraint timing: poisson-2d is pure steady-state (no external dynamic timescale declared) \u2014 no eps_c is fabricated from the constraint's own poles; the steady verdict is a deadline+residual fact, and a coupled negative control (declared fast external tau) surfaces as a rejected certificate via the constraint field"
       }
     },
     "burgers-1d": {
@@ -1020,7 +1039,7 @@
           "T": 0.3
         },
         "cfl": 0.2,
-        "rhs_func": "<function _burgers_fv.<locals>.rhs_func at 0x7f59262adf30>",
+        "rhs_func": "<function _burgers_fv.<locals>.rhs_func at 0x7fa91e909850>",
         "u0": "0.5+0.5 sin(2 pi x) point values (run_phase0/run_transform convention)",
         "reg": {
           "p": 1.4385004176399947,
@@ -1180,9 +1199,7 @@
         "method": "rms3sigma",
         "gamma_before": Infinity,
         "gamma_after": 586.3142773169596,
-        "notes": [
-          "Wo \u4e0d\u53ef\u7528\uff08unavailable\uff09\uff1aMoore \u53e3\u5f84\u7f3a\u7701"
-        ],
+        "notes": [],
         "bandwidth_pass": true
       },
       "p6_certificate": {
@@ -1252,6 +1269,7 @@
           }
         },
         "binding_axis": "representation",
+        "constraint": null,
         "rejection_reasons": [],
         "assumptions": [
           "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
@@ -1801,17 +1819,49 @@
     },
     {
       "problem": "poisson-2d",
-      "name": "poisson-2d: second cert @c_node=1e-6 flags FAIL (eps_c = tau_c/tau_state)",
-      "got": "verdict=FAIL eps_c=1.17e+08",
+      "name": "poisson-2d: pure steady-state: no \u03b5_c fabricated from own poles",
+      "got": "None",
+      "expected": "None (deadline+residual path)",
+      "passed": true,
+      "kind": "recon"
+    },
+    {
+      "problem": "poisson-2d",
+      "name": "poisson-2d: pure steady-state: converged within deadline",
+      "got": "verdict=PASS res(T)=3.658e-14 (tol 1.000e-06)",
+      "expected": "PASS, res < tol",
+      "passed": true,
+      "kind": "recon"
+    },
+    {
+      "problem": "poisson-2d",
+      "name": "poisson-2d: coupled negative control: eps_c = tau_c/tau_external FAILs",
+      "got": "verdict=FAIL eps_c=1.47e+03 (tau_ext=1e-08 declared)",
       "expected": "FAIL with eps_c >= 0.01",
       "passed": true,
       "kind": "recon"
     },
     {
       "problem": "poisson-2d",
-      "name": "poisson-2d: large-C nonconvergence at t=tau_state vs own tau_relax",
-      "got": "res(\u03c4_state)=1.131e+01  res(\u03c4_relax)=8.695e-01",
-      "expected": "res(\u03c4_state) > 0.5\u2016I\u2016, res(\u03c4_relax) < 0.5\u2016I\u2016",
+      "name": "poisson-2d: constraint FAIL reaches certificate (not buried)",
+      "got": "rejected",
+      "expected": "rejected, feasible=False, reason names constraint",
+      "passed": true,
+      "kind": "recon"
+    },
+    {
+      "problem": "poisson-2d",
+      "name": "poisson-2d: coupled FAIL manifests physically: res(tau_external) ~ ||I||",
+      "got": "1.128e+01 vs 1.131e+01",
+      "expected": "res > 0.5||I|| (unconverged when the state needs it)",
+      "passed": true,
+      "kind": "recon"
+    },
+    {
+      "problem": "poisson-2d",
+      "name": "poisson-2d: coupled PASS control: eps_c<0.01 keeps certificate clean",
+      "got": "eps_c=0.001 cert=no violation on evaluated axes",
+      "expected": "PASS, cert still 'no violation on evaluated axes'",
       "passed": true,
       "kind": "recon"
     },
@@ -1921,7 +1971,7 @@
     }
   ],
   "summary": {
-    "n_checks": 30,
-    "n_passed": 30
+    "n_checks": 34,
+    "n_passed": 34
   }
 }
