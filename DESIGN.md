@@ -1466,6 +1466,24 @@ P0–P6 全链在三锚上跑通（`python3 -m bench.run_pipeline`，34/34，记
 
 ---
 
+### 6.19 B2 pre-silicon 原语实测：.noise γ_eff + corner/MC 分离 + P(workload)（`results/b2_extract.json`、`b2.json`）
+
+`python3 -m twin.spice.extract_b2`（~12 min，7 次 ngspice：5 corner + 2 MC）+ `python3 -m bench.run_b2`（15/15 checks）。对象是 B0 tile spec 的行为级原语，**不是** §6.9 的二极管镜像（extract.py）：HBT 差分对（npn13G2，20 µA/边、10k 负载——接口 gm 级）、HBT 电流镜像（20 µA）、LV MOS gm-cell×2（sg13_lv_nmos 10u/0.13u @ Vgs=0.3837 = 10 µA 二极管点、饱和区；gm/Id≈25/V，用孤立 diode sweep 交叉验证——固定 Vgs=0.40 会掉进三极管区，gm/Id 只剩 8.7/V，是第一个被实测抓住的偏置陷阱）、传输门（2u nmos ∥ 4u pmos，Ron=452 Ω）。
+
+**(1) γ_eff 实测（关 §9 风险 3 的一半）**：HBT（VBIC level 9，native model）的 `.noise` 可测：输入参考白噪声 **6.4 nV/√Hz**（1k–1 GHz 积分 var_in=4.07e-8 V²，100 M–1 G 波段全平——带内无可见 1/f 拐点）。分母 g_m=I_C/V_T=773 µS 来自实测 I_C（gm/IC=1/V_T 是精确物理，不是拟合）。相对理想白噪声 4kT/g_m（γ=1 口径）的 white factor = **1.90×**；相对 §6.9 采用的推导假设 γ=1/2 的 γ_eff = **3.79×** ⇒ SNR 乐观 **2.8 dB**。风险 3 的"5–10× ⇒ 7–10 dB"场景在 HBT 接口上**未触发**（比 feared 的小），但 1.90 也不是 1.0——账本 `excess_noise_gamma` 的 α≈1 应按 HBT 实测 1.9 修正。**MOS/传输门的 .noise 不可测**：PSP103 OSDI 器件噪声在 ngspice-44.2 未实现（孤立单管验证 onoise/inoise 谱恒为 0、op `[gm]` 参数恒 ~0 常数）；§6.9 的 MOS 噪声列仍是推导口径、未升级——如实记录，不造数。
+
+**(2) corner ≠ MC（三路分布分开跑、分开报）**：
+- **corner（全局工艺，mos_tt/ss/ff + hbt_typ/wcs/bcs，器件同向平移）**：固定 Vgs 的 gm_fd 115(ss)/151(tt)/94(ff) µS——亚阈值下 gm 对 corner **非单调**（ff 提升电流同时降低 gm/Id）；单调的是 Id：4.85 < 13.9 < 21.1 µA；实测 AC 极点（Rl≈ro 负载 + 1 pF，−3 dB）：**2.82 / 5.01 / 10.0 MHz**（3.6× 张成）。HBT corner 族移动镜像比 ±0.13%（wcs −0.21% / bcs +0.13%）。镜像比对 MOS corner 完全不敏感（0.0 σ_MC shift——MOS corner 不动 HBT，口径正确）。
+- **MC-局部失配（`mos_tt_mismatch` + 逐实例 `mm_ok=1`，24 样本）**：HBT 差分对输入失调 **σ=10.7 mV**（均值 +4.3 mV，24 样本 SEM≈2 mV）、镜像比 **σ=5.5%**（≈ is 3.8%·√2，机制对账）、gm **σ=1.5%**（2.3 µS）、Ron **σ=1.5%**（6.9 Ω）、I_C σ=2.7%。gm 的 corner shift 是失配 σ 的 **16–25×**——全局工艺平移 ≠ 逐器件失配，两条预算不能合并。
+- **MC-全局工艺（`moslv/hbt_stat` libs，24 样本）**：`_stat` 库的 gauss() 是**全局 .param**——所有器件同一抽签：失调 σ≈1e-8 µV（≈0，两器件同漂，这是它与失配的判别性差异）、gm σ=26.9 µS。三路分布的可分性就是它们的定义：corner=系统性平移、stat-MC=全局随机、mismatch-MC=逐器件随机。
+- **工具链事实（复现于本机 ngspice-44.2）**：逐实例 agauss 重抽必须用 PDK 自带配方 `setseed`+`mc_source`+实例 `mm_ok=1`（`libs.tech/gnucap/tests/ngspice/moslv/tb_moslv_mc_mm_tt.sp`），复现其 reference `.out` 逐位一致；**纯 `reset` 循环不重抽 per-instance agauss**（实测配对 ΔVgs/ΔVbe≡0）；全局 `.param mm_ok=1` 会破坏电路（镜像比塌到 1e-7）；mos_tt_mismatch 子电路在 mm_ok=0 时二极管点收敛到 0 V（退化），只在 mm_ok=1 下可用。
+
+**(3) CalibratedTwin 换入实测参数 + P(workload passes)**：`twin/calib.py` 的 CalibratedTwin 以实测值替换 nominal（gm/C=1.509e8 rad/s = gm_fd 151 µS/1 pF、镜像比 0.999565、差分增益 −3.654、Ron 451.7 Ω、失调 σ=10.6 mV；全部 source="foreground"，residual=100 ppm 测量底合同）。**P(workload passes)**（积分器极点 |pole/target−1|≤tol，24 个 mismatch-MC 样本的真实分数）：±10% ⇒ **1.00**、±5% ⇒ **1.00**、±2% ⇒ **0.88**。±2% 容差下 12% 样本出局——corner 数字（单点最坏值）给不出的就是这个分布口径。
+
+B2 仍是 pre-silicon 行为级：无 PEX/EM/substrate/thermal，corner×MC×cal-loop 组合与 post-layout slack 重跑在 B2 后续条目。
+
+---
+
 ## 7. 分阶段落地（每阶段都有可证伪的验收）
 
 ### Phase 0：数字孪生 + 可行性判定器（无硬件）—— 判定器已验收
@@ -1578,7 +1596,7 @@ B0 把 §3 的 10-tile 表收敛成一颗可流片的 characterization vehicle�
 
 **(c) 冻结规格书抽象。** 每个 tile 在 compiler 里暴露 `(E,A,B,C)` descriptor 片段 + `‖H‖₂`/`‖H‖∞`（由 `analysis/` 在其 (E,A,B,C) 上算）+ 功耗 + 面积。功率/面积为 TARGET（§2.1：1000 节点 @10µV@10MHz ⇒ ~0.1 W、~3 mm² C——本 chip 只有几十节点，功率/面积**不是瓶颈**，瓶颈是 κ_hw、route 寄生、校准漂移）。**B0 退出 = 这张表 + 每 tile 的 (E,A,B,C)/‖H‖₂/‖H‖∞/power/area 五行规格冻结**；具体数值待 §7 Phase 7 的 primitive SPICE/PEX 填入，B0 只冻结结构与口径。
 
-**(d) B0 的诚实边界。** (1) 第一颗是 characterization vehicle，不是 processor——§7 Phase 7 已冻结。(2) 功率/面积是 §2.1 一阶估算（TARGET），不是实测；§9 风险 3（γ_eff 5–10× ⇒ SNR 乐观 7–10 dB）仍开着。(3) 工艺包络不只看 f_T：κ_hw=1e6 是 nominal，账本敏感度 4.86% 意味着实测窗口若只到 1e4，diffusion N=1024 这类 stiffness-bound workload 翻判——**κ_hw 必须在 C1 实测，不能只信 PDK**。(4) per-edge route contract 由 B1 `lowering/route_contract.py` 在四判据（gain/phase/noise/feedback-ωc）上发，T7 的数量只是容量冻结。
+**(d) B0 的诚实边界。** (1) 第一颗是 characterization vehicle，不是 processor——§7 Phase 7 已冻结。(2) 功率/面积是 §2.1 一阶估算（TARGET），不是实测；§9 风险 3 已半关：HBT 接口的 γ_eff 已 `.noise` 实测（white factor 1.90× vs γ=1 口径，3.79× vs 推导 γ=1/2，SNR 乐观 2.8 dB，§6.19）——"5–10×"场景在 HBT 上未触发；MOS 一侧因 PSP103 OSDI 器件噪声在 ngspice-44.2 未实现仍是推导口径，实测要等 SPICE 器件噪声支持或硅测（C1）。(3) 工艺包络不只看 f_T：κ_hw=1e6 是 nominal，账本敏感度 4.86% 意味着实测窗口若只到 1e4，diffusion N=1024 这类 stiffness-bound workload 翻判——**κ_hw 必须在 C1 实测，不能只信 PDK**。(4) per-edge route contract 由 B1 `lowering/route_contract.py` 在四判据（gain/phase/noise/feedback-ωc）上发，T7 的数量只是容量冻结。(5) B2 已把 primitive 级 corner/MC/噪声/P(workload) 数字从 TARGET 升级为实测（§6.19，`results/b2.json`）：T1 极点 5.01 MHz@TT（corner 张成 2.82–10.0 MHz）、接口失调 σ=10.7 mV、镜像比 σ=5.5%——功率/面积仍是 TARGET，但失配/噪声/极点的预算轴不再靠 3σ 假设。
 
 ### Phase 8：heterogeneous substrates（研究阶段，按 §3.7 的优先级）
 
@@ -1613,7 +1631,7 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
   | mismatch | ε_dev=1% | floor 线性（2%/1%=2.000），0.052 per 1%；1/λ_min 放大 | constraint.mismatch_floor 现场 + constraint.json |
   | parasitics | 3° 预算 | 2.86°/buffer 级（depth4 11.45° ⇒ 1 级余量） | route.json buffers |
   | calibration_residual | 2% | isometry ≈17/unit 残差（0.342@2%，标定后 3.46e-15） | transform.json gram + §6.16 |
-  | excess_noise_gamma | α≈1 | d log σ_y/d log α = 1/2（公式精确）；γ_eff 5–10× ⇒ SNR 乐观 7–10 dB | §1.2(B) + §9 风险 3 |
+  | excess_noise_gamma | α≈1 | d log σ_y/d log α = 1/2（公式精确）；γ_eff 5–10× ⇒ SNR 乐观 7–10 dB；**B2 HBT 实测 white factor 1.90×（vs γ=1）/3.79×（vs 推导 γ=1/2）⇒ SNR 乐观 2.8 dB，MOS 侧仍推导口径（§6.19）** | §1.2(B) + §9 风险 3 + §6.19 |
 
 
 
