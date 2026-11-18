@@ -1,0 +1,512 @@
+{
+  "hardware": {
+    "kappa_hw": 1000000.0,
+    "B_hw": 10000000.0,
+    "etail_req": 0.0001
+  },
+  "cases": {
+    "diffusion N=64": {
+      "name": "diffusion N=64",
+      "n": 64,
+      "meta": {
+        "kind": "diffusion",
+        "nu": 0.001,
+        "kappa_analytic": 4096.0,
+        "hinf_analytic": 1000.0,
+        "sigma_y_analytic": 22.360679774997898
+      },
+      "check": {
+        "n": 64,
+        "m": 1,
+        "p": 64,
+        "regular": true,
+        "n_finite": 64,
+        "n_infinite": 0,
+        "kappa": 4096.0,
+        "bandwidth_hz": 0.6518986469044034,
+        "spectral_radius": 4.096,
+        "stable": true
+      },
+      "lyapunov": {
+        "sigma_y": 22.360679774997898,
+        "sigma_y2": 500.0,
+        "rel_residual": 0.0,
+        "h2_finite": true,
+        "n_stable": 64,
+        "method": "direct"
+      },
+      "hinf": {
+        "value": 1000.0009536742325,
+        "method": "hamiltonian",
+        "sweep": 999.9999999999161,
+        "rel_diff": 9.5367431640633e-07
+      },
+      "resolvent": {
+        "Gamma": 1000.0,
+        "omega": 0.0,
+        "sigma_min": 0.001,
+        "method": "diag"
+      },
+      "slack": {
+        "values": {
+          "noise": NaN,
+          "bandwidth": 6.518986469044034e-08,
+          "stiffness": 0.004096,
+          "robustness": NaN,
+          "routing": NaN,
+          "representation": NaN
+        },
+        "violated": [],
+        "unknown": [
+          "noise",
+          "robustness",
+          "routing",
+          "representation"
+        ],
+        "reasons": {},
+        "status": "no violation on evaluated axes"
+      }
+    },
+    "diffusion N=1024": {
+      "name": "diffusion N=1024",
+      "n": 1024,
+      "meta": {
+        "kind": "diffusion",
+        "nu": 0.001,
+        "kappa_analytic": 1048576.0,
+        "hinf_analytic": 1000.0,
+        "sigma_y_analytic": 22.360679774997898
+      },
+      "check": {
+        "n": 1024,
+        "m": 1,
+        "p": 1024,
+        "regular": null,
+        "n_finite": 1024,
+        "n_infinite": 0,
+        "kappa": 1048576.0,
+        "bandwidth_hz": 166.88605360752726,
+        "spectral_radius": 1048.576,
+        "stable": true
+      },
+      "lyapunov": {
+        "sigma_y": 22.360679774997898,
+        "sigma_y2": 500.0,
+        "rel_residual": 0.0,
+        "h2_finite": true,
+        "n_stable": 1024,
+        "method": "diag-closed"
+      },
+      "hinf": {
+        "value": 999.9999945024418,
+        "method": "sweep",
+        "sweep": 999.9999945024418,
+        "rel_diff": 0.0
+      },
+      "resolvent": {
+        "Gamma": 1000.0,
+        "omega": 0.0,
+        "sigma_min": 0.001,
+        "method": "diag"
+      },
+      "slack": {
+        "values": {
+          "noise": NaN,
+          "bandwidth": 1.6688605360752727e-05,
+          "stiffness": 1.048576,
+          "robustness": NaN,
+          "routing": NaN,
+          "representation": NaN
+        },
+        "violated": [
+          "stiffness"
+        ],
+        "unknown": [
+          "noise",
+          "robustness",
+          "routing",
+          "representation"
+        ],
+        "reasons": {
+          "stiffness": "delete modes (QSSA/CSP) or use multirate"
+        },
+        "status": "infeasible"
+      }
+    },
+    "biharmonic N=128": {
+      "name": "biharmonic N=128",
+      "n": 128,
+      "meta": {
+        "kind": "biharmonic",
+        "nu": 1e-08,
+        "kappa_analytic": 268435456.0,
+        "hinf_analytic": 100000000.0,
+        "sigma_y_analytic": 7071.067811865475
+      },
+      "check": {
+        "n": 128,
+        "m": 1,
+        "p": 128,
+        "regular": true,
+        "n_finite": 128,
+        "n_infinite": 0,
+        "kappa": 268435456.0,
+        "bandwidth_hz": 0.4272282972352698,
+        "spectral_radius": 2.68435456,
+        "stable": true
+      },
+      "lyapunov": {
+        "sigma_y": 7071.067811865475,
+        "sigma_y2": 50000000.0,
+        "rel_residual": 0.0,
+        "h2_finite": true,
+        "n_stable": 128,
+        "method": "direct"
+      },
+      "hinf": {
+        "value": 103810108.8639365,
+        "method": "hamiltonian",
+        "sweep": 99963990.66240962,
+        "rel_diff": 0.038475036621093715
+      },
+      "resolvent": {
+        "Gamma": 100000000.0,
+        "omega": 0.0,
+        "sigma_min": 1e-08,
+        "method": "diag"
+      },
+      "slack": {
+        "values": {
+          "noise": NaN,
+          "bandwidth": 4.272282972352698e-08,
+          "stiffness": 268.435456,
+          "robustness": NaN,
+          "routing": NaN,
+          "representation": NaN
+        },
+        "violated": [
+          "stiffness"
+        ],
+        "unknown": [
+          "noise",
+          "robustness",
+          "routing",
+          "representation"
+        ],
+        "reasons": {
+          "stiffness": "delete modes (QSSA/CSP) or use multirate"
+        },
+        "status": "infeasible"
+      }
+    },
+    "Burgers N=128": {
+      "name": "Burgers N=128",
+      "n": 128,
+      "meta": {
+        "kind": "burgers",
+        "T": 0.3,
+        "kappa_analytic": null,
+        "hinf_analytic": null,
+        "sigma_y_analytic": null,
+        "p": 1.4385004176399947,
+        "E_tail": 0.00025733990126494986,
+        "WENO_p": 7.279728793979298,
+        "WENO_E_tail": 4.446445143298775e-05
+      },
+      "check": {
+        "n": 128,
+        "m": 1,
+        "p": 128,
+        "regular": true,
+        "n_finite": 128,
+        "n_infinite": 0,
+        "kappa": 2221.7215781996065,
+        "bandwidth_hz": 27.18688601455438,
+        "spectral_radius": 170.82024275461424,
+        "stable": false
+      },
+      "lyapunov": {
+        "sigma_y": 3.632305572629186,
+        "sigma_y2": 13.193643772953038,
+        "rel_residual": 6.437731475789821e-14,
+        "h2_finite": true,
+        "n_stable": 127,
+        "method": "qz"
+      },
+      "hinf": {
+        "value": 6.124887252775304,
+        "method": "sweep",
+        "sweep": 6.124887252775304,
+        "rel_diff": 0.0
+      },
+      "resolvent": {
+        "Gamma": Infinity,
+        "omega": 1.7082024275461442e-06,
+        "sigma_min": 0.0,
+        "method": "sweep"
+      },
+      "slack": {
+        "values": {
+          "noise": NaN,
+          "bandwidth": 2.7186886014554377e-06,
+          "stiffness": 0.0022217215781996065,
+          "robustness": NaN,
+          "routing": NaN,
+          "representation": 2.5733990126494986
+        },
+        "violated": [
+          "representation"
+        ],
+        "unknown": [
+          "noise",
+          "robustness",
+          "routing"
+        ],
+        "reasons": {
+          "representation": "switch basis or move the singular region to flux tiles"
+        },
+        "status": "infeasible"
+      },
+      "regularity": {
+        "p": 1.4385004176399947,
+        "E_tail": 0.00025733990126494986,
+        "representation": 2.5733990126494986,
+        "shock": true
+      }
+    },
+    "Robertson t=1e4": {
+      "name": "Robertson t=1e4",
+      "n": 3,
+      "meta": {
+        "kind": "robertson",
+        "T_obs": 10000.0,
+        "y": [
+          0.10730042853845095,
+          4.800166972604014e-07,
+          0.8926990914448528
+        ],
+        "kappa_analytic": null,
+        "hinf_analytic": null,
+        "sigma_y_analytic": null
+      },
+      "check": {
+        "n": 3,
+        "m": 1,
+        "p": 3,
+        "regular": true,
+        "n_finite": 3,
+        "n_infinite": 0,
+        "kappa": 62161949.57892448,
+        "bandwidth_hz": 1425.3648960469222,
+        "spectral_radius": 8955.83177221158,
+        "stable": false
+      },
+      "lyapunov": {
+        "sigma_y": 0.18959790224215473,
+        "sigma_y2": 0.03594736453462566,
+        "rel_residual": 1.815798656058921e-14,
+        "h2_finite": true,
+        "n_stable": 2,
+        "method": "qz"
+      },
+      "hinf": {
+        "value": 22.320914130332774,
+        "method": "sweep",
+        "sweep": 22.320914130332774,
+        "rel_diff": 0.0
+      },
+      "resolvent": {
+        "Gamma": 17107.910590832355,
+        "omega": 8.955831772211581e-05,
+        "sigma_min": 5.845249159391046e-05,
+        "method": "sweep"
+      },
+      "slack": {
+        "values": {
+          "noise": NaN,
+          "bandwidth": 0.00014253648960469223,
+          "stiffness": 62.16194957892448,
+          "robustness": NaN,
+          "routing": NaN,
+          "representation": NaN
+        },
+        "violated": [
+          "stiffness"
+        ],
+        "unknown": [
+          "noise",
+          "robustness",
+          "routing",
+          "representation"
+        ],
+        "reasons": {
+          "stiffness": "delete modes (QSSA/CSP) or use multirate"
+        },
+        "status": "infeasible"
+      }
+    }
+  },
+  "checks": [
+    {
+      "name": "diffusion N=64 \u03ba",
+      "got": 4096.0,
+      "expected": 4096.0,
+      "log10_err": 0.0,
+      "tol": 0.5,
+      "passed": true,
+      "kind": "log10"
+    },
+    {
+      "name": "diffusion N=64 \u0393",
+      "got": 1000.0,
+      "expected": 1000.0,
+      "log10_err": 0.0,
+      "tol": 0.15,
+      "passed": true,
+      "kind": "log10"
+    },
+    {
+      "name": "diffusion N=64 \u03c3_y",
+      "got": 22.360679774997898,
+      "expected": 22.360679774997898,
+      "log10_err": 0.0,
+      "tol": 0.15,
+      "passed": true,
+      "kind": "log10"
+    },
+    {
+      "name": "diffusion N=64 H\u221e",
+      "got": 1000.0009536742325,
+      "expected": 1000.0,
+      "log10_err": 4.1417525920240713e-07,
+      "tol": 0.15,
+      "passed": true,
+      "kind": "log10"
+    },
+    {
+      "name": "diffusion N=64 H\u221e ham-vs-sweep",
+      "got": 9.5367431640633e-07,
+      "expected": 0.0,
+      "log10_err": -6.020599913279588,
+      "tol": 0.15,
+      "passed": true,
+      "kind": "rel"
+    },
+    {
+      "name": "diffusion N=1024 \u03ba",
+      "got": 1048576.0,
+      "expected": 1048576.0,
+      "log10_err": 0.0,
+      "tol": 0.5,
+      "passed": true,
+      "kind": "log10"
+    },
+    {
+      "name": "diffusion N=1024 \u0393",
+      "got": 1000.0,
+      "expected": 1000.0,
+      "log10_err": 0.0,
+      "tol": 0.15,
+      "passed": true,
+      "kind": "log10"
+    },
+    {
+      "name": "diffusion N=1024 \u03c3_y",
+      "got": 22.360679774997898,
+      "expected": 22.360679774997898,
+      "log10_err": 0.0,
+      "tol": 0.15,
+      "passed": true,
+      "kind": "log10"
+    },
+    {
+      "name": "biharmonic N=128 \u03ba",
+      "got": 268435456.0,
+      "expected": 268435456.0,
+      "log10_err": 0.0,
+      "tol": 0.5,
+      "passed": true,
+      "kind": "log10"
+    },
+    {
+      "name": "biharmonic N=128 \u0393",
+      "got": 100000000.0,
+      "expected": 100000000.0,
+      "log10_err": 0.0,
+      "tol": 0.15,
+      "passed": true,
+      "kind": "log10"
+    },
+    {
+      "name": "biharmonic N=128 \u03c3_y",
+      "got": 7071.067811865475,
+      "expected": 7071.067811865475,
+      "log10_err": 0.0,
+      "tol": 0.15,
+      "passed": true,
+      "kind": "log10"
+    },
+    {
+      "name": "biharmonic N=128 H\u221e",
+      "got": 103810108.8639365,
+      "expected": 100000000.0,
+      "log10_err": 0.01623964648028557,
+      "tol": 0.15,
+      "passed": true,
+      "kind": "log10"
+    },
+    {
+      "name": "biharmonic N=128 H\u221e ham-vs-sweep",
+      "got": 0.038475036621093715,
+      "expected": 0.0,
+      "log10_err": -1.4148209581285474,
+      "tol": 0.15,
+      "passed": true,
+      "kind": "rel"
+    },
+    {
+      "name": "diffusion N=64 Lyapunov residual",
+      "got": 0.0,
+      "expected": 0.0,
+      "log10_err": -16.0,
+      "tol": 1e-10,
+      "passed": true,
+      "kind": "abs"
+    },
+    {
+      "name": "diffusion N=64 verdict",
+      "got": "-",
+      "expected": "-",
+      "passed": true,
+      "kind": "axis"
+    },
+    {
+      "name": "diffusion N=1024 verdict",
+      "got": "stiffness",
+      "expected": "stiffness",
+      "passed": true,
+      "kind": "axis"
+    },
+    {
+      "name": "biharmonic N=128 verdict",
+      "got": "stiffness",
+      "expected": "stiffness",
+      "passed": true,
+      "kind": "axis"
+    },
+    {
+      "name": "Burgers N=128 verdict",
+      "got": "representation",
+      "expected": "representation",
+      "passed": true,
+      "kind": "axis"
+    },
+    {
+      "name": "Robertson t=1e4 verdict",
+      "got": "stiffness",
+      "expected": "stiffness",
+      "passed": true,
+      "kind": "axis"
+    }
+  ]
+}
