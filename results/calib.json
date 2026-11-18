@@ -66,6 +66,54 @@
     "note": null
    },
    {
+    "name": "fg: fallback VERIFY honestly records independent=False (training residual, degraded)",
+    "got": false,
+    "expected": false,
+    "passed": true,
+    "kind": "calib-fg",
+    "note": null
+   },
+   {
+    "name": "fg: VERIFY consumes a held-out set (independent=True)",
+    "got": true,
+    "expected": true,
+    "passed": true,
+    "kind": "calib-fg",
+    "note": null
+   },
+   {
+    "name": "fg: independent VERIFY residual ~ noise floor (passes)",
+    "got": "161.9 ppm",
+    "expected": "<= 10x floor (1000 ppm), passed",
+    "passed": true,
+    "kind": "calib-fg",
+    "note": null
+   },
+   {
+    "name": "fg: overfit NEG control \u2014 training residual looks fine (= floor, raw eaten by dof=points)",
+    "got": "100.0 ppm",
+    "expected": "100.0 ppm (misleading)",
+    "passed": true,
+    "kind": "calib-fg",
+    "note": null
+   },
+   {
+    "name": "fg: overfit caught by independent VERIFY (err >> floor, fails)",
+    "got": "2887.1 ppm, passed=False",
+    "expected": "> 10x floor (1000 ppm), failed",
+    "passed": true,
+    "kind": "calib-fg",
+    "note": null
+   },
+   {
+    "name": "fg: FSM records the overfit VERIFY as independent",
+    "got": true,
+    "expected": true,
+    "passed": true,
+    "kind": "calib-fg",
+    "note": null
+   },
+   {
     "name": "fg: twin param updated by correction (gain*old+offset)",
     "got": "1.961e+06",
     "expected": "1.961e+06",
@@ -233,7 +281,15 @@
     "note": null
    },
    {
-    "name": "p7: target gm/C = max|lambda|/alpha (fastest physical pole)",
+    "name": "p7: per-element target = own |a_ii| (scaled A diagonal), not global max|lambda|/alpha",
+    "got": "1227..5.027e+06",
+    "expected": "nu*k^2/alpha each (spread 4096)",
+    "passed": true,
+    "kind": "calib-p7",
+    "note": null
+   },
+   {
+    "name": "p7: tile speed spec kept as source (max|lambda|/alpha)",
     "got": "5.027e+06",
     "expected": "5.027e+06",
     "passed": true,
@@ -333,7 +389,7 @@
   "summary": {
    "n_elements": 65,
    "alpha": 8.148733086305042e-07,
-   "gm_over_c": 5026548.245743669,
+   "gm_over_c": 1227.1846303085129,
    "residual_budget_ppm": 148624.77366022542,
    "cert_status": "no violation on evaluated axes"
   }
@@ -412,7 +468,7 @@
   }
  },
  "summary": {
-  "n_checks": 43,
-  "n_passed": 43
+  "n_checks": 50,
+  "n_passed": 50
  }
 }

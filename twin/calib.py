@@ -2,11 +2,14 @@
 
 校准在 DESIGN.md 里是一等合同，不是事后补丁（§C3）：
 
-  * foreground（一次性）：已知激励（known stimulus）下测 offset/gain/
-    非线性，存 correction。测完就验证（VERIFY 态），残差以**测量噪声底**
-    收敛——不承诺低于噪声底，那是撒谎（§6.16 Gram 标定口径：标定后
-    isometry 3.46e-15 是因为注入的扰动是确定性的；真实芯片上残差 =
-    噪声底）。
+    * foreground（一次性）：已知激励（known stimulus）下测 offset/gain/
+    非线性，存 correction。测完就验证（VERIFY 态）：correction 作用于
+    **独立**的 held-out 激励+读数（验证点集 ≠ 拟合点集），残差以**测量
+    噪声底**收敛——不承诺低于噪声底，那是撒谎（§6.16 Gram 标定口径：
+    标定后 isometry 3.46e-15 是因为注入的扰动是确定性的；真实芯片上
+    残差 = 噪声底）。VERIFY 用拟合同一点集只能算训练残差，抓不住
+    过拟合/漂移/修错——没有 held-out 集时 FSM 会在 history 里如实记录
+    independent=False（训练残差，降级口径），不冒充独立验证。
   * background（持续运行）：跟踪慢漂移（温度/老化），replica/reference
     锁定；相邻两次重标之间的残差 = drift_rate × update_interval + 噪声底。
     这与 A7 的 `gm_c_calibrate` 语义一致（residual = drift/(1+T) +
@@ -254,10 +257,21 @@ class CalibrationFSM:
     result: CalibrationResult | None = None
     _stimulus: list = field(default_factory=list)
     _reading: list = field(default_factory=list)
+    _verify_stimulus: list = field(default_factory=list)   # held-out 验证集
+    _verify_reading: list = field(default_factory=list)
     history: list = field(default_factory=list)
 
-    def advance(self, stimulus=None, reading=None) -> str:
-        """推进一步；每步给当前态需要的输入，返回新态名。"""
+    def advance(self, stimulus=None, reading=None,
+                verify_stimulus=None, verify_reading=None) -> str:
+        """推进一步；每步给当前态需要的输入，返回新态名。
+
+        VERIFY 态的合同（P1-CALIB）：verify_stimulus/verify_reading 是
+        **held-out** 验证点集（与拟合用的 _stimulus/_reading 不同点），
+        correction 作用于验证读数、残差必须 ≈ 噪声底量级；过拟合的
+        correction（训练点上残差≈底、held-out 上放大）在这里被抓住。
+        不提供验证集 ⇒ 回退到拟合点集本身，history 记录
+        independent=False——那是训练残差，不是独立验证，不冒充。
+        """
         s = self.state
         if s == "IDLE":
             self._stimulus, self._reading = [], []
@@ -275,15 +289,24 @@ class CalibrationFSM:
                 self._reading, self._stimulus, self.meas_noise_ppm)
             self.state = "VERIFY"
         elif s == "VERIFY":
-            # 验证：用同一点集复测一遍（带噪），残差必须 ≈ 噪声底量级
+            if verify_stimulus is not None:
+                self._verify_stimulus = _aslist(verify_stimulus)
+            if verify_reading is not None:
+                self._verify_reading = _aslist(verify_reading)
+            independent = bool(self._verify_stimulus) and bool(self._verify_reading)
+            # 独立验证优先；没有 held-out 集时退回拟合点集（训练残差）
+            v_stim = self._verify_stimulus if independent else self._stimulus
+            v_read = self._verify_reading if independent else self._reading
             r = self.result
             corrected = [r.correction["gain"] * mi + r.correction["offset"]
-                         for mi in self._reading]
-            scale = max(abs(v) for v in self._stimulus) or 1.0
+                         for mi in v_read]
+            scale = max(abs(v) for v in v_stim) or 1.0
             err_ppm = 1e6 * max(abs(ci - ti) / scale
-                                for ci, ti in zip(corrected, self._stimulus))
+                                for ci, ti in zip(corrected, v_stim))
             ok = err_ppm <= max(r.residual_ppm, self.meas_noise_ppm) * 10.0
             self.history.append({"state": "VERIFY", "err_ppm": err_ppm,
+                                 "independent": bool(independent),
+                                 "n_points": len(v_stim),
                                  "passed": bool(ok)})
             if ok or self.retries >= self.max_retries:
                 self.state = "IDLE"
@@ -295,14 +318,21 @@ class CalibrationFSM:
             raise ValueError(f"未知状态 {s!r}")
         return self.state
 
-    def run_foreground(self, stimulus, reading) -> CalibrationResult:
-        """驱动完整一个循环（便捷入口），返回标定结果。"""
+    def run_foreground(self, stimulus, reading,
+                       verify_stimulus=None, verify_reading=None) -> CalibrationResult:
+        """驱动完整一个循环（便捷入口），返回标定结果。
+
+        verify_stimulus/verify_reading：held-out 验证点集（P1-CALIB）。
+        缺省 None ⇒ VERIFY 退回训练残差（history 记 independent=False）。
+        """
         self.advance()                          # IDLE → STIMULATE
         self.advance(stimulus=stimulus)         # STIMULATE → MEASURE
         self.advance(reading=reading)           # MEASURE → CORRECT
-        self.advance()                          # CORRECT → VERIFY
+        self.advance(verify_stimulus=verify_stimulus,
+                     verify_reading=verify_reading)   # CORRECT → VERIFY
         while self.state != "IDLE":
-            self.advance()                      # VERIFY → IDLE（或重试）
+            self.advance(verify_stimulus=verify_stimulus,
+                         verify_reading=verify_reading)  # 重试后复验
         return self.result
 
 

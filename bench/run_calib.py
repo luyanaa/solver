@@ -150,6 +150,55 @@ def case_foreground():
     add_check("fg: verify history recorded and passed",
               fsm.history[-1]["passed"], True,
               fsm.history and fsm.history[-1]["passed"], kind="calib-fg")
+    add_check("fg: fallback VERIFY honestly records independent=False "
+              "(training residual, degraded)",
+              fsm.history[-1].get("independent"), False,
+              fsm.history[-1].get("independent") is False, kind="calib-fg")
+
+    # P1-CALIB：独立 VERIFY——held-out 验证点集（与拟合点集不同值）
+    rng_v = np.random.default_rng(21)
+    v_targets = [0.15, 0.35, 0.55, 0.75, 0.95]
+    v_readings = [t * 1.02 + 3e-4 + t * rng_v.normal(0.0, floor_ppm * 1e-6)
+                  for t in v_targets]
+    fsm_v = CalibrationFSM(meas_noise_ppm=floor_ppm)
+    fsm_v.run_foreground(targets, readings,
+                         verify_stimulus=v_targets, verify_reading=v_readings)
+    vindep = fsm_v.history[-1]
+    add_check("fg: VERIFY consumes a held-out set (independent=True)",
+              vindep.get("independent"), True,
+              vindep.get("independent") is True, kind="calib-fg")
+    add_check("fg: independent VERIFY residual ~ noise floor (passes)",
+              "%.1f ppm" % vindep["err_ppm"], "<= 10x floor (1000 ppm), passed",
+              vindep["passed"] and vindep["err_ppm"] <= 10.0 * floor_ppm,
+              kind="calib-fg")
+
+    # 过拟合负控制：2 点拟合 2 参数（dof=点数）⇒ 训练残差被吃光
+    # （residual=max(raw,floor)=floor，看似合格），correction 吸收了
+    # 训练噪声，在 held-out 点上放大——独立 VERIFY 必须抓住它。
+    # 训练读数大噪声（2000 ppm 量级），验证读数只有噪声底（100 ppm）。
+    rng_o = np.random.default_rng(5)
+    big = 2000.0 * 1e-6
+    o_targets = [0.5, 1.0]
+    o_readings = [t + rng_o.normal(0.0, big) for t in o_targets]
+    fsm_o = CalibrationFSM(meas_noise_ppm=floor_ppm)
+    fsm_o.run_foreground(o_targets, o_readings,
+                         verify_stimulus=[0.25, 0.55, 0.85],
+                         verify_reading=[t + rng_o.normal(0.0, floor_ppm * 1e-6)
+                                         for t in (0.25, 0.55, 0.85)])
+    overt = fsm_o.history[-1]
+    add_check("fg: overfit NEG control — training residual looks fine "
+              "(= floor, raw eaten by dof=points)",
+              "%.1f ppm" % fsm_o.result.residual_ppm, "100.0 ppm (misleading)",
+              abs(fsm_o.result.residual_ppm - floor_ppm) < 1e-6,
+              kind="calib-fg")
+    add_check("fg: overfit caught by independent VERIFY (err >> floor, fails)",
+              "%.1f ppm, passed=%s" % (overt["err_ppm"], overt["passed"]),
+              "> 10x floor (1000 ppm), failed",
+              (not overt["passed"]) and overt["err_ppm"] > 10.0 * floor_ppm,
+              kind="calib-fg")
+    add_check("fg: FSM records the overfit VERIFY as independent",
+              overt.get("independent"), True, overt.get("independent") is True,
+              kind="calib-fg")
 
     # CalibratedTwin：correction 折进孪生参数
     twin = CalibratedTwin(params={"gm_over_c": 2.0e6, "alpha": 8.2e-7})
@@ -299,11 +348,28 @@ def case_p7():
               all(e.s_x == float(sc.S_x_vec[i]) for i, e in
                   enumerate(cfg.elements[:len(d.states)])), kind="calib-p7")
     lam_max = float(np.max(np.abs(d.descriptor.finite_eigs())))
-    add_check("p7: target gm/C = max|lambda|/alpha (fastest physical pole)",
-              "%.4g" % cfg.elements[0].target_gm_over_c,
+    a_v = np.asarray(sc.scaled.A, dtype=float)
+    diag_abs = np.abs(np.diag(a_v))
+    # P0-3 语义更新：target 不再是全局 max|λ|/alpha，而是每元素**各自**
+    # 的有效自系数 |a_ii|（物理 rad/s）。扩散算子 64 个模态互不相同。
+    ok_t = all(
+        abs(cfg.elements[i].target_gm_over_c - diag_abs[i]) < 1e-9
+        and abs(cfg.elements[i].a_ii - a_v[i, i]) < 1e-12
+        for i in range(len(d.states)))
+    last = cfg.elements[len(d.states) - 1]
+    add_check("p7: per-element target = own |a_ii| (scaled A diagonal), "
+              "not global max|lambda|/alpha",
+              "%.4g..%.4g" % (cfg.elements[0].target_gm_over_c,
+                              last.target_gm_over_c),
+              "nu*k^2/alpha each (spread 4096)",
+              ok_t and abs(cfg.elements[0].target_gm_over_c
+                           / last.target_gm_over_c - 1.0 / 4096.0)
+              < 1e-6, kind="calib-p7")
+    add_check("p7: tile speed spec kept as source (max|lambda|/alpha)",
+              "%.4g" % cfg.source["tile_speed_spec"],
               "%.4g" % (lam_max / sc.alpha),
-              abs(cfg.elements[0].target_gm_over_c - lam_max / sc.alpha) < 1e-9
-              and cfg.elements[0].target_gm_over_c > 0, kind="calib-p7")
+              abs(cfg.source["tile_speed_spec"] - lam_max / sc.alpha) < 1e-9,
+              kind="calib-p7")
     add_check("p7: noise axis <= 1 => sigma_scale 1.0 (no invented headroom)",
               cfg.elements[0].noise_setting["sigma_scale"], 1.0,
               cfg.elements[0].noise_setting["sigma_scale"] == 1.0,

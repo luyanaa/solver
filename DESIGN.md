@@ -1538,7 +1538,7 @@ P0–P6 全链在三锚上跑通（`python3 -m bench.run_pipeline`，30/30，记
 - **calibration-in-the-loop**：SPICE 给出 g_m/C，pilot 测量，DAC 更新，再测；报告 post-calibration 分布，不是 raw。
 - **第一颗芯片是 Characterization Vehicle，不是 processor**：primitive bank + 不同长度/扇出/模式的 route + C bank + 器件 bank + replica/温度/噪声/loopback + 同一 cell 的 32 份不同位置。目标是把“PDK model → measured primitive → calibration residual → system error”闭环跑通，而不是跑 CFD。
 
-**已实现（B1，`twin/calib.py` + `lowering/p7.py`，验收 `bench/run_calib.py` 43/43，`results/calib.json`）**：前台标定残差 = **测量噪声底**（合同：不低于底；FSM IDLE→STIMULATE→MEASURE→CORRECT→VERIFY）；后台标定残差 = `rate·interval/(1+loop_gain) + 底`（与 A7 `gm_c_calibrate` 同语义；间隔加倍 ⇒ 漂移残差加倍——诚实的调度权衡）；温漂孪生更新 `drift_update(p, ΔT, tempco)` 把当前这颗芯片的实测参数交给 compiler（不是 TT_25C）。P7 把 (Discretized, Certificate, ScalingResult, CalibratedTwin) 编成 per-element 配置（`target_gm_over_c = max|λ|/alpha`、`S_x`/`alpha` 直取 ScalingResult、噪声 σ_scale 不自造裕度）+ 校准计划（foreground 清单含 Gram `G_T=T̃^*T̃` 右标定；background reference = replica/MEMS ω_ref；`residual_budget = floor/noise_axis`——噪声轴 ≤1 才承诺预算，>1 置 None；证书判 infeasible 的量 **flagged，不悄悄计划**）。仍是 plan，不是 netlist；per-edge route-contract 已含（`lowering/route_contract.py`，验收 `bench/run_route_contract.py` 38/38，`results/route_contract.json`）：`Config.route_contracts` 逐边携带四判据契约——需求（omega_max=max|λ|/alpha 物理带宽；feedback 边 omega_c + tau_max_abs=phase_budget(ωc, φ_reserve)，有限非 inf）+ 代表性 candidate 分布式 RC 线的 `route_closure` verdict（强制长线 ⇒ verdict False，pad_can_fix 在 feedback 边诚实为 False——deskew 负控制的编译层重演：matched 延迟 ≠ instantaneous）+ `edge_sensitivity` 的 1/|A_ij| 延迟预算排序；纯对角/无描述符 ⇒ 空契约表（真"无布线"），NaN/inf 边 flagged 不静默。契约是**需求+代表性可行性**，不是布线结果（那是 P5/B2）；聚合 "route-edges" ElementConfig 保留为向后兼容摘要。
+**已实现（B1，`twin/calib.py` + `lowering/p7.py`，验收 `bench/run_calib.py` 50/50，`results/calib.json`）**：前台标定残差 = **测量噪声底**（合同：不低于底；FSM IDLE→STIMULATE→MEASURE→CORRECT→VERIFY）；VERIFY 用 **held-out** 验证点集（`run_foreground(..., verify_stimulus=, verify_reading=)`）——correction 作用于独立读数、残差须 ≈ 噪声底；无验证集时回退训练点集并如实记录 `independent=False`（训练残差，降级口径）。过拟合负控制：2 点拟合 2 参数（dof=点数）把训练残差吃到底、看似合格，held-out 残差 ≈29×底被 VERIFY 抓住。后台标定残差 = `rate·interval/(1+loop_gain) + 底`（与 A7 `gm_c_calibrate` 同语义；间隔加倍 ⇒ 漂移残差加倍——诚实的调度权衡）；温漂孪生更新 `drift_update(p, ΔT, tempco)` 把当前这颗芯片的实测参数交给 compiler（不是 TT_25C）。P7 把 (Discretized, Certificate, ScalingResult, CalibratedTwin) 编成 per-element 配置 + 校准计划；噪声 σ_scale 不自造裕度；`residual_budget = floor/noise_axis` 是**启发式**（跨轴 dJ 敏感度分配是 B2 refinement，plan notes 里注明）；噪声轴 ≤1 才承诺预算，>1 置 None；证书判 infeasible 的量 **flagged，不悄悄计划**。P0-3 系数图已编码进 config（不再只是一张速度 spec）：每积分器**各自**的有效自系数 `a_ii` = 缩放后 `A_v[i,i]`（`target_gm_over_c = |a_ii|`——diag(-1,-100) 出两个不同系数，不再收敛到全局 max|λ|/alpha；tile 速度 spec 保留在 `source.tile_speed_spec`）、每条非对角 A_v 非零元一条 `coeff_edges`（物理增益 + 引用 `Config.route_contracts` 契约序号）、`b_ports`/`c_taps`（B/C 图逐元展开）、C_bank/gm 码位（`C_BANK_CODES` 档位显式选中）、逐元素 cal bindings；`lowering/netlist.py` `to_behavioral()` 把 config 转成结构化行为级网表（integrator 带极点/edge 带增益/噪声 scale），其 `effective_A()` 重构出的特征值 ≈ scaled 描述符特征值（round-trip，`bench/run_p7_netlist.py` 26/26，`results/p7_netlist.json`；diag 系统与 4×4 稠密系统误差 ≤1.3e-15）。仍是 plan + 行为级模型，不是 SPICE 网表；per-edge route-contract 已含（`lowering/route_contract.py`，验收 `bench/run_route_contract.py` 38/38，`results/route_contract.json`）：`Config.route_contracts` 逐边携带四判据契约——需求（omega_max=max|λ|/alpha 物理带宽；feedback 边 omega_c + tau_max_abs=phase_budget(ωc, φ_reserve)，有限非 inf）+ 代表性 candidate 分布式 RC 线的 `route_closure` verdict（强制长线 ⇒ verdict False，pad_can_fix 在 feedback 边诚实为 False——deskew 负控制的编译层重演：matched 延迟 ≠ instantaneous）+ `edge_sensitivity` 的 1/|A_ij| 延迟预算排序；纯对角/无描述符 ⇒ 空契约表（真"无布线"），NaN/inf 边 flagged 不静默。契约是**需求+代表性可行性**，不是布线结果（那是 P5/B2）；聚合 "route-edges" ElementConfig 保留为向后兼容摘要。
 
 **投入顺序**：behavioral → primitive SPICE → PEX/EM/substrate/thermal → calibration loop → 小规模 test chip → 完整 VLSI。分立器件 PCB 原型只验证 compiler/time scaling/校准流程，不验证片上 mismatch、kT/C、switch 寄生和 substrate coupling。
 
@@ -1794,9 +1794,19 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                           # ν_num 越阈值判定翻转（31 项验收 in run_basis_interface）
         ✅ p7.py          # P7 配置+校准计划：Certificate+ScalingResult+
                           # CalibratedTwin → per-element {primitive,
-                          # target_gm_over_c=max|λ|/alpha, S_x, alpha,
-                          # noise_setting} + plan（foreground/background/
-                          # residual_budget=floor/noise轴，不可行 ⇒ flag）
+                          # target_gm_over_c=|a_ii|（各自有效自系数，
+                          # diag(-1,-100) 出两个不同值；tile 速度 spec
+                          # = max|λ|/alpha 保留在 source）, a_ii, C_code,
+                          # S_x, alpha, noise_setting} + 完整系数图
+                          # coeff_edges/b_ports/c_taps（物理增益，coeff_edge
+                          # 引用契约序号）+ cal_bindings + plan（foreground/
+                          # background/residual_budget=floor/noise轴（启发式，
+                          # dJ 分配是 B2），不可行 ⇒ flag）
+        ✅ netlist.py     # Config → 结构化行为级网表（integrator 带极点/
+                          # edge 带物理增益/噪声 scale；effective_A()/B/C
+                          # 重构 → round-trip 特征值对拍 scaled 描述符，
+                          # diag/4×4 稠密误差 ≤1.3e-15）（26 项验收
+                          # in run_p7_netlist）
         ✅ route_contract.py # per-edge 路由契约（四判据 + feedback ωc）：
                           # 耦合图 = A 非对角非零元；每边 REQUIREMENT
                           # （omega_max=max|λ|/alpha 物理带宽；feedback 边
@@ -1817,7 +1827,10 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                           # mirror 失配静差下界 ‖G⁻¹‖·‖δI‖（∝1/λ_min，κ trade-off）、
                           # kcl_relaxation_descriptor → 复用 analysis 栈（44/44）
         calib.py          # ✅ 校准 FSM：前/后台 + 温漂数字孪生更新
-                          # （foreground 残差 = 测量噪声底合同；background
+                          # （foreground 残差 = 测量噪声底合同；VERIFY 用
+                          # held-out 验证点集，无集时如实记 independent=False；
+                          # 过拟合负控制：dof=点数 ⇒ 训练残差吃到底、
+                          # held-out ≈29×底被抓；background
                           # 残差 = rate·interval/(1+T) + 底，间隔↑残差↑；
                           # CalibrationFSM IDLE→STIMULATE→MEASURE→CORRECT→
                           # VERIFY；CalibratedTwin 是 compiler 的输入）
@@ -1860,12 +1873,21 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                                     # 复现慢特征值、slaving ∝ gap⁻¹、负对照
                                     # 弱间隙/亏损/不稳定/奇异全 flag）（34/34）
         ✅ run_calib.py             # B1 校准验收：前台标定修回噪声底 /
+                                    # VERIFY held-out 独立验证 + 过拟合负控制
+                                    # （训练残差=底、held-out ≈29×底被抓）/
                                     # 后台残差 = rate·interval/(1+T) + 底
                                     # （间隔↑残差↑，A7 同语义）/
                                     # P7 diffusion-1d 配置+校准计划
-                                    # （gm/C=max|λ|/alpha、S_x、残差预算
-                                    # = floor/noise轴、不可行 ⇒ flagged）
-                                    # （43/43）
+                                    # （逐元素 target=|a_ii| spread 4096、
+                                    # S_x、残差预算 = floor/noise轴（启发式）、
+                                    # 不可行 ⇒ flagged）（50/50）
+        ✅ run_p7_netlist.py        # B1 P7 系数图 + 行为级网表 round-trip：
+                                    # diag(-1,-100) ⇒ 两个不同有效系数
+                                    # （比值 100）/ diag ⇒ 0 条 off-diag 边、
+                                    # 耦合系统 ⇒ 边增益=物理 A_v + 契约消费 /
+                                    # 4×4 稠密 12 边逐元对拍 + B/C 重构 /
+                                    # diffusion 64 模态 spread=4096 /
+                                    # round-trip eig 误差 ≤1.3e-15（26/26）
         ✅ run_basis_interface.py   # B1 选基+接口：shear 最坏情况 eigvec 被淘汰
                                     # （Γ=1×κ(Φ)=20.05=20.05 > 恒等基 5.12，
                                     # 对账 stagea/skew）、不变式预算≥Γ_id、
@@ -1882,6 +1904,15 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                                     # False + pad_can_fix 诚实（feedback False/
                                     # 非 feedback True）；负对照：纯对角/burgers
                                     # ⇒ 空表、NaN/inf 边 flagged（38/38）
+        ✅ run_compiler_e2e.py      # B1 closeout：编译链 COMPOSE 端到端——
+                                    # 同一 descriptor 穿 spec→discretize→
+                                    # scaling→cert→closure→split→basis→
+                                    # interface→route_contract→generate_config，
+                                    # binding axis + verdict 逐级一致性
+                                    # （diffusion-1d 对角链 + synthetic-stiff
+                                    # 快慢链；omega_max=2π·scaled.bandwidth
+                                    # 物理时间交接；组合缺口 F1–F5 记录
+                                    # 在 findings）（36/36）
         ✅ ledger.py                # 七项假设敏感度账本 → results/ledger.json
                                     # （κ_hw 4.86% 翻判 / B_hw margin 0.8 /
                                     # 噪声 0.63%/unit / 失配线性 / 2.86°/级 /
@@ -1903,6 +1934,8 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                                   # calib.json / calib_report.txt（B1 校准+P7）/
                                   # route_contract.json / route_contract_report.txt
                                   # （B1 per-edge 路由契约）/
+                                  # p7_netlist.json / p7_netlist_report.txt
+                                  # （B1 P7 系数图+网表 round-trip）/
                                   # ledger.json（七项假设账本）
 
 关键 API（✅ 已实现；SDE 三行是 Phase 6 的目标接口）：
