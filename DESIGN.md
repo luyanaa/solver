@@ -529,6 +529,8 @@ T1–T10 默认 state 是电压。这是实现选择，不是数学要求。把 
 2. **transducer 是一等公民**。每次跨域都要付 gain、nonlinearity、noise、bandwidth、energy，并且它自己就是一个 §1.2 的扰动端口。
 3. **compiler 的算子集从 `{+,×,∫}` 变成 `{E_CMOS, E_MEMS, E_fluid, E_optical}`**。判据仍是 (error, energy, bandwidth, area, communication) 上的 slack 向量，只是每轴按 substrate 重算。
 
+状态（A7，`results/substrate.json`，40/40）：MEMS 的 `ω0=√(k/m)`、`Q=mω0/c` 精确公式 + 小幅阻尼解析响应 RK4 命中（4.9e-11）；Duffing 一阶微扰骨架线 `ω(A)≈ω0(1+3k3A²/8k)` 与微幅 RK4 测频差 <1%（A² 缩放比 3.99≈4，k3 符号双向可辨）；gm/C 用 ω_ref 锁定后残差 ≈ 测量噪声底（10 ppm）而非温漂（1000 ppm），残差对 drift 100× 变化不动——参考自身漂移（§9 风险33）须单独入账；photonic 4×4 MVM：零噪机器精度、shot 项严格 ∝1/√N（能量份额探测使其与 M,x 无关）、漂移残差地板与光子数无关（Monte-Carlo 与解析 quad 相加一致 ±20%）。流体扩散算例（1D fluidic diffusion 孪生）与真实 transducer 测量数据仍是 Phase 8 TODO。
+
 | substrate | 最自然的 primitive | 数学形式 | 不擅长 |
 |---|---|---|---|
 | CMOS 积分器 | 一阶 ODE / 积分 | C·V̇ = I | 高 Q、长延迟、二阶机械模态 |
@@ -1697,7 +1699,9 @@ Gamma 与 Bessel 的边界也按 §1.5 执行：Gamma 直接拒绝（native-only
         ✅ substrate.py    # §3.7 最小子集：KAPPA_HW 每域时间窗 + 流体→电学
                           # P↔V/Q↔I/R_f↔R/C_f↔C 映射 + Hagen–Poiseuille R_f +
                           # fluidic_mesh_to_conductance + TransducerCost 合同
-                          # （MEMS/photonic constitutive law 仍是 Phase 8 TODO）
+                          # + MEMS 谐振器（ω0/Q/τ_settle/Duffing 骨架线/
+                          # gm_c_calibrate ω_ref 锁定）+ photonic MVM 保真度
+                          # （shot 1/√N + 漂移残差地板；无存储断言；A7，40/40）
         ✅ transform.py    # §5.7–§5.9：smoothness sensor/σ（相对 ε floor + attack/release）、
                           # lifting wavelet、W_inv/W_star、Gram 右/左标定、transposeable edge
                           # 实测：守恒 2.2e-16；CDF53 W_inv≠W* 0.684；isometry 2.3e-2→3.5e-15
@@ -1708,7 +1712,8 @@ Gamma 与 Bessel 的边界也按 §1.5 执行：Gamma 直接拒绝（native-only
         ✅ run_skew.py              # Phase 1.5 互连延迟：E=I+A∘T、τ_crit、相位预算（15/15）
         ✅ run_route.py             # Phase 1.6 route closure：wire/buffer/all-pass/deskew/crosstalk/敏感度（38/38）
         ✅ run_transform.py         # Phase 4.5：WENO 三算子、lifting adjoint、Gram 标定（35/35）
-        run_substrate.py            # Phase 8：MEMS 模态/Duffing、fluidic diffusion、photonic MVM
+        ✅ run_substrate.py         # A7 异构介质验收：MEMS/光子（40/40）；
+                                    # fluidic diffusion 算例仍是 Phase 8 TODO
         ✅ run_sde.py               # OU/GBM/双势阱 + CRN/moment 参数恢复（27/27）
         ✅ run_multirate.py         # §4.3 WR/S&H 合法性验收（16/16）
         ✅ run_compiler.py          # P6 证书聚合层验收（22/22）
@@ -1723,7 +1728,8 @@ Gamma 与 Bessel 的边界也按 §1.5 执行：Gamma 直接拒绝（native-only
                                   # skew_report.txt / route.json /
                                   # route_report.txt / png / 提取日志 /
                                   # transform.json / transform_report.txt（Phase 4.5）/
-                                  # sde.json / sde_report.txt（Phase 6）
+                                  # sde.json / sde_report.txt（Phase 6）/
+                                  # substrate.json / substrate_report.txt（A7 异构介质）
 
 关键 API（✅ 已实现；SDE 三行是 Phase 6 的目标接口）：
 

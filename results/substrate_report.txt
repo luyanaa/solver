@@ -1,0 +1,95 @@
+A7 异构介质验收：MEMS + photonic（DESIGN.md §3.7 / Phase 8）
+
+==============================================================================
+CASE 1  MEMS 线性谐振器：ω0/Q 精确公式 + 阻尼解析响应 + descriptor
+==============================================================================
+         quantity      value
+       ω0 [rad/s] 1.0000e+04
+                Q     1000.0
+                ζ  5.000e-04
+     τ_settle [s] 2.0000e-01
+  RK4 vs analytic  4.947e-11
+
+==============================================================================
+CASE 2  Duffing 骨架线：符号、A² 缩放、微幅 RK4 命中
+==============================================================================
+      A ω_meas/ω0 − 1 backbone pred backbone value
+  0.500     9.323e-03     9.375e-03       1.009375
+  0.250     2.338e-03     2.344e-03       1.002344
+  诚实范围：一阶微扰骨架线（Lindstedt），更高阶 O(ε²)~8.8e-05 未建模；c=0 无阻尼自由响应，未验证受迫/阻尼下的 backbone。
+
+==============================================================================
+CASE 3  gm/C 锁定到 MEMS ω_ref：残差 = 测量底，不是温漂
+==============================================================================
+                         case residual [ppm]
+  drift=1000 ppm, meas=10 ppm          10.10
+    drift=10 ppm, meas=10 ppm          10.00
+              weak loop (T=1)          510.0
+  假设（已写进 docstring）：ω_ref 在标定区间内自身稳定；参考漂移（§9 风险33）须单独入账，不在本函数返回值内。
+
+==============================================================================
+CASE 4  photonic 4×4 MVM：机器精度基线 + shot 1/√N + 漂移地板
+==============================================================================
+               case MC rel err analytic
+   shot only, N=1e4     0.0201   0.0200
+  shot+drift, N=1e6     0.0085   0.0102
+  范围：只建 shot 噪声 + 漂移残差两个保真度上限；WDM 串扰、PD 线性度、ring 热漂移动力学（§9 风险37）不在本模型内。
+
+==============================================================================
+CASE 5  TransducerCost 合同：photonic TARGET 填充 / MEMS 不造数
+==============================================================================
+
+==============================================================================
+CASE 6  κ_hw 窗口守卫 + photonic 无存储 + 负控制
+==============================================================================
+    domain         window                      checked τ
+      mems   (1e-06, 0.1) 1/ω0=1.0e-04, τ_settle=2.0e-02
+   fluidic (0.001, 100.0)                 1e-5 → flagged
+  photonic (1e-12, 1e-09)              no storage (no τ)
+
+==============================================================================
+VERDICT
+==============================================================================
+                                                check                                                               got                                             expected pass
+                                          ω0 = √(k/m)                                                      1.000000e+04                                         1.000000e+04  yes
+                                 mems_omega0() agrees                                                      1.000000e+04                                         1.000000e+04  yes
+                                           Q = m·ω0/c                                                       1000.000000                                          1000.000000  yes
+                                 ζ = c/(2mω0), Q=1/2ζ                                                       1000.000000                                          1000.000000  yes
+                      damped response RK4 vs analytic                                                         4.947e-11                                               < 1e-6  yes
+                 descriptor eigvals = m s²+cs+k roots                                                         1.819e-12                                       ≈0 (<1e-9 rel)  yes
+                 descriptor k3 excluded (E diag(1,m))                              [np.float64(1.0), np.float64(1e-12)]                                               [1, m]  yes
+                              τ_settle = 2Q/ω0 = 2m/c                                                        2.0000e-01                                           2.0000e-01  yes
+                backbone shift present (k3>0 hardens)                                                         9.323e-03                                                  > 0  yes
+                              RK4 vs backbone (few %)                                              9.32e-03 vs 9.37e-03                       ±15% of 1st-order perturbation  yes
+                      A² scaling: shift(A)/shift(A/2)                                                              3.99                                              ≈4 ±10%  yes
+                             k3<0 softens (shift < 0)                                                        -9.428e-03                                                  < 0  yes
+                     softening magnitude mirrors (A²)                                              9.43e-03 vs 9.32e-03                                       symmetric ±10%  yes
+                           k3=0 → zero detuning (RK4)                                                         0.000e+00                                           ≈0 (<1e-4)  yes
+                         locked residual ≈ meas floor                                                         10.10 ppm                                           ≈ 10.0 ppm  yes
+                                 residual ≪ raw drift                                                             0.010                                         ≪ 1 (< 0.05)  yes
+       residual drift-independent (100× drift change)                                                 10.10 → 10.00 ppm                                    ≈ unchanged (±2%)  yes
+                   finite loop gain remainder visible                                                         510.0 ppm                             > meas floor (weak loop)  yes
+           nominal gm0 = ω_ref·C_target (lock target)                                                         1.000e-07                                           documented  yes
+               zeroed noise/drift → machine precision                                                         0.000e+00                                              < 1e-15  yes
+                      analytic shot term = √(n_out/N)                                                            0.0200                                               0.0200  yes
+                             1/√N scaling: e(N)/e(4N)                                                             2.000                                               ≈2 ±1%  yes
+   shot term M,x-independent (energy-share detection)                                                         0.000e+00                                                   ≈0  yes
+                            MC shot error vs analytic                                                  0.0201 vs 0.0200                                                 ±20%  yes
+               MC shot+drift (quadrature) vs analytic                                                  0.0085 vs 0.0102                                                 ±20%  yes
+                            drift floor N-independent                                                   0.0102 → 0.0100 both ≈ drift ±2.5% (shot shrinks 1000×, floor stays)  yes
+              drift term = ‖δM x‖/‖M x‖ = drift_resid                                                            0.0100                                  ≈hypot(shot, 0.010)  yes
+                       photonic cost fields populated ['bandwidth_hz', 'energy', 'extra', 'gain', 'noise_rms', 'notes']                                  all contract fields  yes
+                       serializable (json round-trip)                                                                ok                                        round-trip ok  yes
+                            TARGET provenance labeled                                                       target-only                               provenance=target-only  yes
+      MEMS cost: no fabricated numbers (NaN contract)                                                               nan                                           NaN + note  yes
+              fluidic API unbroken (regression guard)                                                        2.5465e+11                                           2.5465e+11  yes
+                                  1/ω0 in MEMS window                                                           1.0e-04                                      in (1e-06, 0.1)  yes
+                     τ_settle=2Q/ω0 in window (Q=100)                                                           2.0e-02                                      in (1e-06, 0.1)  yes
+             Q=1000 τ_settle exceeds window → flagged                                                           2.0e-01                         outside (1e-06, 0.1) → False  yes
+              negative control: τ outside MEMS window                                                           1.0e-12                                      flagged (False)  yes
+           negative control: τ outside fluidic window                                                           1.0e-05                                      flagged (False)  yes
+                photonic no-storage assertion present                                                               yes                           documented in substrate.py  yes
+  photonic window kept as link latency, not storage τ                                                    (1e-12, 1e-09)                                        (1e-12, 1e-9)  yes
+                                4 domains in KAPPA_HW                     ['electronic', 'fluidic', 'mems', 'photonic']                                            4 domains  yes
+
+  40/40 checks passed

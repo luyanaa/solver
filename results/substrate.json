@@ -1,0 +1,290 @@
+{
+ "substrate": {
+  "checks": [
+   {
+    "name": "\u03c90 = \u221a(k/m)",
+    "got": "1.000000e+04",
+    "expected": "1.000000e+04",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "mems_omega0() agrees",
+    "got": "1.000000e+04",
+    "expected": "1.000000e+04",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "Q = m\u00b7\u03c90/c",
+    "got": "1000.000000",
+    "expected": "1000.000000",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "\u03b6 = c/(2m\u03c90), Q=1/2\u03b6",
+    "got": "1000.000000",
+    "expected": "1000.000000",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "damped response RK4 vs analytic",
+    "got": "4.947e-11",
+    "expected": "< 1e-6",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "descriptor eigvals = m s\u00b2+cs+k roots",
+    "got": "1.819e-12",
+    "expected": "\u22480 (<1e-9 rel)",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "descriptor k3 excluded (E diag(1,m))",
+    "got": "[np.float64(1.0), np.float64(1e-12)]",
+    "expected": "[1, m]",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "\u03c4_settle = 2Q/\u03c90 = 2m/c",
+    "got": "2.0000e-01",
+    "expected": "2.0000e-01",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "backbone shift present (k3>0 hardens)",
+    "got": "9.323e-03",
+    "expected": "> 0",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "RK4 vs backbone (few %)",
+    "got": "9.32e-03 vs 9.37e-03",
+    "expected": "\u00b115% of 1st-order perturbation",
+    "passed": true,
+    "kind": "perturbative"
+   },
+   {
+    "name": "A\u00b2 scaling: shift(A)/shift(A/2)",
+    "got": "3.99",
+    "expected": "\u22484 \u00b110%",
+    "passed": true,
+    "kind": "ratio"
+   },
+   {
+    "name": "k3<0 softens (shift < 0)",
+    "got": "-9.428e-03",
+    "expected": "< 0",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "softening magnitude mirrors (A\u00b2)",
+    "got": "9.43e-03 vs 9.32e-03",
+    "expected": "symmetric \u00b110%",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "k3=0 \u2192 zero detuning (RK4)",
+    "got": "0.000e+00",
+    "expected": "\u22480 (<1e-4)",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "locked residual \u2248 meas floor",
+    "got": "10.10 ppm",
+    "expected": "\u2248 10.0 ppm",
+    "passed": true,
+    "kind": "order"
+   },
+   {
+    "name": "residual \u226a raw drift",
+    "got": "0.010",
+    "expected": "\u226a 1 (< 0.05)",
+    "passed": true,
+    "kind": "ratio"
+   },
+   {
+    "name": "residual drift-independent (100\u00d7 drift change)",
+    "got": "10.10 \u2192 10.00 ppm",
+    "expected": "\u2248 unchanged (\u00b12%)",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "finite loop gain remainder visible",
+    "got": "510.0 ppm",
+    "expected": "> meas floor (weak loop)",
+    "passed": true,
+    "kind": "info"
+   },
+   {
+    "name": "nominal gm0 = \u03c9_ref\u00b7C_target (lock target)",
+    "got": "1.000e-07",
+    "expected": "documented",
+    "passed": true,
+    "kind": "info"
+   },
+   {
+    "name": "zeroed noise/drift \u2192 machine precision",
+    "got": "0.000e+00",
+    "expected": "< 1e-15",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "analytic shot term = \u221a(n_out/N)",
+    "got": "0.0200",
+    "expected": "0.0200",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "1/\u221aN scaling: e(N)/e(4N)",
+    "got": "2.000",
+    "expected": "\u22482 \u00b11%",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "shot term M,x-independent (energy-share detection)",
+    "got": "0.000e+00",
+    "expected": "\u22480",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "MC shot error vs analytic",
+    "got": "0.0201 vs 0.0200",
+    "expected": "\u00b120%",
+    "passed": true,
+    "kind": "monte-carlo"
+   },
+   {
+    "name": "MC shot+drift (quadrature) vs analytic",
+    "got": "0.0085 vs 0.0102",
+    "expected": "\u00b120%",
+    "passed": true,
+    "kind": "monte-carlo"
+   },
+   {
+    "name": "drift floor N-independent",
+    "got": "0.0102 \u2192 0.0100",
+    "expected": "both \u2248 drift \u00b12.5% (shot shrinks 1000\u00d7, floor stays)",
+    "passed": true,
+    "kind": "order"
+   },
+   {
+    "name": "drift term = \u2016\u03b4M x\u2016/\u2016M x\u2016 = drift_resid",
+    "got": "0.0100",
+    "expected": "\u2248hypot(shot, 0.010)",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "photonic cost fields populated",
+    "got": "['bandwidth_hz', 'energy', 'extra', 'gain', 'noise_rms', 'notes']",
+    "expected": "all contract fields",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "serializable (json round-trip)",
+    "got": "ok",
+    "expected": "round-trip ok",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "TARGET provenance labeled",
+    "got": "target-only",
+    "expected": "provenance=target-only",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "MEMS cost: no fabricated numbers (NaN contract)",
+    "got": "nan",
+    "expected": "NaN + note",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "fluidic API unbroken (regression guard)",
+    "got": "2.5465e+11",
+    "expected": "2.5465e+11",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "1/\u03c90 in MEMS window",
+    "got": "1.0e-04",
+    "expected": "in (1e-06, 0.1)",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "\u03c4_settle=2Q/\u03c90 in window (Q=100)",
+    "got": "2.0e-02",
+    "expected": "in (1e-06, 0.1)",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "Q=1000 \u03c4_settle exceeds window \u2192 flagged",
+    "got": "2.0e-01",
+    "expected": "outside (1e-06, 0.1) \u2192 False",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "negative control: \u03c4 outside MEMS window",
+    "got": "1.0e-12",
+    "expected": "flagged (False)",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "negative control: \u03c4 outside fluidic window",
+    "got": "1.0e-05",
+    "expected": "flagged (False)",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "photonic no-storage assertion present",
+    "got": "yes",
+    "expected": "documented in substrate.py",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "photonic window kept as link latency, not storage \u03c4",
+    "got": "(1e-12, 1e-09)",
+    "expected": "(1e-12, 1e-9)",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "4 domains in KAPPA_HW",
+    "got": "['electronic', 'fluidic', 'mems', 'photonic']",
+    "expected": "4 domains",
+    "passed": true,
+    "kind": "exact"
+   }
+  ],
+  "summary": {
+   "n_checks": 40,
+   "n_passed": 40
+  }
+ }
+}
