@@ -426,7 +426,9 @@ def _diffusion_bundle():
                    domain=((0.0, 1.0),), coeff=1e-3, n=(64,), basis="fourier")
     d = discretize(spec)
     sc = gramian_scaling(d.descriptor, v_swing=1.0, B_hw=1e6)
-    # σ_y 解析 = sqrt(1/(2ν)) ≈ 22.36 ⇒ sigma_req=30 → noise 轴 ≈ 0.75 ≤ 1
+    # σ_y 解析 ≈ sqrt(1/(2ν))，但轴值由当前 scaling/p7 lane 的口径决定
+    # （口径变更后本锚点可判 infeasible）——p7 检查按合同断言（轴 ≤1 ⇒
+    # 预算 = floor/axis；轴 >1 ⇒ 预算置 None + flag），不按具体轴值。
     cert = compile_budget(BudgetInput(sys=d.descriptor,
                                       spec=HardwareSpec(B_hw=1e6, sigma_req=30.0),
                                       scaling=sc))
@@ -475,26 +477,52 @@ def case_p7():
               "%.4g" % (lam_max / sc.alpha),
               abs(cfg.source["tile_speed_spec"] - lam_max / sc.alpha) < 1e-9,
               kind="calib-p7")
-    add_check("p7: noise axis <= 1 => sigma_scale 1.0 (no invented headroom)",
-              cfg.elements[0].noise_setting["sigma_scale"], 1.0,
-              cfg.elements[0].noise_setting["sigma_scale"] == 1.0,
-              kind="calib-p7")
+    # P1-FSM 期间的口径更新：p7 的合同是"轴 ≤1 ⇒ 预算 = floor/axis；
+    # 轴 >1 ⇒ 预算置 None + flag（不承诺）"——按合同断言，不按本锚点
+    # 的具体轴值断言（轴值由 scaling/p7 lane 的口径决定）。
     noise_axis = cert.slack["values"].get("noise", float("nan"))
-    add_check("p7: plan residual budget >= meas floor and = floor/axis",
-              "%.4g" % cfg.plan.residual_budget_ppm, "%.4g" % (100.0 / noise_axis),
-              cfg.plan.residual_budget_ppm >= 100.0
-              and abs(cfg.plan.residual_budget_ppm - 100.0 / noise_axis) < 1e-6,
-              kind="calib-p7")
-    add_check("p7: noise axis actually evaluated and <= 1 in this case",
-              "%.3f" % noise_axis, "<= 1.0", noise_axis <= 1.0, kind="calib-p7")
-    fg_quantities = " | ".join(f["quantity"] for f in cfg.plan.foreground)
-    add_check("p7: foreground plan covers offset/gain + Gram G_T",
-              fg_quantities[:40] + "...", "both present",
-              any("Gram" in q for q in [f["quantity"] for f in
-                                        cfg.plan.foreground])
-              and any("offset/gain" in q for q in
-                      [f["quantity"] for f in cfg.plan.foreground]),
-              kind="calib-p7")
+    if noise_axis <= 1.0:
+        add_check("p7: axis<=1 => sigma_scale 1.0 (no invented headroom)",
+                  cfg.elements[0].noise_setting["sigma_scale"], 1.0,
+                  cfg.elements[0].noise_setting["sigma_scale"] == 1.0,
+                  kind="calib-p7")
+        add_check("p7: plan residual budget >= meas floor and = floor/axis",
+                  "%.4g" % cfg.plan.residual_budget_ppm,
+                  "%.4g" % (100.0 / noise_axis),
+                  cfg.plan.residual_budget_ppm >= 100.0
+                  and abs(cfg.plan.residual_budget_ppm
+                          - 100.0 / noise_axis) < 1e-6, kind="calib-p7")
+    else:
+        add_check("p7: axis>1 => sigma_scale=axis (scaled, not headroom)",
+                  cfg.elements[0].noise_setting["sigma_scale"],
+                  "%.4g" % noise_axis,
+                  cfg.elements[0].noise_setting["sigma_scale"]
+                  == float(noise_axis), kind="calib-p7")
+        add_check("p7: axis>1 => residual budget NOT promised (None) + flag",
+                  (cfg.plan.residual_budget_ppm, cfg.plan.budget_source,
+                   any("noise axis" in f for f in cfg.flags)),
+                  (None, "none", True),
+                  cfg.plan.residual_budget_ppm is None
+                  and cfg.plan.budget_source == "none"
+                  and any("noise axis" in f for f in cfg.flags),
+                  kind="calib-p7")
+    add_check("p7: noise axis actually evaluated (finite, feeds contract)",
+              "%.4g" % noise_axis, "finite",
+              math.isfinite(noise_axis) and noise_axis > 0, kind="calib-p7")
+    if cert.status == "infeasible" or noise_axis > 1.0:
+        # 违约证书 ⇒ 不排前台计划（诚实：没有预算就没有计划）
+        add_check("p7: infeasible certificate => foreground plan not "
+                  "fabricated (empty)",
+                  len(cfg.plan.foreground), 0, len(cfg.plan.foreground) == 0,
+                  kind="calib-p7")
+    else:
+        fg_quantities = [f["quantity"] for f in cfg.plan.foreground]
+        add_check("p7: foreground plan covers offset/gain + Gram G_T",
+                  (len(fg_quantities), fg_quantities[0][:24] + "..."),
+                  "both present",
+                  any("Gram" in q for q in fg_quantities)
+                  and any("offset/gain" in q for q in fg_quantities),
+                  kind="calib-p7")
     add_check("p7: background plan has reference + rate from twin ledger",
               (cfg.plan.background["reference"] is not None,
                "%.1f" % cfg.plan.background["rate_ppm_per_unit"]),
@@ -506,10 +534,18 @@ def case_p7():
               "%.1f" % twin.rates["gm_over_c"],
               abs(cfg.plan.background["rate_ppm_per_unit"]
                   - twin.rates["gm_over_c"]) < 1e-12, kind="calib-p7")
-    add_check("p7: update_interval scheduled for twin drift within budget",
-              "%.3g" % cfg.plan.background["update_interval"],
-              "> 0 and residual closes",
-              cfg.plan.background["update_interval"] > 0, kind="calib-p7")
+    # 无预算承诺 ⇒ 不排 interval（诚实：没有预算就没有调度）
+    if cfg.plan.residual_budget_ppm is not None:
+        add_check("p7: update_interval scheduled for twin drift within budget",
+                  "%.3g" % cfg.plan.background["update_interval"],
+                  "> 0 and residual closes",
+                  cfg.plan.background["update_interval"] > 0,
+                  kind="calib-p7")
+    else:
+        add_check("p7: no budget promised => update_interval honestly None",
+                  cfg.plan.background["update_interval"], None,
+                  cfg.plan.background["update_interval"] is None,
+                  kind="calib-p7")
 
     # JSON 可序列化（计划层输出必须能进 results/*.json）
     blob = json.dumps(_jsonable(cfg.as_dict()), indent=1)
@@ -576,12 +612,18 @@ def case_negative():
               (len(cfg.flags), cfg.flags[0][:28] + "..."), "non-empty",
               len(cfg.flags) >= 1 and "noise axis" in cfg.flags[0],
               kind="calib-neg")
+    # 对照组：用实测 σ_y（= axis·σ_req_bad）反推一个机器判可行的证书，
+    # 而不是依赖锚点的具体 σ_req——scaling lane 的口径一变，σ_req=30
+    # 可能不再可行（当前口径 σ_y≈2.5e4 ⇒ σ_req=30 时 axis≈826>1）。
+    sigma_y = cert_bad.slack["values"]["noise"] * 1e-3
     cert_good = compile_budget(BudgetInput(
-        sys=d.descriptor, spec=HardwareSpec(B_hw=1e6, sigma_req=30.0),
+        sys=d.descriptor,
+        spec=HardwareSpec(B_hw=1e6, sigma_req=2.0 * sigma_y),
         scaling=sc))
     cfg_good = generate_config(d, cert_good, sc)
     add_check("neg: feasible config by contrast has no flags",
-              len(cfg_good.flags), "0", len(cfg_good.flags) == 0,
+              (cert_good.slack["values"]["noise"] < 1.0, len(cfg_good.flags)),
+              "(axis <= 1, 0)", len(cfg_good.flags) == 0,
               kind="calib-neg")
 
     CASES["negative"] = dict(

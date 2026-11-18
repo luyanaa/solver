@@ -83,6 +83,7 @@
      }
     },
     "binding_axis": "robustness_A",
+    "constraint": null,
     "rejection_reasons": [],
     "assumptions": [
      "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
@@ -214,6 +215,7 @@
      }
     },
     "binding_axis": "stiffness",
+    "constraint": null,
     "rejection_reasons": [],
     "assumptions": [
      "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
@@ -268,7 +270,7 @@
      "source": "results/pipeline.json",
      "status": "no violation on evaluated axes",
      "fallback": 0,
-     "binding_axis": "bandwidth",
+     "binding_axis": "robustness_A",
      "note": null
     },
     {

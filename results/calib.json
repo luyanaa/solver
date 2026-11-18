@@ -114,6 +114,130 @@
     "note": null
    },
    {
+    "name": "fg: ACCEPTED path \u2014 terminal=ACCEPTED, result accepted=True",
+    "got": [
+     "ACCEPTED",
+     "ACCEPTED",
+     true
+    ],
+    "expected": [
+     "ACCEPTED",
+     "ACCEPTED",
+     true
+    ],
+    "passed": true,
+    "kind": "calib-fg",
+    "note": null
+   },
+   {
+    "name": "fg: retry consumes a FRESH measurement (correction from retry set, not refit of attempt 0)",
+    "got": "0.980392",
+    "expected": "\u2248 1/1.02 = 0.980392",
+    "passed": true,
+    "kind": "calib-fg",
+    "note": null
+   },
+   {
+    "name": "fg: retry VERIFY saw new data (read_digest differs)",
+    "got": 2,
+    "expected": "2 distinct digests",
+    "passed": true,
+    "kind": "calib-fg",
+    "note": null
+   },
+   {
+    "name": "fg: successful retry ends terminal=ACCEPTED",
+    "got": "ACCEPTED",
+    "expected": "ACCEPTED",
+    "passed": true,
+    "kind": "calib-fg",
+    "note": null
+   },
+   {
+    "name": "fg: exhausted retries \u21d2 terminal=FAILED (not a clean result)",
+    "got": [
+     "FAILED",
+     "FAILED"
+    ],
+    "expected": [
+     "FAILED",
+     "FAILED"
+    ],
+    "passed": true,
+    "kind": "calib-fg",
+    "note": null
+   },
+   {
+    "name": "fg: FAILED result is not accepted (upstream gate flag)",
+    "got": false,
+    "expected": false,
+    "passed": true,
+    "kind": "calib-fg",
+    "note": null
+   },
+   {
+    "name": "fg: FAILED reason recorded and result still inspectable",
+    "got": [
+     "retries_exhausted_last_verify_failed",
+     "100.0"
+    ],
+    "expected": [
+     "retries_exhausted_last_verify_failed",
+     ">= floor 100.0"
+    ],
+    "passed": true,
+    "kind": "calib-fg",
+    "note": null
+   },
+   {
+    "name": "fg: each exhausted attempt consumed FRESH data (3 digests)",
+    "got": 3,
+    "expected": "3 distinct digests",
+    "passed": true,
+    "kind": "calib-fg",
+    "note": null
+   },
+   {
+    "name": "fg: no fresh measurement for retry \u21d2 honest FAILED (never refits the consumed set)",
+    "got": [
+     "FAILED",
+     "retry_needed_but_no_fresh_measurement",
+     false
+    ],
+    "expected": [
+     "FAILED",
+     "retry_needed_but_no_fresh_measurement",
+     false
+    ],
+    "passed": true,
+    "kind": "calib-fg",
+    "note": null
+   },
+   {
+    "name": "fg: consumed data cleared on retry \u2014 stale refit fails loud",
+    "got": true,
+    "expected": true,
+    "passed": true,
+    "kind": "calib-fg",
+    "note": null
+   },
+   {
+    "name": "fg: CalibratedTwin.apply_foreground refuses a FAILED result",
+    "got": true,
+    "expected": true,
+    "passed": true,
+    "kind": "calib-fg",
+    "note": null
+   },
+   {
+    "name": "fg: CalibrationResult terminal/accepted JSON-safe",
+    "got": "{\"correction\": {\"offset\": -7.401486830834377e-17, \"gain\": 1.1111111111111112}, \"residual_ppm\": 100.0, \"method\": \"gain+offset\", \"meas_noise_ppm\": 100.0, \"n_points\": 6, \"raw_rms_ppm\": 6.232141462756543e-11, \"terminal\": \"FAILED\", \"accepted\": false}",
+    "expected": "has terminal/accepted",
+    "passed": true,
+    "kind": "calib-fg",
+    "note": null
+   },
+   {
     "name": "fg: twin param updated by correction (gain*old+offset)",
     "got": "1.961e+06",
     "expected": "1.961e+06",
@@ -297,33 +421,41 @@
     "note": null
    },
    {
-    "name": "p7: noise axis <= 1 => sigma_scale 1.0 (no invented headroom)",
-    "got": 1.0,
-    "expected": 1.0,
+    "name": "p7: axis>1 => sigma_scale=axis (scaled, not headroom)",
+    "got": 825.6931870012521,
+    "expected": "825.7",
     "passed": true,
     "kind": "calib-p7",
     "note": null
    },
    {
-    "name": "p7: plan residual budget >= meas floor and = floor/axis",
-    "got": "1.486e+05",
-    "expected": "1.486e+05",
+    "name": "p7: axis>1 => residual budget NOT promised (None) + flag",
+    "got": [
+     null,
+     "none",
+     true
+    ],
+    "expected": [
+     null,
+     "none",
+     true
+    ],
     "passed": true,
     "kind": "calib-p7",
     "note": null
    },
    {
-    "name": "p7: noise axis actually evaluated and <= 1 in this case",
-    "got": "0.001",
-    "expected": "<= 1.0",
+    "name": "p7: noise axis actually evaluated (finite, feeds contract)",
+    "got": "825.7",
+    "expected": "finite",
     "passed": true,
     "kind": "calib-p7",
     "note": null
    },
    {
-    "name": "p7: foreground plan covers offset/gain + Gram G_T",
-    "got": "integrator offset/gain (per element) | t...",
-    "expected": "both present",
+    "name": "p7: infeasible certificate => foreground plan not fabricated (empty)",
+    "got": 0,
+    "expected": 0,
     "passed": true,
     "kind": "calib-p7",
     "note": null
@@ -348,9 +480,9 @@
     "note": null
    },
    {
-    "name": "p7: update_interval scheduled for twin drift within budget",
-    "got": "2.97e+06",
-    "expected": "> 0 and residual closes",
+    "name": "p7: no budget promised => update_interval honestly None",
+    "got": null,
+    "expected": null,
     "passed": true,
     "kind": "calib-p7",
     "note": null
@@ -359,11 +491,11 @@
     "name": "p7: Config round-trips through JSON",
     "got": [
      65,
-     2
+     0
     ],
     "expected": [
      65,
-     2
+     0
     ],
     "passed": true,
     "kind": "calib-p7",
@@ -390,8 +522,8 @@
    "n_elements": 65,
    "alpha": 8.148733086305042e-07,
    "gm_over_c": 1227.1846303085129,
-   "residual_budget_ppm": 148624.77366022542,
-   "cert_status": "no violation on evaluated axes"
+   "residual_budget_ppm": null,
+   "cert_status": "infeasible"
   }
  },
  "negative": {
@@ -400,7 +532,7 @@
     "name": "neg: certificate is infeasible by noise axis",
     "got": [
      "infeasible",
-     "20.19"
+     "24770795.61"
     ],
     "expected": [
      "infeasible",
@@ -446,7 +578,7 @@
     "name": "neg: flags list carries the violation message",
     "got": [
      1,
-     "noise axis 20.2 > 1: residua..."
+     "noise axis 2.48e+07 > 1: res..."
     ],
     "expected": "non-empty",
     "passed": true,
@@ -455,8 +587,11 @@
    },
    {
     "name": "neg: feasible config by contrast has no flags",
-    "got": 0,
-    "expected": "0",
+    "got": [
+     true,
+     0
+    ],
+    "expected": "(axis <= 1, 0)",
     "passed": true,
     "kind": "calib-neg",
     "note": null
@@ -468,7 +603,7 @@
   }
  },
  "summary": {
-  "n_checks": 50,
-  "n_passed": 50
+  "n_checks": 62,
+  "n_passed": 62
  }
 }

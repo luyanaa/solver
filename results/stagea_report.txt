@@ -49,7 +49,7 @@ CASE 4  数字回退率 tally（Stage-A 退出条件 5）
                biharmonic N=128            phase0                     infeasible      YES              stiffness
                   Burgers N=128            phase0                     infeasible      YES         representation
                 Robertson t=1e4            phase0                     infeasible      YES stiffness,robustness_A
-                   diffusion-1d          pipeline no violation on evaluated axes        -              bandwidth
+                   diffusion-1d          pipeline no violation on evaluated axes        -           robustness_A
                      poisson-2d          pipeline no violation on evaluated axes        -              bandwidth
                      burgers-1d          pipeline                     infeasible      YES         representation
                non-normal shear run_stagea (live) no violation on evaluated axes        -           robustness_A

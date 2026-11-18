@@ -1,0 +1,134 @@
+{
+  "checks": [
+    {
+      "name": "repro alpha=1.98944e-07: V_ss == S*x_ss == 0.471405",
+      "value": "5.551e-17 (V_ss=0.471405, 旧bug值=9.37829e-08=S/alpha)",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "repro alpha=1.98944e-07: numeric step final == V_ss",
+      "value": "1.67e-16",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "repro alpha=1.98944e-07: old B_v=S·B would give V_ss=S/alpha≠S",
+      "value": "S/alpha=2.36954e+06, S=0.471405, 差=2.37e+06",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "repro alpha=0.198944: V_ss == S*x_ss == 0.471405",
+      "value": "5.551e-17 (V_ss=0.471405, 旧bug值=0.0937829=S/alpha)",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "repro alpha=0.198944: numeric step final == V_ss",
+      "value": "2.78e-16",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "repro alpha=0.198944: old B_v=S·B would give V_ss=S/alpha≠S",
+      "value": "S/alpha=2.36954, S=0.471405, 差=1.9",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "tf DC (w_p=0): |H_model(jαω) − H_scaled(jω)|",
+      "value": "3.11e-15",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "tf low (w_p=0.01): |H_model(jαω) − H_scaled(jω)|",
+      "value": "2.66e-15",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "tf mid (w_p=1): |H_model(jαω) − H_scaled(jω)|",
+      "value": "8.88e-16",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "tf bw (w_p=10): |H_model(jαω) − H_scaled(jω)|",
+      "value": "4.44e-15",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "tf DC gain: C(−A)⁻¹B == C_v(−A_v)⁻¹B_v",
+      "value": "3.55e-15",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "tf multi-input (m=2): per-channel V_ss == S·x_ss",
+      "value": "all channels",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "eig invariance: eig(A_v,E_v) == eig(A,E)/alpha",
+      "value": "9.31e-10",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "input_contract recorded on ScalingResult.as_dict()",
+      "value": "u carries physical forcing units [x-hat/...",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "bport: physical-unit perturbation port picks up alpha^-1",
+      "value": "1.05969e+06 == S2/alpha2·B_p=1.05969e+06 (S2=0.421637, alpha2=1.989e-07)",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "bport: physical-rate-unit port carries S only (no alpha^-1)",
+      "value": "g=0.210819, alpha^-1·S·g=1.05969e+06",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "bport: contract names both conventions explicitly",
+      "value": "documented",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "p7: b_ports gain == B_v[i,p] (includes alpha^-1)",
+      "value": "2.36954e+06 == 2.36954e+06",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "p7: b_port gain == S/alpha (contract value)",
+      "value": "2.36954e+06 == 2.36954e+06",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "netlist: effective_B reconstructs B_v",
+      "value": "0.00e+00",
+      "ok": true,
+      "kind": "scaling"
+    },
+    {
+      "name": "netlist: V_ss via effective_A/B == S*x_ss",
+      "value": "5.55e-17",
+      "ok": true,
+      "kind": "scaling"
+    }
+  ],
+  "n_pass": 21,
+  "n_total": 21,
+  "contract": "u carries physical forcing units; u_p(t_p)=u_m(t_p/alpha) ⇒ B_v = alpha^-1·S·B",
+  "note": "2026-11 fix: B_v was S·B (missing alpha^-1); old code gave DC gain off by S/alpha (repro V_ss 0.0938 vs 1.0). Internal eig/A/B/C round-trip could not catch it; external transfer function can."
+}
