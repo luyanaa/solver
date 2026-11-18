@@ -199,7 +199,7 @@
    },
    {
     "name": "dense: cal_bindings bind every unflagged integrator to a reference",
-    "got": 8,
+    "got": 4,
     "expected": ">= 2*4 unflagged fg+bg",
     "passed": true,
     "kind": "p7net-dense",

@@ -18,9 +18,27 @@
     时间：t_phys = α·t_model ⇒ d/dt_model = α·d/dt_phys
           E ẋ_phys = α⁻¹ A x        ⇒ eig 缩小 α 倍（λ_phys = λ/α）
     状态：V = S x ⇔ x = S⁻¹V，左乘 S
-          E_v = S E S⁻¹,  A_v = α⁻¹ S A S⁻¹,  B_v = S B,  C_v = C S⁻¹
+          E_v = S E S⁻¹,  A_v = α⁻¹ S A S⁻¹,  B_v = α⁻¹ S B,  C_v = C S⁻¹
 
     ⇒ eig(A_v, E_v) = eig(A, E)/α      （selftest 里断言）
+
+**输入缩放契约（显式，2026-11 修复）**：descriptor (E,A,B,C) 里的 `u`
+携带**物理强迫单位**（每单位 u 每单位 model-time 的状态变化率，
+x̂-units / model-time-unit）。物理驱动按同一信号时间膨胀施加：
+u_p(t_p) = u_m(t_p/α)。代入 E dx/dt_m = A x + B u_m, t_p = α·t_m：
+
+    E ẋ_phys = α⁻¹ A x + α⁻¹ B u_p(t_p)   ⇒   **B_v = α⁻¹·S·B**
+
+α⁻¹ 同时作用于 A 与 B——这是同一个 d/dt_model = α·d/dt_phys 代换
+打在 RHS 的两项上。漏掉 B_v 的 α⁻¹ 会把外部 DC 增益/阶跃响应按
+S/α 弄错（内部 eig/A/B/C round-trip 查不出来：scaled 系统自身是
+自洽的，只有**外部**传递函数 C_v(sE_v−A_v)⁻¹B_v 对拍模型才暴露）。
+
+合法的替代口径（本模块不使用，仅命名）：若端口已经是物理速率单位
+（例如直接注进物理求和结点的噪声电流，V/s per V），则该端口**不带**
+α⁻¹，必须单独装配，不能走 `scaled.B`。slack 的扰动端口 B_p 与
+主输入同口径：物理单位的扰动/噪声源经过 `scaling.scaled` 评估时
+同样吃 α⁻¹（同一代换），除非明确以物理速率单位构造。
 
 已知限制：PhysicalScaling.S_x 是标量（twin/route.py:745），本模块只存
 S_x_vec 的几何均值作为代表值；完整逐状态向量在 ScalingResult.S_x_vec。
@@ -105,6 +123,12 @@ class ScalingResult:
     bandwidth_pass: bool
     notes: list[str] = field(default_factory=list)
     scaled: object | None = None      # 物理时间 descriptor（P6 证书输入；eig=λ/α）
+    input_contract: str = (
+        "u carries physical forcing units [x-hat/s per model-time-unit]; "
+        "u_p(t_p)=u_m(t_p/alpha) ⇒ B_v = alpha^-1·S·B (same alpha^-1 as A_v). "
+        "Ports already in physical rate units (e.g. noise currents injected "
+        "at the physical summing node) must NOT take alpha^-1 and must not "
+        "be built from scaled.B.")
 
     def as_dict(self) -> dict:
         return dict(
@@ -119,6 +143,7 @@ class ScalingResult:
             k_head=float(self.k_head),
             bandwidth_pass=bool(self.bandwidth_pass),
             notes=list(self.notes),
+            input_contract=self.input_contract,
         )
 
 
@@ -198,14 +223,18 @@ def gramian_scaling(sys: Descriptor, v_swing: float, B_hw: float,
     #         由 alpha_for_bandwidth 得 scaled.bandwidth() = B_hw·margin ≤ B_hw。
     #   状态  V = S x ⇔ x = S⁻¹V，代入并左乘 S ⇒ 双边相似（不是单边右乘）：
     #         E_v = S E S⁻¹（E=I ⇒ E_v=I），A_v = α⁻¹ S A S⁻¹，
-    #         B_v = S B，C_v = C S⁻¹。
+    #         B_v = α⁻¹ S B，C_v = C S⁻¹。
     #         eig(A_v,E_v) = eig(A,E)/α（相似不变非平凡部分）；§4.0 "不改 κ_t、
     #         经 S A S⁻¹ 降 Γ" 的预条件目标只在双边形式下成立。
+    #         B 的 α⁻¹ 与 A 的 α⁻¹ 是同一个时间代换 d/dt_m = α·d/dt_p 打在
+    #         RHS 两项上（u_p(t_p) = u_m(t_p/α) ⇒ 外部 DC 增益/阶跃响应
+    #         精确保持；V_ss = S·x_ss 精确成立）。模块 docstring 有完整
+    #         输入缩放契约。
     Sinv = np.diag(1.0 / S_x)
     S_mat = np.diag(S_x)
     scaled = Descriptor(S_mat @ sys.E @ Sinv,
                         (1.0 / alpha) * (S_mat @ sys.A @ Sinv),
-                        S_mat @ sys.B, sys.C @ Sinv, sys.D)
+                        (1.0 / alpha) * (S_mat @ sys.B), sys.C @ Sinv, sys.D)
 
     g_before = float(resolvent_peak(sys)["Gamma"])
     g_after = float(resolvent_peak(scaled)["Gamma"])
@@ -288,6 +317,28 @@ def selftest() -> dict:
     d = res.as_dict()
     import json
     json.dumps(d)
+
+    # 9) **外部**传递函数契约（内部 eig/A/B/C round-trip 查不出的那类错）：
+    #    u_p(t_p)=u_m(t_p/α) ⇒ C_v(jωE_v−A_v)⁻¹B_v 与
+    #    C(jωαE−A)⁻¹B 在外部 QoI 上一致——DC 增益、阶跃终值都保持。
+    #    旧 bug（B_v=S·B，缺 α⁻¹）在此给出 DC 增益差 S/α 因子。
+    w0 = np.array([0.0, 0.01, 0.1, 1.0])
+    H0 = sys.freqresp(w0 * res.alpha)          # 模型频窗 ω_m = α·ω_p
+    H1 = res.scaled.freqresp(w0)
+    assert np.allclose(H0, H1, rtol=1e-9, atol=1e-12), \
+        np.max(np.abs(H0 - H1))
+    # 阶跃终值（DC 增益）：x_ss = −A⁻¹B ⇒ V_ss = S·x_ss 精确
+    x_ss = np.linalg.solve(-A, B)
+    V_ss = np.linalg.solve(-(res.scaled.A), res.scaled.B)
+    assert np.allclose(V_ss, np.diag(res.S_x_vec) @ x_ss, rtol=1e-9,
+                       atol=1e-12), (V_ss, np.diag(res.S_x_vec) @ x_ss)
+    # 1/(s−a) 单输入复现（bench/run_scaling.py 的 repro）：dx/dt=−x+u
+    a1 = np.array([[-1.0]]); b1 = np.array([[1.0]]); c1 = np.array([[1.0]])
+    r1 = gramian_scaling(Descriptor(np.eye(1), a1, b1, c1),
+                         v_swing=1.0, B_hw=1.0)
+    ss1 = np.linalg.solve(-r1.scaled.A, r1.scaled.B)[0, 0]
+    S1 = float(r1.S_x_vec[0])
+    assert abs(ss1 - S1) < 1e-12, (ss1, S1)   # = S·x_ss = S·1.0，非 S/α
 
     return dict(ok=True, method=res.method, gamma_before=res.gamma_before,
                 gamma_after=res.gamma_after)

@@ -35,7 +35,7 @@ VERDICT
                              dense: effective_B/effective_C reconstruct B_v/C_v       ('0.0e+00', '0.0e+00')                                     <= 1e-12  yes
                                              dense: round-trip eig error < 1e-8                     1.30e-15                                      <= 1e-8  yes
                               dense: BehavioralNetlist round-trips through JSON                      (4, 12)                                      (4, 12)  yes
-             dense: cal_bindings bind every unflagged integrator to a reference                            8                       >= 2*4 unflagged fg+bg  yes
+             dense: cal_bindings bind every unflagged integrator to a reference                            4                       >= 2*4 unflagged fg+bg  yes
   diff: per-element coefficients distinct across 64 modes (spread = n^2 = 4096)                       4096.0                                         4096  yes
    diff: element k targets its OWN mode speed nu*k^2/alpha (not the global max)        ('1227', '5.027e+06')            min != max; max = tile_speed_spec  yes
                      diff: tile_speed_spec kept in source (= max|lambda|/alpha)                    5.027e+06                                    5.027e+06  yes

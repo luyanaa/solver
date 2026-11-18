@@ -71,7 +71,11 @@ class BehavioralEdge:
 
 @dataclass
 class BehavioralPort:
-    """一条输入端口边 p → i：B_v[i,p]（物理 V/s per V_in）。"""
+    """一条输入端口边 p → i：B_v[i,p]（物理 V/s per V_in）。
+
+    B_v = α⁻¹·S·B（输入缩放契约，lowering/scaling.py docstring）：
+    gain 已含 α⁻¹，对应物理驱动 u_p(t_p)=u_m(t_p/α)。
+    """
 
     input: int
     dst: str

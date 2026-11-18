@@ -233,6 +233,130 @@ def case_edge():
                      phase_delay_fb=fb.closure["phase_delay_omega_c"]))
 
 
+def case_units():
+    hr("UNITS  alpha≠1 ⇒ 敏感度/权重全在物理时间轴（α 解析缩放核对）")
+    desc = _chain_descriptor()
+    d = _TinyDisc(desc, ["x0", "x1", "x2", "x3"])
+    rep_m = emit_route_contracts(d)            # 无 scaling：alpha=1, model=physical
+    alpha = 1e-3
+    from types import SimpleNamespace
+    sc = SimpleNamespace(alpha=alpha, S_x_vec=np.ones(4))
+    rep_p = emit_route_contracts(d, scaling=sc)  # 物理时间动力学（重构口径）
+
+    add_check("units: omega_max on the physical axis (lam_max/alpha)",
+              "%.6g" % rep_p.omega_max, "%.6g" % (rep_m.omega_max / alpha),
+              abs(rep_p.omega_max - rep_m.omega_max / alpha)
+              < 1e-9 * rep_p.omega_max, kind="rc-units")
+    fb_m = [c for c in rep_m.contracts if c.feedback_critical][0]
+    fb_p = [c for c in rep_p.contracts if c.feedback_critical][0]
+    add_check("units: weight is the physical coefficient A_v = alpha^-1*A",
+              "%.6g" % fb_p.weight, "%.6g" % (fb_m.weight / alpha),
+              abs(fb_p.weight - fb_m.weight / alpha)
+              < 1e-9 * fb_p.weight, kind="rc-units")
+    # 解析缩放：J_p = A/α、ω = lam_max/α ⇒ resolvent = α·r_model，
+    # S = ω|A_v|r = S_model/α（相似缩放，容差给 roundoff）。
+    ratio_S = fb_p.S_tau / fb_m.S_tau
+    add_check("units: S_tau(physical) = S_tau(model)/alpha (NOT the old "
+              "mixed-unit number)",
+              "%.6g" % ratio_S, "1/alpha = %.6g" % (1.0 / alpha),
+              abs(ratio_S - 1.0 / alpha) < 1e-6 * (1.0 / alpha),
+              kind="rc-units")
+    ratio_tol = fb_p.tau_tol / fb_m.tau_tol
+    add_check("units: tau_tol(physical) = alpha * tau_tol(model)",
+              "%.6g" % ratio_tol, "alpha = %.6g" % alpha,
+              abs(ratio_tol - alpha) < 1e-6 * alpha, kind="rc-units")
+    ratio_hf = fb_p.hf_tau_tol / fb_m.hf_tau_tol
+    add_check("units: hf_tau_tol = eps_phi/|A_v,ij| scales by alpha "
+              "(physical A_ij, not model A_ij)",
+              "%.6g" % ratio_hf, "alpha = %.6g" % alpha,
+              abs(ratio_hf - alpha) < 1e-12 * alpha, kind="rc-units")
+    w_sorted = sorted(rep_p.contracts, key=lambda c: -c.weight)
+    tols = [c.hf_tau_tol for c in w_sorted]
+    add_check("units: ordering preserved in physical units "
+              "(hf_tau_tol ascending with |A_v,ij| descending)",
+              "%.4g -> %.4g -> %.4g -> %.4g" % tuple(tols), "monotone",
+              tols[0] < tols[1] < tols[2] < tols[3], kind="rc-units")
+    add_check("units: source records the physical-dynamics derivation",
+              (rep_p.source["A_source"][:20] + "...",
+               rep_p.source["J_source"][:16] + "..."), "reconstructed/E_p^-1",
+              "reconstructed" in rep_p.source["A_source"]
+              and "E_p^-1 A_p" in rep_p.source["J_source"]
+              and "physical" in rep_p.source["units"], kind="rc-units")
+    add_check("units: report J field carries the physical J_p (not model A)",
+              "J_p" if np.allclose(np.asarray(rep_p.J),
+                                   np.asarray(desc.A) / alpha,
+                                   rtol=1e-12) else "not J_p",
+              "J_p = E_p^-1 A_p",
+              np.allclose(np.asarray(rep_p.J), np.asarray(desc.A) / alpha,
+                          rtol=1e-9), kind="rc-units")
+
+    CASES["units"] = dict(
+        checks=[c for c in CHECKS if c["kind"] == "rc-units"],
+        summary=dict(alpha=alpha,
+                     S_tau_ratio=float(ratio_S), tau_tol_ratio=float(ratio_tol),
+                     hf_ratio=float(ratio_hf),
+                     omega_max_model=rep_m.omega_max,
+                     omega_max_phys=rep_p.omega_max))
+
+
+def case_singular():
+    hr("SING  奇异 E_p：pinv 微分子空间提升（不朴素求逆，不造假数）")
+    # 2×2 index-1 DAE：E=diag(1,0)，代数变量 x1（约束方程 4e5·x0 − 1e6·x1 = 0
+    # ⇔ x1 = 0.4·x0），微分方程 x0' = −1e6·x0 − 3e5·x1。有限特征值
+    # λ = −1e6 − 3e5·0.4 = −1.12e6（另一个在无穷 = 代数块）。
+    A = np.array([[-1e6, -3e5],
+                  [4e5, -1e6]])
+    E = np.diag([1.0, 0.0])
+    desc = Descriptor(E, A, np.array([[1.0], [0.0]]), np.eye(2))
+    d = _TinyDisc(desc, ["xd", "xa"])
+    rep = emit_route_contracts(d)
+
+    lam_fin = np.abs(desc.finite_eigs())
+    lam_fin = lam_fin[np.isfinite(lam_fin)]
+    add_check("sing: singular-E descriptor accepted, 2 contracts emitted",
+              rep.n_edges, 2, rep.n_edges == 2, kind="rc-sing")
+    add_check("sing: omega_max = max|finite eig| on the differential "
+              "subspace (no naive E inversion)",
+              "%.6g" % rep.omega_max, "%.6g" % float(np.max(lam_fin)),
+              np.isfinite(rep.omega_max)
+              and abs(rep.omega_max - float(np.max(lam_fin)))
+              < 1e-6 * rep.omega_max, kind="rc-sing")
+    add_check("sing: source records the pinv differential-subspace lift",
+              rep.source["J_source"][:24] + "...", "pinv(E_p) A_p",
+              "pinv(E_p) A_p" in rep.source["J_source"], kind="rc-sing")
+    # 微分行 (i=0)：J_p[0,1] = −3e5 ⇒ 敏感度有限
+    c01 = [c for c in rep.contracts if (c.i, c.j) == (0, 1)][0]
+    add_check("sing: differential-row edge keeps finite sensitivity",
+              "(S %.4g, tol %.3g)" % (c01.S_tau, c01.tau_tol), "finite > 0",
+              np.isfinite(c01.S_tau) and c01.S_tau > 0
+              and np.isfinite(c01.tau_tol) and c01.tau_tol > 0,
+              kind="rc-sing")
+    # 代数行 (i=1)：J_p[1,:] = 0 ⇒ 敏感度如实为 0，tau_tol = inf
+    c10 = [c for c in rep.contracts if (c.i, c.j) == (1, 0)][0]
+    add_check("sing: algebraic-row edge reports honest 0 sensitivity "
+              "(no finite dynamics on that edge), tau_tol=inf",
+              "(S %.4g, tol %.3g)" % (c10.S_tau, c10.tau_tol),
+              "S=0, tau_tol=inf",
+              c10.S_tau == 0.0 and np.isinf(c10.tau_tol), kind="rc-sing")
+    add_check("sing: hf_tau_tol still finite on the algebraic row "
+              "(eps/|A_v,ij| — the gm budget is independent of the lift)",
+              "%.4g" % c10.hf_tau_tol,
+              "%.4g" % (math.radians(c10.eps_phase_deg) / c10.weight),
+              np.isfinite(c10.hf_tau_tol)
+              and abs(c10.hf_tau_tol
+                      - math.radians(c10.eps_phase_deg) / c10.weight) < 1e-18,
+              kind="rc-sing")
+    add_check("sing: pinv lift is not flagged as defective (contracts valid)",
+              tuple(c.flagged for c in rep.contracts), "all False",
+              not any(c.flagged for c in rep.contracts), kind="rc-sing")
+
+    CASES["singular"] = dict(
+        checks=[c for c in CHECKS if c["kind"] == "rc-sing"],
+        summary=dict(omega_max=rep.omega_max,
+                     S_tau_diff=c01.S_tau, S_tau_alg=c10.S_tau,
+                     J_source=rep.source["J_source"]))
+
+
 def case_p7():
     hr("P7  generate_config 集成：diffusion-1d 锚点 + 3-node 链")
     spec = PDESpec(name="diffusion-1d", operator="diffusion", bc="periodic",
@@ -403,8 +527,10 @@ def case_negative():
 
 def main():
     emit("B1 per-edge route contracts 验收：route_contract.py + p7.py 集成"
-         "（DESIGN.md §3.2/§6.15 四判据 → P7 编译输出）")
+         "（DESIGN.md §3.2/§6.15 四判据 → P7 编译输出；敏感度物理单位合同）")
     case_edge()
+    case_units()
+    case_singular()
     case_p7()
     case_violation()
     case_negative()

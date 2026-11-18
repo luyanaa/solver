@@ -200,6 +200,111 @@ def case_foreground():
               overt.get("independent"), True, overt.get("independent") is True,
               kind="calib-fg")
 
+    # P1-FSM 终态语义：IDLE ≠ 合格；accepted 才是上游判据
+    add_check("fg: ACCEPTED path — terminal=ACCEPTED, result accepted=True",
+              (fsm_v.terminal, fsm_v.result.terminal, fsm_v.result.accepted),
+              ("ACCEPTED", "ACCEPTED", True),
+              fsm_v.terminal == "ACCEPTED" and fsm_v.result.accepted is True,
+              kind="calib-fg")
+
+    # 重试 = 新测量（不是旧数据重拟合）：尝试 0 的拟合集(1.5)与验证集
+    # (1.2)互相不一致 ⇒ VERIFY 必败；重试给一份**新**测量（一致的真误差
+    # 1.02）——通过后 correction 必须来自重试集，而不是尝试 0 的重拟合。
+    fsm_r = CalibrationFSM(meas_noise_ppm=floor_ppm, max_retries=2)
+    res_r = fsm_r.run_foreground(
+        targets, [t * 1.5 for t in targets],
+        verify_stimulus=v_targets, verify_reading=[t * 1.2 for t in v_targets],
+        retry_sets=[(targets, [t * 1.02 for t in targets],
+                     v_targets, [t * 1.02 for t in v_targets])])
+    add_check("fg: retry consumes a FRESH measurement (correction from "
+              "retry set, not refit of attempt 0)",
+              "%.6f" % res_r.correction["gain"], "≈ 1/1.02 = 0.980392",
+              abs(res_r.correction["gain"] - 1.0 / 1.02) < 1e-9,
+              kind="calib-fg")
+    digests_r = [h["read_digest"] for h in fsm_r.history
+                 if h["state"] == "VERIFY"]
+    add_check("fg: retry VERIFY saw new data (read_digest differs)",
+              len(set(digests_r)), "2 distinct digests",
+              len(set(digests_r)) == 2, kind="calib-fg")
+    add_check("fg: successful retry ends terminal=ACCEPTED",
+              fsm_r.terminal, "ACCEPTED", fsm_r.terminal == "ACCEPTED",
+              kind="calib-fg")
+
+    # 重试耗尽：max_retries 次重试全部失败 ⇒ terminal=FAILED、accepted
+    # =False（数值仍可检查，但上游不得当作合格系数）。
+    fsm_f = CalibrationFSM(meas_noise_ppm=floor_ppm, max_retries=2)
+    res_f = fsm_f.run_foreground(
+        targets, [t * 1.5 for t in targets],
+        verify_stimulus=v_targets, verify_reading=[t * 1.2 for t in v_targets],
+        retry_sets=[(targets, [t * 1.3 for t in targets],
+                     v_targets, [t * 0.7 for t in v_targets]),
+                    (targets, [t * 0.9 for t in targets],
+                     v_targets, [t * 1.7 for t in v_targets])])
+    digests_f = [h["read_digest"] for h in fsm_f.history
+                 if h["state"] == "VERIFY"]
+    add_check("fg: exhausted retries ⇒ terminal=FAILED (not a clean result)",
+              (fsm_f.terminal, res_f.terminal), ("FAILED", "FAILED"),
+              fsm_f.terminal == "FAILED" and res_f.terminal == "FAILED",
+              kind="calib-fg")
+    add_check("fg: FAILED result is not accepted (upstream gate flag)",
+              res_f.accepted, False, res_f.accepted is False, kind="calib-fg")
+    add_check("fg: FAILED reason recorded and result still inspectable",
+              (fsm_f.terminal_reason, "%.1f" % res_f.residual_ppm),
+              ("retries_exhausted_last_verify_failed", ">= floor 100.0"),
+              fsm_f.terminal_reason == "retries_exhausted_last_verify_failed"
+              and res_f.residual_ppm >= floor_ppm, kind="calib-fg")
+    add_check("fg: each exhausted attempt consumed FRESH data (3 digests)",
+              len(set(digests_f)), "3 distinct digests",
+              len(set(digests_f)) == 3, kind="calib-fg")
+
+    # VERIFY 失败但没提供新测量 ⇒ 诚实 FAILED，绝不重拟合已消费的旧
+    # 数据（overfit 负控制 fsm_o 正好走到这条路径）。
+    add_check("fg: no fresh measurement for retry ⇒ honest FAILED "
+              "(never refits the consumed set)",
+              (fsm_o.terminal, fsm_o.terminal_reason, fsm_o.result.accepted),
+              ("FAILED", "retry_needed_but_no_fresh_measurement", False),
+              fsm_o.terminal == "FAILED"
+              and fsm_o.terminal_reason
+              == "retry_needed_but_no_fresh_measurement"
+              and fsm_o.result.accepted is False, kind="calib-fg")
+
+    # 手动 advance 用户同样不能重拟合旧数据：失败后数据已清空，空数据
+    # 拟合显式报错（fail loud），不悄悄把旧读数再喂一遍。
+    fsm_c = CalibrationFSM(meas_noise_ppm=floor_ppm)
+    fsm_c.advance()
+    fsm_c.advance(stimulus=[0.5, 1.0])
+    fsm_c.advance(reading=[0.52, 1.03])
+    fsm_c.advance()                                  # CORRECT
+    fsm_c.advance(verify_stimulus=[0.25], verify_reading=[0.35])  # 必败
+    cleared = (fsm_c.state == "STIMULATE" and fsm_c._reading == []
+               and fsm_c._stimulus == [])
+    raised = False
+    try:
+        fsm_c.advance(stimulus=[0.5, 1.0])
+        fsm_c.advance(reading=None)                  # 没有新读数
+        fsm_c.advance()                              # CORRECT on 空数据
+    except ValueError:
+        raised = True
+    add_check("fg: consumed data cleared on retry — stale refit fails loud",
+              cleared and raised, True, bool(cleared and raised),
+              kind="calib-fg")
+
+    # certificate-cal 一致性门：FAILED 标定不能折进孪生参数（P7 只消费
+    # CalibratedTwin，这道门就是它的上游关口）。
+    twin_ng = CalibratedTwin(params={"gm_over_c": 1.0})
+    refused = False
+    try:
+        twin_ng.apply_foreground("gm_over_c", fsm_f.result)
+    except ValueError:
+        refused = True
+    add_check("fg: CalibratedTwin.apply_foreground refuses a FAILED result",
+              refused, True, refused, kind="calib-fg")
+    add_check("fg: CalibrationResult terminal/accepted JSON-safe",
+              json.dumps(_jsonable(res_f.as_dict())),
+              'has terminal/accepted',
+              json.loads(json.dumps(_jsonable(res_f.as_dict())))["terminal"]
+              == "FAILED", kind="calib-fg")
+
     # CalibratedTwin：correction 折进孪生参数
     twin = CalibratedTwin(params={"gm_over_c": 2.0e6, "alpha": 8.2e-7})
     twin.apply_foreground("gm_over_c", res)

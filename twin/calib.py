@@ -37,7 +37,19 @@ __all__ = ["CalibrationResult", "CalibratedTwin", "CalibrationFSM",
 # ---------------------------------------------------------------------------
 @dataclass
 class CalibrationResult:
-    """一次标定的记录。residual_ppm ≥ meas_noise_ppm（合同，不是巧合）。"""
+    """一次标定的记录。residual_ppm ≥ meas_noise_ppm（合同，不是巧合）。
+
+    终态语义（P1-FSM）：`terminal` ∈
+      * "UNVERIFIED"    —— 直接调 calibrate_foreground 的裸拟合（没走
+        FSM 的 VERIFY；可用，但不是独立验证过的标定）；
+      * "ACCEPTED"      —— FSM 的 VERIFY 通过（accepted=True）；
+      * "PENDING_RETRY" —— VERIFY 失败、还有重试机会（accepted=False，
+        结果会被下一次 CORRECT 覆盖）；
+      * "FAILED"        —— 重试耗尽 / 无新测量可用，最后一次 VERIFY
+        失败（**accepted=False**；上游不得当作合格系数使用——
+        CalibratedTwin.apply_foreground 会拒绝它）。
+    上游判据永远是 `accepted`，不是"result 存在"。
+    """
 
     correction: dict            # {"offset": .., "gain": ..}（作用在 measured 上）
     residual_ppm: float         # 标定后的残差（分数 ppm = 1e6 × 相对误差）
@@ -45,6 +57,8 @@ class CalibrationResult:
     meas_noise_ppm: float
     n_points: int = 0
     raw_rms_ppm: float = float("nan")   # 拟合残差（未加底）——诊断用
+    terminal: str = "UNVERIFIED"
+    accepted: bool = True
 
     def as_dict(self) -> dict:
         return dict(correction=dict(self.correction),
@@ -52,7 +66,9 @@ class CalibrationResult:
                     method=self.method,
                     meas_noise_ppm=float(self.meas_noise_ppm),
                     n_points=int(self.n_points),
-                    raw_rms_ppm=float(self.raw_rms_ppm))
+                    raw_rms_ppm=float(self.raw_rms_ppm),
+                    terminal=str(self.terminal),
+                    accepted=bool(self.accepted))
 
 
 def _fit_gain_offset(meas, ref):
@@ -203,7 +219,18 @@ class CalibratedTwin:
     counter: int = 0
 
     def apply_foreground(self, key: str, result: CalibrationResult) -> None:
-        """把前台 correction 折进孪生参数：p ← correction(p)。"""
+        """把前台 correction 折进孪生参数：p ← correction(p)。
+
+        门（P1-FSM）：FAILED / PENDING_RETRY（accepted=False）的标定
+        结果**拒绝折入**——失败的校准不能冒充合格系数进孪生参数
+        （P7 只消费这里，所以这道门就是 certificate-cal 一致性的
+        上游关口；p7 侧 contract 见 DESIGN.md §7 Phase 7 B1 行）。
+        """
+        if not result.accepted or result.terminal == "FAILED":
+            raise ValueError(
+                "apply_foreground 拒绝未通过的标定结果（terminal=%s, "
+                "accepted=%s）：失败的校准不能折进孪生参数"
+                % (result.terminal, result.accepted))
         self.counter += 1
         c = result.correction
         v = float(self.params.get(key, 0.0))
@@ -248,12 +275,31 @@ class CalibrationFSM:
     用法：`fsm = CalibrationFSM(meas_noise_ppm=…)`；反复 `fsm.advance(...)`
     直到 state == "IDLE"（一个完整循环结束）。VERIFY 态用一次带噪复测
     验证残差，验证失败 ⇒ 回到 STIMULATE（最多 retries 次）。
+
+    终态语义（P1-FSM）：IDLE 只是"循环结束"，不是"标定合格"。看
+    `fsm.terminal`（"ACCEPTED" | "FAILED"）与 `fsm.terminal_reason`，
+    以及 `fsm.result.accepted`：
+      * VERIFY 通过 ⇒ terminal="ACCEPTED"，reason="verify_passed"；
+      * VERIFY 连续失败到 max_retries ⇒ terminal="FAILED"，
+        reason="retries_exhausted_last_verify_failed"——result 仍可检
+        查（最后一次拟合的数值），但 accepted=False；
+      * 重试**必须用新测量**：失败后已消费的拟合集/验证集全部清空，
+        下一次 STIMULATE/MEASURE 必须重新提供数据（重试 = 重新激励 +
+        重新测量，不是对旧数据重新拟合）。`run_foreground` 用
+        `retry_sets=[...]` 提供每次重试的新 (stimulus, reading[,
+        verify_stimulus, verify_reading])；用尽仍失败 ⇒ FAILED。没有
+        提供新测量而 VERIFY 失败 ⇒ 立即 FAILED
+        （reason="retry_needed_but_no_fresh_measurement"），绝不拿旧
+        数据假装重试。history 里每条 VERIFY 带 `read_digest`——上游
+        可以核对重试确实换了数据。
     """
 
     meas_noise_ppm: float = 100.0
     state: str = "IDLE"
     retries: int = 0
     max_retries: int = 2
+    terminal: str | None = None          # "ACCEPTED" | "FAILED"（IDLE 时有效）
+    terminal_reason: str = ""
     result: CalibrationResult | None = None
     _stimulus: list = field(default_factory=list)
     _reading: list = field(default_factory=list)
@@ -275,6 +321,8 @@ class CalibrationFSM:
         s = self.state
         if s == "IDLE":
             self._stimulus, self._reading = [], []
+            self.terminal = None
+            self.terminal_reason = ""
             self.state = "STIMULATE"
         elif s == "STIMULATE":
             if stimulus is not None:
@@ -287,6 +335,9 @@ class CalibrationFSM:
         elif s == "CORRECT":
             self.result = calibrate_foreground(
                 self._reading, self._stimulus, self.meas_noise_ppm)
+            self.history.append({"state": "CORRECT",
+                                 "n_points": len(self._reading),
+                                 "read_digest": _digest(self._reading)})
             self.state = "VERIFY"
         elif s == "VERIFY":
             if verify_stimulus is not None:
@@ -307,34 +358,105 @@ class CalibrationFSM:
             self.history.append({"state": "VERIFY", "err_ppm": err_ppm,
                                  "independent": bool(independent),
                                  "n_points": len(v_stim),
-                                 "passed": bool(ok)})
-            if ok or self.retries >= self.max_retries:
-                self.state = "IDLE"
-                self.retries = 0
+                                 "passed": bool(ok),
+                                 "read_digest": _digest(v_read)})
+            if ok:
+                self._terminate(self.result, accepted=True,
+                                reason="verify_passed")
+            elif self.retries >= self.max_retries:
+                self._terminate(self.result, accepted=False,
+                                reason="retries_exhausted_last_verify_failed")
             else:
                 self.retries += 1
+                self.result.accepted = False
+                self.result.terminal = "PENDING_RETRY"
+                self.terminal = None
+                self.terminal_reason = ("verify_failed_retry_%d_pending"
+                                        % self.retries)
+                # 重试必须用**新测量**：清空已消费的数据（拟合集与验证
+                # 集都不作数）——下一次 STIMULATE/MEASURE 必须重新提供，
+                # 否则 advance 链会在空数据上显式报错，而不是悄悄重拟
+                # 合旧读数假装重试。
+                self._stimulus, self._reading = [], []
+                self._verify_stimulus, self._verify_reading = [], []
                 self.state = "STIMULATE"
         else:
             raise ValueError(f"未知状态 {s!r}")
         return self.state
 
+    def _terminate(self, result: CalibrationResult, accepted: bool,
+                   reason: str) -> None:
+        """终态落账：result 与 FSM 同步打上 ACCEPTED/FAILED。"""
+        result.accepted = bool(accepted)
+        result.terminal = "ACCEPTED" if accepted else "FAILED"
+        self.terminal = result.terminal
+        self.terminal_reason = reason
+        self.state = "IDLE"
+        self.retries = 0
+
+    def fail(self, reason: str) -> CalibrationResult:
+        """无新测量可用的诚实失败：立即终结为 FAILED，不重试旧数据。"""
+        if self.result is None:
+            raise ValueError("fail() 需要至少一次 CORRECT 之后的 result")
+        self._terminate(self.result, accepted=False, reason=str(reason))
+        return self.result
+
     def run_foreground(self, stimulus, reading,
-                       verify_stimulus=None, verify_reading=None) -> CalibrationResult:
-        """驱动完整一个循环（便捷入口），返回标定结果。
+                       verify_stimulus=None, verify_reading=None,
+                       retry_sets=None) -> CalibrationResult:
+        """驱动完整循环（便捷入口），返回标定结果——**必查 accepted**。
 
         verify_stimulus/verify_reading：held-out 验证点集（P1-CALIB）。
         缺省 None ⇒ VERIFY 退回训练残差（history 记 independent=False）。
+
+        retry_sets（P1-FSM）：每次 VERIFY 失败后的重试消耗其中一份
+        **新测量** `(stimulus, reading[, verify_stimulus, verify_reading])`
+        （重新激励 + 重新测量，绝不是对旧数据重新拟合）。`max_retries`
+        次重试都失败 ⇒ 返回值 terminal="FAILED"、accepted=False（数值
+        仍可检查，但上游不得当作合格系数；CalibratedTwin.apply_foreground
+        会拒绝它）。重试排在队列里而 VERIFY 又失败（没有更多新测量）⇒
+        立即 FAILED，reason="retry_needed_but_no_fresh_measurement"。
         """
-        self.advance()                          # IDLE → STIMULATE
-        self.advance(stimulus=stimulus)         # STIMULATE → MEASURE
-        self.advance(reading=reading)           # MEASURE → CORRECT
-        self.advance(verify_stimulus=verify_stimulus,
-                     verify_reading=verify_reading)   # CORRECT → VERIFY
+        def _tup(x):
+            if x is None:
+                return (None, None, None, None)
+            x = tuple(x)
+            return x if len(x) == 4 else x + (None, None)
+
+        sets = [_tup((stimulus, reading, verify_stimulus, verify_reading))]
+        for extra in (retry_sets or []):
+            sets.append(_tup(extra))
+
+        self.advance()                                  # IDLE → STIMULATE
+        i = 0
         while self.state != "IDLE":
-            self.advance(verify_stimulus=verify_stimulus,
-                         verify_reading=verify_reading)  # 重试后复验
+            s = self.state
+            if s == "STIMULATE":
+                self.advance(stimulus=sets[i][0])
+            elif s == "MEASURE":
+                self.advance(reading=sets[i][1])
+            elif s == "CORRECT":
+                self.advance()
+            elif s == "VERIFY":
+                self.advance(verify_stimulus=sets[i][2],
+                             verify_reading=sets[i][3])
+                if self.state == "STIMULATE":           # 调度了一次重试
+                    i += 1
+                    if i >= len(sets):
+                        # 没有新测量：诚实失败，而不是重拟合旧数据
+                        self.fail("retry_needed_but_no_fresh_measurement")
+            else:
+                raise ValueError(f"未知状态 {s!r}")
         return self.result
 
 
 def _aslist(v):
     return list(v) if _is_seq(v) else [v]
+
+
+def _digest(seq) -> int:
+    """测量数据的稳定指纹（重试换没换数据，history 里可核对）。"""
+    try:
+        return hash(tuple(round(float(v), 12) for v in seq)) & 0x7FFFFFFF
+    except (TypeError, ValueError):
+        return 0

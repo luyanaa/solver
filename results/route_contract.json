@@ -212,6 +212,154 @@
    "phase_delay_fb": 2.0613020081311908e-08
   }
  },
+ "units": {
+  "checks": [
+   {
+    "name": "units: omega_max on the physical axis (lam_max/alpha)",
+    "got": "1.0583e+09",
+    "expected": "1.0583e+09",
+    "passed": true,
+    "kind": "rc-units",
+    "note": null
+   },
+   {
+    "name": "units: weight is the physical coefficient A_v = alpha^-1*A",
+    "got": "3e+08",
+    "expected": "3e+08",
+    "passed": true,
+    "kind": "rc-units",
+    "note": null
+   },
+   {
+    "name": "units: S_tau(physical) = S_tau(model)/alpha (NOT the old mixed-unit number)",
+    "got": "1000",
+    "expected": "1/alpha = 1000",
+    "passed": true,
+    "kind": "rc-units",
+    "note": null
+   },
+   {
+    "name": "units: tau_tol(physical) = alpha * tau_tol(model)",
+    "got": "0.001",
+    "expected": "alpha = 0.001",
+    "passed": true,
+    "kind": "rc-units",
+    "note": null
+   },
+   {
+    "name": "units: hf_tau_tol = eps_phi/|A_v,ij| scales by alpha (physical A_ij, not model A_ij)",
+    "got": "0.001",
+    "expected": "alpha = 0.001",
+    "passed": true,
+    "kind": "rc-units",
+    "note": null
+   },
+   {
+    "name": "units: ordering preserved in physical units (hf_tau_tol ascending with |A_v,ij| descending)",
+    "got": "1.047e-10 -> 1.309e-10 -> 1.745e-10 -> 2.618e-10",
+    "expected": "monotone",
+    "passed": true,
+    "kind": "rc-units",
+    "note": null
+   },
+   {
+    "name": "units: source records the physical-dynamics derivation",
+    "got": [
+     "reconstructed alpha^...",
+     "J_p = E_p^-1 A_p..."
+    ],
+    "expected": "reconstructed/E_p^-1",
+    "passed": true,
+    "kind": "rc-units",
+    "note": null
+   },
+   {
+    "name": "units: report J field carries the physical J_p (not model A)",
+    "got": "J_p",
+    "expected": "J_p = E_p^-1 A_p",
+    "passed": true,
+    "kind": "rc-units",
+    "note": null
+   }
+  ],
+  "summary": {
+   "alpha": 0.001,
+   "S_tau_ratio": 999.9999999999998,
+   "tau_tol_ratio": 0.0010000000000000002,
+   "hf_ratio": 0.001,
+   "omega_max_model": 1058300.5244258363,
+   "omega_max_phys": 1058300524.4258362
+  }
+ },
+ "singular": {
+  "checks": [
+   {
+    "name": "sing: singular-E descriptor accepted, 2 contracts emitted",
+    "got": 2,
+    "expected": 2,
+    "passed": true,
+    "kind": "rc-sing",
+    "note": null
+   },
+   {
+    "name": "sing: omega_max = max|finite eig| on the differential subspace (no naive E inversion)",
+    "got": "1.12e+06",
+    "expected": "1.12e+06",
+    "passed": true,
+    "kind": "rc-sing",
+    "note": null
+   },
+   {
+    "name": "sing: source records the pinv differential-subspace lift",
+    "got": "J_p = pinv(E_p) A_p on t...",
+    "expected": "pinv(E_p) A_p",
+    "passed": true,
+    "kind": "rc-sing",
+    "note": null
+   },
+   {
+    "name": "sing: differential-row edge keeps finite sensitivity",
+    "got": "(S 3.121e+05, tol 1.68e-07)",
+    "expected": "finite > 0",
+    "passed": true,
+    "kind": "rc-sing",
+    "note": null
+   },
+   {
+    "name": "sing: algebraic-row edge reports honest 0 sensitivity (no finite dynamics on that edge), tau_tol=inf",
+    "got": "(S 0, tol inf)",
+    "expected": "S=0, tau_tol=inf",
+    "passed": true,
+    "kind": "rc-sing",
+    "note": null
+   },
+   {
+    "name": "sing: hf_tau_tol still finite on the algebraic row (eps/|A_v,ij| \u2014 the gm budget is independent of the lift)",
+    "got": "1.309e-07",
+    "expected": "1.309e-07",
+    "passed": true,
+    "kind": "rc-sing",
+    "note": null
+   },
+   {
+    "name": "sing: pinv lift is not flagged as defective (contracts valid)",
+    "got": [
+     false,
+     false
+    ],
+    "expected": "all False",
+    "passed": true,
+    "kind": "rc-sing",
+    "note": null
+   }
+  ],
+  "summary": {
+   "omega_max": 1120000.0,
+   "S_tau_diff": 312082.62823103624,
+   "S_tau_alg": 0.0,
+   "J_source": "J_p = pinv(E_p) A_p on the differential subspace (singular/ill-conditioned E_p, cond=inf; constraint rows are zero \u2014 honest 0 sensitivity, resolvent 1/(jw) block is a known lift artifact)"
+  }
+ },
  "p7": {
   "checks": [
    {
@@ -443,7 +591,7 @@
   }
  },
  "summary": {
-  "n_checks": 38,
-  "n_passed": 38
+  "n_checks": 53,
+  "n_passed": 53
  }
 }

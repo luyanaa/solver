@@ -23,7 +23,17 @@ P7 的 generate_config 原来只发一条聚合的 "route-edges" ElementConfig�
      强制成长线做负控制（verdict 翻 False，pad_can_fix 诚实：feedback
      边 pad 修不了绝对延迟）。
   3. 动力学敏感度（edge_sensitivity）：S_τ,ij 与 τ_tol；高频极限
-     hf_tau_tol = ε/|A_ij| 给出 1/|A_ij| 的延迟预算排序。
+      hf_tau_tol = ε/|A_v,ij| 给出 1/|A_v,ij| 的延迟预算排序。
+
+单位合同（P0 finding 修复）：敏感度一律在**物理时间**轴上评估——
+J_p = E_p⁻¹·A_p（ScalingResult.scaled 的 E_v/A_v；无 scaling 时
+alpha=1、model=physical），ω = omega_max（物理 rad/s）。绝不把物理
+ω 代进模型坐标 J。奇异 E_p 不做朴素求逆：J_p 取有限（微分）子空间
+上的 Moore-Penrose 提升 pinv(E_p)·A_p——代数（约束）行的 J_p 为零，
+其敏感度如实为 0/inf（该边无有限动力学）；pinv 也失败 ⇒ "sensitivity
+not computable"，S_tau/tau_tol 置 nan，不造假数。weight/hf_tau_tol
+读的也是物理系数 A_v[i,j] = α⁻¹·(S A S⁻¹)[i,j]——1/|A_ij| 排序只有
+在一致单位下才有意义。
 
 诚实边界：per-edge 契约是 REQUIREMENT + 代表性可行性，不是 P5/B2 的
 放置布线结果；physical lengths/fanout 到 B2/PEX 才知道。
@@ -66,7 +76,7 @@ class EdgeRouteContract:
     j: int                       # 源节点（状态 j 输出）
     src: str                     # 状态 j 名
     dst: str                     # 状态 i 名
-    weight: float                # |A_ij|
+    weight: float                # |A_v[i,j]| 物理系数（无 scaling ⇒ |A_ij|）
     feedback_critical: bool
     omega_max: float             # rad/s 物理轴（=max|λ|/alpha）
     omega_c: float | None        # feedback 边 crossover；否则 None
@@ -77,9 +87,9 @@ class EdgeRouteContract:
     phi_reserve_deg: float
     candidate_length_um: float
     closure: dict                # twin.route.route_closure 输出（含四判据）
-    S_tau: float                 # ω|A_ij|·‖(jωI−J)⁻¹‖ 在 omega_max
-    tau_tol: float               # ε_φ/S_tau（resolvent 口径）
-    hf_tau_tol: float            # ε_φ/|A_ij|（高频极限 ⇒ 1/|A_ij| 排序）
+    S_tau: float                 # ω|J_p,ij|·‖(jωI−J_p)⁻¹‖，ω/ω_max 物理轴
+    tau_tol: float               # ε_φ/S_tau（resolvent 口径，物理秒）
+    hf_tau_tol: float            # ε_φ/|A_v,ij|（高频极限 ⇒ 1/|A_v,ij| 排序）
     flagged: bool = False        # 契约本身有缺陷（奇异/defective spec）⇒ 标记
     flag_reason: str = ""
 
@@ -116,7 +126,8 @@ class RouteContractReport:
     n_edges: int
     n_feedback: int
     omega_max: float
-    J: object | None             # 用作敏感度的动力学矩阵（模型坐标 A）
+    J: object | None             # 敏感度用的物理时间 Jacobian J_p（E_p⁻¹A_p）
+    J_model: object | None = None  # 模型坐标 A（诊断对照用，不进 as_dict）
     source: dict = field(default_factory=dict)
 
     def as_dict(self) -> dict:
@@ -136,9 +147,10 @@ def derive_coupling_edges(discretized) -> tuple[list, np.ndarray | None]:
     """耦合边列表 [(i, j, A_ij)] + 动力学矩阵 J。
 
     优先级：Discretized 显式携带的边/图字段（meta["edges"] /
-    coupling_graph 属性）> 从 A 的非对角非零元推导。J 用于
-    edge_sensitivity；burgers（descriptor=None、非线性）时 J=None，
-    调用方只能拿到显式边或空表。
+    coupling_graph 属性）> 从 A 的非对角非零元推导。J 是**模型坐标** A
+    （诊断/边推导用；敏感度一律走 _physical_dynamics 的 J_p）；
+    burgers（descriptor=None、非线性）时 J=None，调用方只能拿到显式边
+    或空表。
     """
     explicit = getattr(discretized, "coupling_graph", None)
     meta = getattr(discretized, "meta", None) or {}
@@ -188,6 +200,101 @@ def _feedback_edges(edges: list) -> set:
 
 
 # ---------------------------------------------------------------------------
+# 物理时间动力学（单位合同的核心）
+# ---------------------------------------------------------------------------
+_COND_E_LIMIT = 1e10
+
+
+def _physical_dynamics(discretized, scaling) -> dict | None:
+    """物理时间轴的动力学：(E_p, A_p, J_p) + 来源记录。
+
+    优先级（与 p7.py 的 A_v 重构同口径）：
+      1. scaling.scaled 是物理时间 Descriptor ⇒ 直接取 (E_v, A_v)；
+      2. scaling.S_x_vec 存在 ⇒ 重构 E_v = S E S⁻¹、
+         A_v = α⁻¹·S A S⁻¹（P3 公式，t_phys = α·t_model）；
+      3. 都没有 ⇒ alpha=1、model 坐标 = physical 坐标。
+
+    J_p = E_p⁻¹·A_p；E_p 病态/奇异（cond > 1e10）时不做朴素求逆，改用
+    微分（有限特征值）子空间上的 Moore-Penrose 提升 pinv(E_p)·A_p：
+    代数（约束）行 J_p 为 0 ⇒ 对应边的敏感度如实为 0（无有限动力学），
+    resolvent 在该子空间之外的 1/(jω) 块是提升的已知伪影，记进 source。
+    pinv 也失败 ⇒ J_p=None（调用方报 "sensitivity not computable"）。
+    """
+    desc = getattr(discretized, "descriptor", discretized)
+    A_m = getattr(desc, "A", None)
+    if A_m is None:
+        return None
+    A_m = np.asarray(A_m, dtype=float)
+    if A_m.ndim != 2 or A_m.shape[0] != A_m.shape[1]:
+        return None
+    n = A_m.shape[0]
+    alpha = float(getattr(scaling, "alpha", 1.0)) if scaling is not None else 1.0
+    if not (np.isfinite(alpha) and alpha > 0.0):
+        alpha = 1.0
+    E_m = getattr(desc, "E", None)
+    E_m = np.eye(n) if E_m is None else np.asarray(E_m, dtype=float)
+
+    notes: list[str] = []
+    A_v = E_v = None
+    a_src = ""
+    sc = getattr(scaling, "scaled", None) if scaling is not None else None
+    if sc is not None:
+        try:
+            A_sc = np.asarray(sc.A, dtype=float)
+            E_sc = np.asarray(sc.E, dtype=float)
+            if A_sc.shape == A_m.shape and E_sc.shape == A_m.shape:
+                A_v, E_v = A_sc, E_sc
+                a_src = "scaling.scaled (physical-time descriptor E_v, A_v)"
+        except (TypeError, ValueError):
+            pass
+    if A_v is None and scaling is not None:
+        S = getattr(scaling, "S_x_vec", None)
+        if S is not None:
+            S = np.asarray(S, dtype=float).ravel()
+            if (S.size == n and np.all(np.isfinite(S)) and np.all(S > 0)):
+                Sm = np.diag(S)
+                Sinv = np.diag(1.0 / S)
+                E_v = Sm @ E_m @ Sinv
+                A_v = (1.0 / alpha) * (Sm @ A_m @ Sinv)
+                a_src = ("reconstructed alpha^-1*S*A*S^-1, E_v=S*E*S^-1 "
+                         "(P3 formula)")
+    if A_v is None:
+        E_v = E_m
+        A_v = A_m if alpha == 1.0 else (1.0 / alpha) * A_m
+        a_src = ("unscaled model coordinates (alpha=%g: model=physical)"
+                 % alpha)
+
+    # E_p 条件数决定求逆口径
+    try:
+        cond_e = float(np.linalg.cond(E_v))
+    except np.linalg.LinAlgError:
+        cond_e = float("inf")
+    j_src = ""
+    J_p = None
+    if np.isfinite(cond_e) and cond_e < _COND_E_LIMIT:
+        try:
+            J_p = np.linalg.solve(E_v, A_v)
+            j_src = "J_p = E_p^-1 A_p (cond(E_p)=%.3g)" % cond_e
+        except np.linalg.LinAlgError:
+            J_p = None
+    if J_p is None:
+        try:
+            J_p = np.linalg.pinv(E_v) @ A_v
+            j_src = ("J_p = pinv(E_p) A_p on the differential subspace "
+                     "(singular/ill-conditioned E_p, cond=%.3g; constraint "
+                     "rows are zero — honest 0 sensitivity, resolvent "
+                     "1/(jw) block is a known lift artifact)" % cond_e)
+            notes.append("singular E_p: pinv lift on finite-eigenspace")
+        except np.linalg.LinAlgError:
+            J_p = None
+            j_src = ("sensitivity not computable (E_p not invertible and "
+                     "pinv lift failed)")
+            notes.append("E_p not invertible: sensitivity not computable")
+    return dict(A_v=A_v, E_v=E_v, J_p=J_p, A_source=a_src, J_source=j_src,
+                alpha=alpha, cond_E=cond_e, notes=notes)
+
+
+# ---------------------------------------------------------------------------
 # 主入口
 # ---------------------------------------------------------------------------
 def emit_route_contracts(discretized, scaling=None, spec_template=None,
@@ -206,8 +313,14 @@ def emit_route_contracts(discretized, scaling=None, spec_template=None,
     states = list(states if states is not None else
                   getattr(discretized, "states", None) or [])
 
+    # 物理时间动力学（单位合同）：A_v/J_p 与物理 omega 配套，见模块头
+    phys = _physical_dynamics(discretized, scaling)
+    A_v = phys["A_v"] if phys is not None else None
+    J_p = phys["J_p"] if phys is not None else None
+
     # 物理带宽：alpha 来自 ScalingResult（t_phys = alpha·t_model）
-    alpha = float(getattr(scaling, "alpha", 1.0)) if scaling is not None else 1.0
+    alpha = phys["alpha"] if phys is not None else \
+        (float(getattr(scaling, "alpha", 1.0)) if scaling is not None else 1.0)
     lam_max = float("nan")
     if J is not None and J.size:
         try:
@@ -248,9 +361,15 @@ def emit_route_contracts(discretized, scaling=None, spec_template=None,
         feedback = idx in fb_idx
         flag = ""
         flagged = False
+        sens_note = ""
         # ---- 契约量（defective spec ⇒ flag，不静默）----
         omega_c = omega_max if feedback else None
-        weight = abs(float(a_ij))
+        # weight 必须是物理系数 A_v[i,j]（α⁻¹·SAS⁻¹），否则 1/|A_ij|
+        # 排序混单位。无 A_v（显式边但无 A）才退回边表自带的模型权重。
+        if A_v is not None:
+            weight = abs(float(A_v[i, j]))
+        else:
+            weight = abs(float(a_ij))
         if not np.isfinite(omega_max) or omega_max <= 0:
             flagged = True
             flag = ("defective spec: omega_max not finite/positive "
@@ -291,17 +410,22 @@ def emit_route_contracts(discretized, scaling=None, spec_template=None,
                 n_grid=base["n_grid"],
             )
             closure = route_closure(edge, spec)
-            # 敏感度：J 在 omega_max 的 resolvent + 高频极限
+            # 敏感度：物理 J_p 在物理 omega_max 的 resolvent + 高频极限。
+            # J_p 为 None ⇒ "sensitivity not computable"，nan 不造假。
             S_tau = tau_tol = hf_tau_tol = float("nan")
-            if J is not None and np.isfinite(weight) and weight > 0:
+            if J_p is None:
+                sens_note = "sensitivity not computable (no physical J_p)"
+            elif np.isfinite(weight) and weight > 0:
                 try:
-                    S, tol = edge_sensitivity(J, float(omega_max),
+                    S, tol = edge_sensitivity(J_p, float(omega_max),
                                               eps_phase_deg=base["eps_phase_deg"])
                     S_tau = float(np.asarray(S)[i, j])
                     tau_tol = float(np.asarray(tol)[i, j])
                 except (np.linalg.LinAlgError, ValueError):
-                    pass
+                    sens_note = "sensitivity not computable (resolvent failed)"
                 hf_tau_tol = (base["eps_phase_deg"] * np.pi / 180.0) / weight
+        if sens_note:
+            flag = (flag + "; " if flag else "") + sens_note
         contracts.append(EdgeRouteContract(
             i=i, j=j, src=src, dst=dst, weight=weight,
             feedback_critical=feedback,
@@ -318,13 +442,20 @@ def emit_route_contracts(discretized, scaling=None, spec_template=None,
     n_fb = sum(1 for c in contracts if c.feedback_critical)
     return RouteContractReport(
         contracts=contracts, n_edges=len(contracts), n_feedback=n_fb,
-        omega_max=omega_max, J=J,
+        omega_max=omega_max, J=J_p, J_model=J,
         source=dict(
             derivation=("explicit" if getattr(discretized, "coupling_graph",
                                               None) is not None
                         or (getattr(discretized, "meta", None) or {}).get("edges")
                         else "A off-diagonal nnz"),
             alpha=alpha, lam_max=lam_max,
+            A_source=(phys["A_source"] if phys is not None else
+                      "no descriptor: edges only"),
+            J_source=(phys["J_source"] if phys is not None else
+                      "sensitivity not computable (no descriptor)"),
+            units=("physical time: S_tau/tau_tol/hf_tau_tol use J_p=E_p^-1*A_p "
+                   "and A_v[i,j] with omega=omega_max (rad/s physical)"),
+            notes=(phys["notes"] if phys is not None else []),
             candidate="distributed RC wire (r=%.3g Ω/µm, c=%.3g fF/µm)"
                       % (_WIRE_R, _WIRE_C),
             honesty="requirement + representative-candidate feasibility, "

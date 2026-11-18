@@ -1,7 +1,15 @@
-B1 per-edge route contracts 验收：route_contract.py + p7.py 集成（DESIGN.md §3.2/§6.15 四判据 → P7 编译输出）
+B1 per-edge route contracts 验收：route_contract.py + p7.py 集成（DESIGN.md §3.2/§6.15 四判据 → P7 编译输出；敏感度物理单位合同）
 
 ==============================================================================
 EDGE  3-node 链 + feedback 边：per-edge 契约（需求 + verdict + 敏感度）
+==============================================================================
+
+==============================================================================
+UNITS  alpha≠1 ⇒ 敏感度/权重全在物理时间轴（α 解析缩放核对）
+==============================================================================
+
+==============================================================================
+SING  奇异 E_p：pinv 微分子空间提升（不朴素求逆，不造假数）
 ==============================================================================
 
 ==============================================================================
@@ -38,6 +46,21 @@ VERDICT
                                         edge: resolvent pair identity tau_tol * S_tau == eps_phi (exact inverse)                                                                        0.0523599                        0.0523599  yes
                                                                     edge: S_tau = omega*|A_ij|*||resolvent|| > 0                                                                         2.83e+05                              > 0  yes
                                                              edge: report round-trips through JSON (4 contracts)                                                                                4                                4  yes
+                                                           units: omega_max on the physical axis (lam_max/alpha)                                                                       1.0583e+09                       1.0583e+09  yes
+                                                      units: weight is the physical coefficient A_v = alpha^-1*A                                                                            3e+08                            3e+08  yes
+                                     units: S_tau(physical) = S_tau(model)/alpha (NOT the old mixed-unit number)                                                                             1000                   1/alpha = 1000  yes
+                                                               units: tau_tol(physical) = alpha * tau_tol(model)                                                                            0.001                    alpha = 0.001  yes
+                            units: hf_tau_tol = eps_phi/|A_v,ij| scales by alpha (physical A_ij, not model A_ij)                                                                            0.001                    alpha = 0.001  yes
+                     units: ordering preserved in physical units (hf_tau_tol ascending with |A_v,ij| descending)                                 1.047e-10 -> 1.309e-10 -> 1.745e-10 -> 2.618e-10                         monotone  yes
+                                                          units: source records the physical-dynamics derivation                               ('reconstructed alpha^...', 'J_p = E_p^-1 A_p...')             reconstructed/E_p^-1  yes
+                                                    units: report J field carries the physical J_p (not model A)                                                                              J_p                 J_p = E_p^-1 A_p  yes
+                                                       sing: singular-E descriptor accepted, 2 contracts emitted                                                                                2                                2  yes
+                           sing: omega_max = max|finite eig| on the differential subspace (no naive E inversion)                                                                         1.12e+06                         1.12e+06  yes
+                                                        sing: source records the pinv differential-subspace lift                                                      J_p = pinv(E_p) A_p on t...                    pinv(E_p) A_p  yes
+                                                            sing: differential-row edge keeps finite sensitivity                                                      (S 3.121e+05, tol 1.68e-07)                       finite > 0  yes
+            sing: algebraic-row edge reports honest 0 sensitivity (no finite dynamics on that edge), tau_tol=inf                                                                   (S 0, tol inf)                 S=0, tau_tol=inf  yes
+    sing: hf_tau_tol still finite on the algebraic row (eps/|A_v,ij| — the gm budget is independent of the lift)                                                                        1.309e-07                        1.309e-07  yes
+                                                   sing: pinv lift is not flagged as defective (contracts valid)                                                                   (False, False)                        all False  yes
                                                                         p7: Config carries route_contracts field                                                                             list                             list  yes
                      p7: contract count == off-diagonal nnz of A (diffusion: diagonal => 0, a true 'no routing')                                                                                0                                0  yes
                                                 p7: aggregate 'route-edges' ElementConfig kept (backward compat)                                                                             True                          present  yes
@@ -59,4 +82,4 @@ VERDICT
                                                       neg: inf edge flagged with reason; finite edge passes spec                                              (1, 'defective edge: |A_ij|...', 1)                       >0 flagged  yes
                                                      neg: derive_coupling_edges returns [] + J for diagonal desc                                                                        (0, True)                        (0, True)  yes
 
-  38/38 checks passed
+  53/53 checks passed

@@ -209,10 +209,13 @@ def generate_config(discretized, cert, scaling,
 
     # ---- per-element 配置 ----
     # P0-3：系数图取自**物理缩放后的描述符**（scaling.scaled：
-    # E_v = S E S⁻¹, A_v = α⁻¹ S A S⁻¹, B_v = S B, C_v = C S⁻¹）。
+    # E_v = S E S⁻¹, A_v = α⁻¹ S A S⁻¹, B_v = α⁻¹ S B, C_v = C S⁻¹）。
     # A_v 的对角元是该积分器的有效自系数（rad/s，物理时间轴），非对角
     # 非零元是 MVM/flux 边的物理增益。没有 scaled/descriptor（burgers
     # 非线性）时退回全局速度 spec——如实记录，不编造系数图。
+    # 输入缩放契约（lowering/scaling.py docstring）：u 携带物理强迫单位，
+    # u_p(t_p)=u_m(t_p/α) ⇒ B_v = α⁻¹·S·B（与 A_v 同一个 α⁻¹）。b_ports
+    # 的 gain 因此是 α⁻¹ 标定后的物理 V/s per V_in。
     scaled = getattr(scaling, "scaled", None)
     A_v = getattr(scaled, "A", None) if scaled is not None else None
     B_v = getattr(scaled, "B", None) if scaled is not None else None
@@ -220,7 +223,7 @@ def generate_config(discretized, cert, scaling,
     if A_v is None and desc is not None and alpha > 0 and len(s_vec) == desc.n:
         S = np.diag(s_vec)
         A_v = (1.0 / alpha) * (S @ np.asarray(desc.A, dtype=float) @ np.diag(1.0 / np.asarray(s_vec)))
-        B_v = S @ np.asarray(desc.B, dtype=float)
+        B_v = (1.0 / alpha) * (S @ np.asarray(desc.B, dtype=float))
         C_v = np.asarray(desc.C, dtype=float) @ np.diag(1.0 / np.asarray(s_vec))
     A_v = np.asarray(A_v, dtype=float) if A_v is not None else None
     graph_ok = A_v is not None and A_v.shape == (len(states), len(states))
