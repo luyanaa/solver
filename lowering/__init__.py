@@ -5,6 +5,7 @@ normalize：无量纲化 + 坐标中心化（P0）。
 scaling：状态/时间缩放，A_t 公式 + 频窗检查（P3）。
 """
 
+from .discretize import Discretized, PDESpec, discretize, linearize_rhs
 from .normalize import (Normalization, center_system, fold,
                         nondimensionalize, pipeline_normalize)
 from .reduce import (Canonical, Expr, Reduced, System, add, besselj, C,
@@ -21,6 +22,7 @@ __all__ = [
     "eval_expr", "eval_system", "complete_env",
     "Normalization", "center_system", "nondimensionalize",
     "pipeline_normalize", "fold",
+    "PDESpec", "Discretized", "discretize", "linearize_rhs",
     "ScalingResult", "gramian_scaling", "alpha_for_bandwidth",
     "state_scale_from_ranges",
 ]

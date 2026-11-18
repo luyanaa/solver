@@ -25,6 +25,7 @@ Plain Python 3 (stdlib + numpy + scipy + matplotlib). No build step, no packagin
     python3 -m bench.run_multirate             # Phase 4.3 WR/S&H 合法性, ~50 s, 16/16 checks
     python3 -m bench.run_compiler              # P6 证书聚合层, ~3 s, 22/22 checks
     python3 -m bench.run_constraint            # T10 KCL 松弛孪生, ~4 s, 44/44 checks
+    python3 -m bench.run_pipeline              # 3-anchor e2e (spec→cert→twin), ~5 min on this box, 30/30 checks
 
 In the Trae agent shell, prefix ngspice with `env -u LD_LIBRARY_PATH`. The agent
 injects a libstdc++ that ngspice cannot load (`GLIBCXX_3.4.32` missing). A normal

@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 # 早期一次失败提取留下的 sky130 模型拷贝；PDK 不入库（见 AGENTS.md）
 results/pdk_stage/
+
+# 参考文献 PDF（open-access 本地副本，不入库——ref/README.md 记 DOI/链接）
+ref/pdfs/

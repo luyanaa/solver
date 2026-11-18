@@ -1676,6 +1676,7 @@ Gamma 与 Bessel 的边界也按 §1.5 执行：Gamma 直接拒绝（native-only
         ✅ scaling.py      # 可控/可观 Gramian 对角平衡 → S_x (rms3σ / Moore d_i)
                           # + α=max|λ|/(2πB_hw·margin)；自动构造 PhysicalScaling；
                           # 频窗检查（eig 不变性断言）
+        ✅ discretize.py   # P0 半离散化：PDESpec→Discretized (fourier/fd/fv)
         ✅ budget.py       # P6 证书聚合：slack + Γ_M + σ_y² + manifold-γ 窗
                           # + loop ‖S‖∞ + multirate k_max + sde_cert →
                           # Certificate（rejected/infeasible/no-violation/feasible）
@@ -1712,8 +1713,9 @@ Gamma 与 Bessel 的边界也按 §1.5 执行：Gamma 直接拒绝（native-only
         ✅ run_multirate.py         # §4.3 WR/S&H 合法性验收（16/16）
         ✅ run_compiler.py          # P6 证书聚合层验收（22/22）
         ✅ run_constraint.py        # T10 KCL 松弛孪生验收（44/44）
+        ✅ run_pipeline.py          # 3 锚定基准 e2e（符号→证书→孪生核对）（30/30）
         diffusion.py biharmonic.py burgers.py robertson.py shear.py hh.py
-        airfoil.py bore.py front.py   # 20 个 benchmark 待补；当前模型在 run_phase0.py 内
+        airfoil.py bore.py front.py   # 20 个 benchmark 待补；3 anchors in bench/problems.py；当前模型在 run_phase0.py 内
       results/                    # report.txt / twin_experiments.json /
                                   # device_extract.json / phase0.json /
                                   # phase0_report.txt / reduce.json /
