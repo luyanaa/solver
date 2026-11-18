@@ -1542,6 +1542,41 @@ P0–P6 全链在三锚上跑通（`python3 -m bench.run_pipeline`，30/30，记
 
 **投入顺序**：behavioral → primitive SPICE → PEX/EM/substrate/thermal → calibration loop → 小规模 test chip → 完整 VLSI。分立器件 PCB 原型只验证 compiler/time scaling/校准流程，不验证片上 mismatch、kT/C、switch 寄生和 substrate coupling。
 
+### Phase 7.5 / B0：架构冻结（process + tile counts + 冻结规格书）
+
+B0 把 §3 的 10-tile 表收敛成一颗可流片的 characterization vehicle。冻结的不是"最高性能"，而是**让 Stage C 每个待测量都有专用结构**（§7 Phase 7 / B3）。三条输入：§6.9 的 λ 表、§2.1 的尺度律、§1.2 的 slack 轴。**所有未进 `results/*.json` 的数字标 TARGET——B0 的功率/面积是一阶估算，不是实测。**
+
+**(a) 工艺冻结 = IHP SG13G2 SiGe BiCMOS（130 nm）。** 依据是实测 λ 表（`results/device_extract.json`），不是偏好：
+
+| 器件 | λ = gds/ID | r_o | 用途判据 |
+|---|---|---|---|
+| SG13G2 npn13G2 **HBT** | 0.0138 /V | 3.61 MΩ | 接口镜像/缓冲/line driver（λ 比 IHP MOS 小 70×，镜像系统误差 ~590× 小） |
+| SG13G2 sg13_lv_nmos | 0.970 /V | 65 kΩ | **不适合接口镜像**（§6.9：58.6% 镜像误差）；只做低阻节点 SUM/开关/digital |
+| MIM（MOS 电容阵） | — | — | 存 state（`σ²=αkT/C`，C 是资源） |
+| CMOS digital | — | — | supervisor / 校准 FSM / 配置 |
+
+分工与 §3.1 一致且被 λ 表钉死：**HBT 做高速电流接口与缓冲（它快、ro 高、g_m/I_C≈38.7/V），MOS/MIM 做状态积分，CMOS 做 supervisor。** 代价记账：V_BE 温度系数 −2 mV/K ⇒ 接口偏置必须进 background 校准环（`twin/calib.py` 的 replica-locked drift 语义）；HBT 不存 state（§3.1）。同一 die 上有 HBT+CMOS 是选 SG13G2 而非纯 RF CMOS 的决定性理由（§6.9：接口层排序 HBT≫gf180>sky130≫短沟道 MOS）。
+
+**(b) Tile 数冻结（第一颗 characterization vehicle，不是全 fabric）。** 每类至少一个实例 + §7 Phase 7 的"同一 cell 的 32 份不同位置"用于 mismatch 地图：
+
+| Tile | 数量 | 冻结规格（(E,A,B,C) 抽象 + 关键数） | 绑定 slack 轴 |
+|---|---|---|---|
+| T1 State | 4–8 积分器 | C·V̇=I；C_bank = 1 pF（`C_BANK_F`，`lowering/p7.py`）梯度 1×/4×/16×；`target_gm_over_c = max|λ|/α`（P7 实测口径） | noise `σ²=αkT/C`、leakage |
+| T2 Algebra | 1 簇 | 电流域 SUM/MUL/tanh（低阻节点）；HBT/MOS | mismatch Γ·ΔA |
+| T3 Operator | 1 个 ≤64 MVM | 可编程权值；失配 ∝1/√(WL)；**cap 256，本 chip 用 64**（§3 T3） | robustness_A |
+| T4 Stiff | 1 组极点阵 | ż_k=−λ_k z_k；τ 覆盖 1e-8…1e-3（§3 T4） | stiffness κ_hw=1e6（账本敏感 4.86%） |
+| T5 Flux | 1 条 1D 链（~64 cell） | cell C + NL flux + limiter；单通量源镜像（HBT） | conservation、representation |
+| T6 Event | 1 比较器+锁存+S&H | 迟滞防 Zeno；抖动 σ_t 进统计 | event jitter |
+| T7 Route | 可编程长度/扇出阵 | `H_ij(s)=H_wire·∏H_buf·e^{−sτ}`；wire 分布式 1/cosh√(sRC)；buffer 单极+噪声；AllPass pad；**per-edge contract 由 `route_contract.py` 提供四判据**（B1 落地） | routing η_route、phase、feedback ωc |
+| T8 Noise | 1 bank（m 独立源） | 物理热噪声 + replay PRNG+DAC；PSD/τ_c/ρ 可编程；`B_noise≥100·B_req`（§3 T8） | noise realizability（账本 0.63%/unit） |
+| T9 Statistics | 1 累加器组 | 片上均值/协方差/直方图；只读 O(p²) | readout budget |
+| T10 Constraint | 1 稀疏 gm mesh（~16×16） | `C_y ẏ=−Ay+b` 松弛解 Poisson/KCL；`ε_c=τ_constraint/τ_state,min`（§2.8 #3）；λ_min 判收敛 | relaxation ε_c、mismatch floor ∝1/λ_min |
+| Supervisor | 1 | CMOS FSM + DAC + ADC + replica/reference；校准 FSM 见 `twin/calib.py` | 全轴校准残差（账本 17/unit） |
+
+**(c) 冻结规格书抽象。** 每个 tile 在 compiler 里暴露 `(E,A,B,C)` descriptor 片段 + `‖H‖₂`/`‖H‖∞`（由 `analysis/` 在其 (E,A,B,C) 上算）+ 功耗 + 面积。功率/面积为 TARGET（§2.1：1000 节点 @10µV@10MHz ⇒ ~0.1 W、~3 mm² C——本 chip 只有几十节点，功率/面积**不是瓶颈**，瓶颈是 κ_hw、route 寄生、校准漂移）。**B0 退出 = 这张表 + 每 tile 的 (E,A,B,C)/‖H‖₂/‖H‖∞/power/area 五行规格冻结**；具体数值待 §7 Phase 7 的 primitive SPICE/PEX 填入，B0 只冻结结构与口径。
+
+**(d) B0 的诚实边界。** (1) 第一颗是 characterization vehicle，不是 processor——§7 Phase 7 已冻结。(2) 功率/面积是 §2.1 一阶估算（TARGET），不是实测；§9 风险 3（γ_eff 5–10× ⇒ SNR 乐观 7–10 dB）仍开着。(3) 工艺包络不只看 f_T：κ_hw=1e6 是 nominal，账本敏感度 4.86% 意味着实测窗口若只到 1e4，diffusion N=1024 这类 stiffness-bound workload 翻判——**κ_hw 必须在 C1 实测，不能只信 PDK**。(4) per-edge route contract 由 B1 `lowering/route_contract.py` 在四判据（gain/phase/noise/feedback-ωc）上发，T7 的数量只是容量冻结。
+
 ### Phase 8：heterogeneous substrates（研究阶段，按 §3.7 的优先级）
 
 不做"三种 substrate 一起上"。每次只加一个域，并且先有 `substrate.py` 的 constitutive law + transducer cost，再有数字孪生。
