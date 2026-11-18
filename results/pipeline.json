@@ -108,7 +108,7 @@
             "noise": NaN,
             "bandwidth": 0.08,
             "stiffness": 0.004096,
-            "robustness_A": 8.148733086305042e-07,
+            "robustness_A": 0.9999999999999998,
             "robustness_io": NaN,
             "routing": NaN,
             "representation": NaN
@@ -129,7 +129,7 @@
               "noise": NaN,
               "bandwidth": 0.08,
               "stiffness": 0.004096,
-              "robustness_A": 8.148733086305042e-07,
+              "robustness_A": 0.9999999999999998,
               "robustness_io": NaN,
               "routing": NaN,
               "representation": NaN
@@ -163,14 +163,14 @@
             "detail": "\u03c3_y=0.02019 (direct)"
           }
         },
-        "binding_axis": "bandwidth",
+        "binding_axis": "robustness_A",
         "rejection_reasons": [],
         "assumptions": [
           "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
           "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
         ]
       },
-      "p6_binding_axis": "bandwidth",
+      "p6_binding_axis": "robustness_A",
       "scaling": {
         "alpha": 8.148733086305042e-07,
         "scaled_bandwidth_hz": 800000.0,
@@ -1020,7 +1020,7 @@
           "T": 0.3
         },
         "cfl": 0.2,
-        "rhs_func": "<function _burgers_fv.<locals>.rhs_func at 0x7f9e5370df30>",
+        "rhs_func": "<function _burgers_fv.<locals>.rhs_func at 0x7f59262adf30>",
         "u0": "0.5+0.5 sin(2 pi x) point values (run_phase0/run_transform convention)",
         "reg": {
           "p": 1.4385004176399947,
@@ -1193,7 +1193,7 @@
             "noise": NaN,
             "bandwidth": 0.0802418285047454,
             "stiffness": 0.0022279823748737825,
-            "robustness_A": 9.463614866008874e-07,
+            "robustness_A": 0.02782890629126389,
             "robustness_io": NaN,
             "routing": NaN,
             "representation": 2.5733990126494986
@@ -1217,7 +1217,7 @@
               "noise": NaN,
               "bandwidth": 0.0802418285047454,
               "stiffness": 0.0022279823748737825,
-              "robustness_A": 9.463614866008874e-07,
+              "robustness_A": 0.02782890629126389,
               "robustness_io": NaN,
               "routing": NaN,
               "representation": 2.5733990126494986

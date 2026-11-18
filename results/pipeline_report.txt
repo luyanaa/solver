@@ -23,7 +23,7 @@ Stage A5 step-3：3 锚定基准 e2e（符号 → 证书 → 孪生对账）
 5. 对账汇总
 ==============================================================================
        problem                    cert status   binding axis                                                  predicted                                             measured                                                    verdict
-  diffusion-1d no violation on evaluated axes      bandwidth          sigma_y=2.236e+01 (noise floor; no axis violated)       det_err=1.776e-15 meas_sigma=22.48507078790137             within-band: algorithm error below noise floor
+  diffusion-1d no violation on evaluated axes   robustness_A          sigma_y=2.236e+01 (noise floor; no axis violated)       det_err=1.776e-15 meas_sigma=22.48507078790137             within-band: algorithm error below noise floor
     poisson-2d no violation on evaluated axes      bandwidth eps_c=1.17e+08 >= 0.01 ⇒ FAIL (elliptic becomes parabolic) res(t=τ_state)=1.131e+01 vs res(t=τ_relax)=8.695e-01 bound-holds: nonconverged at τ_state, converged at τ_relax
     burgers-1d                     infeasible representation     E_tail^(1/2)=1.604e-02 (representation violation size)                                   l2_blend=2.334e-02                  within-band (scaling claim, not identity)
 
