@@ -1440,7 +1440,7 @@ Gamma 与 Bessel 的边界也按 §1.5 执行：Gamma 直接拒绝（native-only
 
 ### 6.17 编译器证书链：P3→P6 物理时间衔接与 ΔA 量纲一致性（`results/compiler.json`、`pipeline.json`、`constraint.json`）
 
-P0–P6 全链在三锚上跑通（`python3 -m bench.run_pipeline`，见 §6.17 末尾的验收数，记录 `results/pipeline.json`）。**P3→P6 的衔接有一个必须钉死的方向与一个量纲陷阱**，两者都已修复并写入验收：
+P0–P6 全链在三锚上跑通（`python3 -m bench.run_pipeline`，34/34，记录 `results/pipeline.json`）。**P3→P6 的衔接有一个必须钉死的方向与一个量纲陷阱**，两者都已修复并写入验收：
 
 | 项目 | 错误写法 | 修复后 | 实测 |
 |---|---|---|---|
@@ -1864,7 +1864,7 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
         ✅ run_compiler.py          # P6 证书聚合层验收（22/22）
         ✅ run_constraint.py        # T10 KCL 松弛孪生验收（44/44）
         ✅ run_constraint_timing.py # T10 ε_c 语义：外部时标显式声明 + 纯稳态 deadline 事实 + 证书可见性（36/36）
-        ✅ run_pipeline.py          # 3 锚定基准 e2e（符号→证书→孪生核对）（35/35）
+        ✅ run_pipeline.py          # 3 锚定基准 e2e（符号→证书→孪生核对）（34/34）
         ✅ run_stagea.py            # A4/A8/A9 收尾：shear 换基判定（Γ 5.12 /
                                     # scaled / eigvec=1+κ(Φ)=20 税）/ VdP
                                     # （不稳定工点 ⇒ 回退，reduce=poly）/
