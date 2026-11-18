@@ -6,7 +6,7 @@ This file provides guidance to CodeBuddy Code when working with code in this rep
 
 A design study plus digital twin, not a product codebase. The artifact that matters is `DESIGN.md`: it specifies a compiler and a layered continuous-time analog/hybrid fabric for solving ODE/PDE, and it carries the normative claims, scaling laws, acceptance criteria and experiment results. The Python under `twin/`, `analysis/` and `bench/` exists to falsify or confirm statements in `DESIGN.md`.
 
-Read `DESIGN.md` before touching code. It is ~620 lines and organized so each section states a claim, then the number that makes it checkable.
+Read `DESIGN.md` before touching code. It is ~1720 lines and organized so each section states a claim, then the number that makes it checkable.
 
 ## Commands
 
@@ -14,6 +14,10 @@ Plain Python 3 (stdlib + numpy + scipy + matplotlib). No build step, no packagin
 
     python3 -m bench.run_twin_experiments      # all five twin experiments, ~3 min
     python3 -m bench.run_phase0                # Phase 0 verdicts, ~2 min, 23/23 checks
+    python3 -m bench.run_reduce                # Phase 1 front-end, ~5 s, 25/25 checks
+    python3 -m bench.run_skew                  # Phase 1.5 interconnect delay, ~2 s, 15/15 checks
+    python3 -m bench.run_route                 # Phase 1.6 route closure, ~2 s, 38/38 checks
+    python3 -m bench.run_transform             # Phase 4.5 representation/transform, ~4 s, 35/35 checks
     python3 -m twin.spice.extract              # ngspice extraction, every PDK in the dict
     python3 -m twin.spice.extract sky130       # single PDK (~70 s: model loading dominates)
     python3 -m twin.spice.extract ihp-hbt
@@ -22,11 +26,87 @@ In the Trae agent shell, prefix ngspice with `env -u LD_LIBRARY_PATH`. The agent
 injects a libstdc++ that ngspice cannot load (`GLIBCXX_3.4.32` missing). A normal
 login shell does not need this.
 
-Outputs land in `results/`: `report.txt`, `twin_experiments.json`, `twin_experiments.png`, `device_extract.json`, `phase0.json`, `phase0_report.txt`, `phase0.png`, plus per-PDK `ext_*.sp` / `ext_*.log` / `*sweep_*.dat`. The JSON files are the machine-readable record that `DESIGN.md §6.8/§6.9/§6.10` quotes.
+Outputs land in `results/`: `report.txt`, `twin_experiments.json`, `twin_experiments.png`, `device_extract.json`, `phase0.json`, `phase0_report.txt`, `phase0.png`, `reduce.json`, `reduce_report.txt`, `skew.json`, `skew_report.txt`, `route.json`, `route_report.txt`, `transform.json`, `transform_report.txt`, plus per-PDK `ext_*.sp` / `ext_*.log` / `*sweep_*.dat`. The JSON files are the machine-readable record that `DESIGN.md §6.8/§6.9/§6.10/§6.13/§6.14/§6.15/§6.16` quotes.
 
 To run one experiment in isolation, import and call it (each `exp_*` is self-contained):
 
     python3 -c "from bench.run_twin_experiments import exp_d; exp_d()"
+
+## Implementation phases
+
+Three stages: **A theory validation** (software only), **B chip and software design**, **C silicon validation**. Each stage ends with a gate; each gate names the number that passes and the observation that falsifies it. A gate that cannot fail is not a gate, and a claim without a `results/*.json` entry is still a target.
+
+### Stage A — theory validation (no silicon)
+
+Purpose: decide whether the architecture deserves silicon. The digital twin is the only oracle; there is no "trust the hardware" escape hatch at this stage.
+
+**A0 — feasibility core (implemented, 23/23).** `analysis/` computes `(E,A,B,C) → κ, Γ, ‖H‖₂, ‖H‖∞` and the six-axis slack. Diffusion N=64/1024, biharmonic N=128, Burgers and Robertson match analytic/asymptotic values within ±3 dB / ±0.5 decade. Two invariants to keep: κ removes only numerical zero modes; the representation axis is evaluated on the physical state, not on a capturing scheme's output.
+
+**A1 — front-end reducibility (implemented, 25/25).** `lowering/reduce.py` classifies Lorenz/Duffing as polynomial, HH as rational (six `exp` augmentations), Bessel J0 as rational with `1/t` (rejected at `t=0`), Gamma as rejected. The reduction is exact only on the invariant manifold: the `s²+c²` drift grows from 1e-14 to 1e-3 when the augmentation is perturbed by 1e-3. Do not widen a claim beyond that.
+
+**A2 — interconnect and timing (implemented, 15/15 + 38/38).** `bench/run_skew.py` verifies `E=I+A∘T`, `τ_crit` and the `2/π` optimism of the first-order mass matrix. `bench/run_route.py` verifies distributed vs lumped RC (0.3791 vs 0.3795 RC t50), the phase-before-noise fanout limit (11.45° at 4 levels), all-pass vs RC padding (108× `J_H`), deskew vs absolute feedback delay, the crosstalk floor, and the `1/|J_ij|` / `2Q` sensitivity ordering. The missing piece is end-to-end closure, not per-edge closure.
+
+**A3 — representation and transform (Phase 4.5, implemented, 35/35).** WENO as `S → T_σ → F_σ`, continuous `σ`, conservation on a shared face flux; lifting wavelet with `(W, W_inv, W_star)`; the per-scale `C_j` vs `g_m,j` trade-off (mode C keeps `g_m` range small but noise grows as `4^j`; mode g_m keeps noise flat but needs a `4^L` transconductance range); `G_T = T̃^*T̃` calibration. Three measured traps are now in the bench: (a) the sensor's `ε` must be a ~1% field-range floor, or smooth extrema give `0/0` and read as shocks (sine σ 1.0 → 0.1265); (b) a symmetric σ tracker forms a representation-feedback limit cycle (8 threshold crossings per cell), while attack/release 400/10 gives 2; (c) `G_T=T̃^*T̃` requires right multiplication `T_cal=T̃G_T^{-1/2}`; the naive left `K T̃` leaves isometry at 0.032 (0.342 at 2% perturbation) instead of 3.46e-15.
+
+**A4 — benchmark corpus (§8, partial).** Every system in §8 must produce a verdict, a binding slack axis, and a predicted QoI error. Current coverage is the five Phase 0 cases. The gap is not "run more simulations"; it is "every benchmark has an analytic or high-resolution reference, and a predicted failure where the theory says failure".
+
+**A5 — compiler end-to-end (not implemented).** P0–P7 from equation to config + slack + calibration plan. The output per workload is a **theory certificate**: `(E,A,B,C)`, κ, Γ, σ_y, ‖H‖∞, slack vector, binding axis, per-edge route contracts, calibration plan, predicted QoI error, and the assumptions that would invalidate the verdict. Falsification: the certificate says feasible but the digital twin diverges; or the digital fallback rate exceeds 50%, which reclassifies the machine as an accelerator (risk 4), not a solver.
+
+**A6 — stochastic dynamics and inverse problems (Phase 6, not implemented).** OU (Var/ACF, noise bandwidth), GBM (Itô/Stratonovich split), Langevin (histogram vs `e^{−V/T}`), CRN/EnKF/adjoint parameter recovery. Falsification: a noise source that cannot be written into the noise contract; or adjoint gradients that disagree with finite differences after `W_inv` and `W_star` are kept distinct.
+
+**A7 — heterogeneous substrates (Phase 8, not implemented).** `substrate.py` + `bench/run_substrate.py`: MEMS `ω0/Q/Duffing`, fluidic `P↔V` diffusion, photonic 4×4 MVM. Falsification: a transducer cost that cannot be expressed in the same slack; or a state-count growth that the substrate cannot resolve.
+
+**A8 — negative controls (partly implemented).** biharmonic N=128 (`κ=N⁴`), non-normal shear (`Γ≫1`), Robertson without QSSA, high-Re DNS, 6D Boltzmann, quantum many-body, long-time chaos. Stage A passes only if these are rejected or downgraded for the predicted reason.
+
+**A9 — exit review.** The review reads the assumption ledger and the failure map, not the demos.
+
+What Stage A must validate:
+
+| Category | What must be validated | Pass number | Falsified by |
+|---|---|---|---|
+| Model algebra | descriptor, generalized eigenproblem, Lyapunov, H∞, Γ, κ | ±3 dB; κ within ±0.5 decade | two independent methods disagree |
+| Reduction | polynomial/rational/rejected; invariant manifolds; DAE index | exact at 1e-12; drift grows with mismatch | a "polynomial" case needs non-polynomial terms; index>1 slips through |
+| Perturbation budget | `B_p` ports; H2/H∞; noise, mismatch, route, jitter in one resolvent | σ_y within ±3 dB; binding axis correct | a perturbation cannot be represented as a port |
+| Timing | `H_ij(s)`, group delay, crosstalk, absolute feedback | phase <3°; `η_route` <20%; crosstalk floor | per-edge passes but the loop fails |
+| Representation | basis switch, WENO triple, transform contract | conservation <1e-4; isometry <0.5%; PR <0.2%; adjoint <1e-3 | σ blend on states; inverse used as adjoint |
+| Compiler | P0–P7, slack, placement/route contract, calibration plan | QoI ±10%; fallback rate reported | feasible certificate, divergent twin |
+| Stochastics | Itô/Stratonovich, noise contract, CRN/EnKF/adjoint | ±10%; KL<0.05; θ<10% | interpretation missing; gradient bias |
+| Heterogeneous | MEMS/fluidic/photonic constitutive laws + transducer | 5–10% on toy models | cost not in slack; state blowup |
+| Failure map | negative controls | predicted rejection | a known-hard case "passes" without evidence |
+
+Stage A exit criteria (all must hold):
+
+1. Every §8 benchmark has a verdict, a binding axis, and a reference (analytic or high-resolution).
+2. Prediction errors are inside the table's intervals; no benchmark is "feasible" in the certificate and divergent in the twin.
+3. At least three workloads run end-to-end through P0–P7 and the twin: 1D diffusion (spectral), 2D Poisson (constraint mesh), 1D Burgers (flux + `σ`).
+4. Negative controls fail for the predicted reason, not by accident.
+5. The digital fallback rate is measured; if >50%, `DESIGN.md` says "accelerator", not "solver".
+6. Every quantitative claim in `DESIGN.md` maps to a `results/*.json` or is explicitly marked as a target.
+7. An assumption ledger exists: `κ_hw`, α, noise PSD, mismatch, parasitics, calibration residual, each with a sensitivity number.
+
+### Stage B — chip and software design
+
+**B0 — architecture freeze.** Choose the process (RF BCD/HVCMOS/SOI), tile counts (T1–T10), C banks, T3 size, T7 route fabric, T8/T9, T10 constraint mesh, supervisor, and test structures. Exit: block diagram plus per-block `(E,A,B,C)`, `‖H‖₂`, `‖H‖∞`, power and area.
+
+**B1 — compiler and software.** Complete P0–P7; contract-driven placer/router; calibration FSM; digital-twin update; config and test-vector generation. Exit: the compiler reproduces the Stage A verdicts on the same workloads, with the same slack axes.
+
+**B2 — pre-silicon verification.** SPICE → PEX/EM/substrate/thermal → behavioral model; corner and Monte Carlo separated; calibration-in-the-loop; post-layout slack re-run. Exit: `P(workload passes)` is reported; no block ships without a noise and mismatch model.
+
+**B3 — characterization vehicle.** Primitive bank, route testers (length/fanout/mode), C bank, device bank, replica/temperature/noise/loopback, and 32 copies of the same cell at different locations. Exit: every quantity measured in Stage C has a dedicated structure.
+
+**B4 — design review.** Exit: all blocks close on slack; the test plan maps 1:1 to Stage C; DFM/ESD/IR-drop checked.
+
+### Stage C — silicon validation
+
+- **C0 bring-up**: power, clock, supervisor, DAC/ADC, reference, leakage.
+- **C1 primitive characterization**: `g_m/C`, noise PSD, offset, THD, charge injection, C mismatch.
+- **C2 route and array**: delay, phase, crosstalk, all-pass, feedback absolute delay, latency class.
+- **C3 calibration**: foreground/background, residual distribution, drift vs temperature, replica tracking.
+- **C4 workloads**: diffusion N=64, 32×32 Poisson, 1D Burgers, OU/GBM, Robertson with QSSA, then larger cases.
+- **C5 heterogeneous (optional)**: MEMS resonator, photonic link, fluidic cell.
+- **C6 accounting and go/no-go**: QoI vs digital reference, energy/area/bandwidth per solve, measured failure boundary.
+
+Stage C exit: measured/predicted errors are inside the Stage A intervals; at least one workload runs end-to-end with no digital fallback; the next chip's targets are derived from measured, not nominal, numbers.
 
 ## Architecture
 
@@ -44,9 +124,27 @@ Three layers, separated so measurement code never contains a solver and solver c
 
 **`twin/spice/extract.py` — PDK extraction.** Builds a diode-connected current-mirror netlist per process, runs ngspice in batch, parses the sweep `.dat` files into lambda = gds/ID, gm/ID, ro and the mirror ratio. PDKs are external (`~/.ciel/ciel/...`, `/grid/...`) and must not be vendored or modified.
 
-**`analysis/` — the feasibility analyzer (Phase 0).** Pure linear algebra, no solver and no hardware model. `descriptor.py` owns (E,A,B,C) and the spectral metrics; `lyapunov.py` solves the generalized Lyapunov equation by QZ on the stable finite deflating subspace; `hinf.py` bisects the Hamiltonian pencil and cross-checks against a frequency sweep; `resolvent.py` computes Γ; `regularity.py` fits the spectral tail; `slack.py` builds the six-axis vector. Two policies are load-bearing: κ drops only *numerical* zero modes (|λ| < 1e-12·max|λ|), so physical slow modes stay in the verdict; and the representation axis must be evaluated on the physical state, never on a capturing scheme's output (WENO smears the tail with ν_num and would pass a test the state fails).
+**`twin/route.py` — the route closure model.** One edge is `H_ij(s) = H_wire(s)·∏ H_buf,k(s)·e^{−sτ_ij}`, built from `Wire` (distributed `1/cosh√(sRC)` by default, `lumped` as the one-pole strawman), `Buffer` (single pole + input-referred noise), `AllPass` (first-order Padé delay trim) and `PureDelay`. `route_closure` returns the four per-edge verdicts — gain, phase, noise, feedback absolute delay — plus η_route, J_H, J_τ and the latency class. Two policies are load-bearing: (a) the distributed and lumped models share the DC slope RC/2 but differ in t50 (0.3795 vs ln2/2) and f_3dB, so a one-pole model is not a substitute for either; (b) `feedback_critical` checks `τ < φ_reserve/ω_c` separately, because deskew can zero the skew without changing the absolute loop delay. `edge_sensitivity` computes `S_τ,ij = ω|J_ij|·‖(jωI−J)⁻¹‖` and `τ_tol = ε_φ/S`; near a resonance the whole band's budget shrinks by the resolvent peak (~2Q), while the ordering stays `1/|J_ij|`.
+
+**`twin/transform.py` — representation primitives (Phase 4.5).** `smoothness_indicator` (normalized second difference with a ~1% field-range `ε` floor), `SigmaTracker` (hysteresis + asymmetric attack/release), the face fluxes `weno5/central/rusanov/muscl`, `blend_face_flux` (the blend must happen on one face, never on states), `LiftingWavelet` (orthonormal Haar and biorthogonal CDF53, with explicit `W`, `W_inv`, `W_star` for contract tests), `stationary_haar` (undecimated, translation-invariant), `gram_calibrate` (right Gram `T_cal=T̃G_T^{-1/2}`; left Gram uses `T̃T̃^*`), `TransposeableEdge`/`edge_matrix`, `adjoint_ode_gradient` (transpose of the discrete RK4 map), and `scale_poles` (mode C vs mode g_m). Two traps are load-bearing: a symmetric σ tracker oscillates through a representation feedback loop (8 crossings per cell vs 2 with 400/10 attack/release), and `K T̃` with the right Gram does not orthogonalize (isometry 0.032 vs 3.46e-15).
+
+**`ref/README.md` — annotated bibliography and reading status.** Maps the FPAA physical-synthesis line (Baskaya 2006/2009, Hasler–Twigg 2007, Wang–Vrudhula 2002, George 2016), the waveform-relaxation/multirate line (Lelarasmee 1982, RELAX, Hayashi–Asai 1992), the delay-in-dynamics demo (Jiménez 2022), and the GPAC/differential-algebra/complexity line (Shannon 1941; Bournez–Graça–Pouly 2016/2017; Rubel 1981) to DESIGN.md sections. Open-access PDFs live in `ref/pdfs/`; paywalled items are DOI links only. The stated gap is dynamical-sensitivity-aware physical synthesis: extend `S_τ,ij` to `S_g,ij`/`S_n,ij`, feed the contracts into a P&R cost, and fall back to waveform relaxation when the instantaneous contract cannot be met. §G and §H are different in kind: they list MEMS/fluidic/photonic and WENO/wavelet/adjoint reading *targets* that have not been verified, and say so explicitly. Do not upgrade those to citations without checking the metadata.
+
+**`DESIGN.md §3.7` — heterogeneous substrates.** The descriptor is relaxed to `E_q q̇ = F_q(q) + Σ C_qr z_r` with `q ∈ {V, I, x_mech, P_fluid, c_chem, a_optical}`, so state is a generalized physical coordinate rather than a voltage. MEMS supplies the second-order primitive `mẍ+cẋ+kx=F` (and `ω0=√(k/m)` as a dynamical reference), the fluidic network is the same graph Laplacian as `C V̇ = −GV+I` (`P↔V, Q↔I, R_f↔R`), and photonics is limited to global dense communication and linear transforms. The judgment machinery does not change: `κ_hw` becomes per-domain, `Γ` uses the transducer coupling, and every cross-domain trip pays gain/noise/bandwidth/energy that must enter the §1.2 slack. Stated non-goals: analog does not reduce state count, and high-Re DNS / 6D Boltzmann / quantum many-body / long-term chaos are not promised.
+
+**`DESIGN.md §5.7–§5.9` — adaptive representation and the transform contract.** WENO is not treated as a stencil to be copied into hardware but as three operators `S → T_σ → F_σ` (smoothness detector, state-dependent representation, conservative face flux); `σ` is a continuous coordinate, and the smooth/shock blend must happen on the same face flux or telescoping conservation is lost. The representation contract is `(T, T⁻¹, T^*)`, not `(T, T⁻¹)` — biorthogonal wavelets have `T⁻¹ ≠ T^*` (measured 0.684 for CDF53), and confusing them silently corrupts adjoint gradients. Isometry is measured in the energy metric `M=diag(C)`, not bare voltage. Lifting wavelets with transposeable gm/current edges let forward and adjoint share hardware; undecimated coefficients avoid hidden S/H. Per-scale `C_j` vs `g_m,j` is a trade-off, not a κ reduction: the pole spread stays `4^L` in both modes, mode C puts it in noise (`g_m` spread 1), mode g_m puts it in transconductance (noise spread 1). `G_T=T̃^*T̃` is the calibration observable, but the right Gram requires right multiplication `T_cal=T̃G_T^{-1/2}`; the naive left form leaves isometry at 0.032. Measured numbers are in §6.16, including the relative-ε sensor floor (sine σ 1.0 → 0.1265) and the asymmetric σ tracker (8 → 2 crossings).
+
+**`analysis/` — the feasibility analyzer (Phase 0).** Pure linear algebra, no solver and no hardware model. `descriptor.py` owns (E,A,B,C) and the spectral metrics; `lyapunov.py` solves the generalized Lyapunov equation by QZ on the stable finite deflating subspace; `hinf.py` bisects the Hamiltonian pencil and cross-checks against a frequency sweep; `resolvent.py` computes Γ; `regularity.py` fits the spectral tail; `slack.py` builds the six-axis vector. `skew.py` turns path delay into a descriptor: `E = I + A∘T`, with the uniform-delay closed form `λ/(1+τλ)`. Two policies are load-bearing: κ drops only *numerical* zero modes (|λ| < 1e-12·max|λ|), so physical slow modes stay in the verdict; and the representation axis must be evaluated on the physical state, never on a capturing scheme's output (WENO smears the tail with ν_num and would pass a test the state fails).
+
+**`lowering/` — the front-end classifier (Phase 1).** `reduce.py` is a tiny symbolic IR (`Expr` + `+ × ^ sin cos exp tanh besselj gamma`), a first-order/jet reducer, a state augmenter that records invariant manifolds, and a sparse rational canonicalizer. It answers one question: is the right-hand side polynomial, rational, or neither? `bench/run_reduce.py` is the acceptance: Lorenz/Duffing → polynomial; standard Hodgkin–Huxley → rational (six `exp` states plus three denominators, because α/β contain 1/(1−exp)); Bessel J0 → rational with 1/t, rejected at t=0; Gamma → rejected. Do not describe HH as polynomial — the earlier draft did, and the data says otherwise. The reduction is only equivalent on the invariant manifold: a 1e-3 mismatch in the sin/cos augmentation grows the s²+c² drift from 1e-14 to 1e-3.
 
 **`bench/run_phase0.py` — the Phase 0 acceptance.** Builds five systems (diffusion N=64/1024, biharmonic N=128, Burgers linearized at the pre-shock state, Robertson at t=1e4), runs the analyzer, checks against analytic κ/Γ/σ_y/H∞, and writes the verdict table. The Burgers exact solution is via characteristics; the Jacobian is the first-order Roe operator (differentiable), while the WENO solution is only used to show how capturing hides the spectral tail.
+
+**`bench/run_skew.py` — the Phase 1.5 acceptance.** Converts path delay to the descriptor `E = I + A∘T` and checks three things: the uniform-delay closed form `λ/(1+τλ)` (2.3e-16), the first-order `−τλ²` pole shift, and the scalar DDE stability boundary. The scalar DDE is the warning: its exact boundary is `|a|τ = π/2`, while `E = I + τA` gives `|a|τ = 1`, optimistic by `2/π`. Phase budget at 100 MHz is 27.8 ps for 1°. Do not treat the first-order mass matrix as a substitute for the `ω_max τ` check.
+
+**`bench/run_route.py` — the Phase 1.6 acceptance.** Seven cases and 38 checks. A distributed RC line's t50 is measured with a small implicit-Euler diffusion fixture (`_diffusion_t50`), not assumed: 0.3791 RC vs the analytic 0.3795. The buffer fanout case shows the depth limit is phase, not gain or noise (4 levels at 2 GHz/100 MHz give 11.45° against a 3° budget). The all-pass case quantifies why an RC pole is the wrong pad (same DC delay, 15.3% gain error and 108× the J_H at 500 MHz). The deskew case is the negative control: skew goes to 3e-7 ps while the common 59.8 ps still violates a 1° reserve. The crosstalk case checks the HF floor `C_m/(C_2+C_m)` and the 1 mV/1 V C_m budget. The sensitivity case checks the `1/|J_ij|` ordering and the `2Q` resonance factor.
+
+**`bench/run_transform.py` — the Phase 4.5 acceptance.** Five cases and 35 checks. The WENO case puts a static step and a smooth sine through the sensor (σ 1.0000 vs 0.1265 with a 1% `ε` floor), then runs Burgers to t=0.5 with central/MUSCL blending on a shared face flux: conservation drift 2.22e-16, shock position equal to WENO5 (x=0.7480), L2 4.59e-3, and at most 2 σ threshold crossings per cell (a symmetric tracker gives 8). The lifting case verifies Haar isometry/PR/dot product at ~1e-16 and shows CDF53 has `W_inv−W*` = 0.684 while PR stays at 2.17e-16. The adjoint case checks `A↔Aᵀ` (2.7e-16), quadratic and ODE gradients against finite differences (~1.5e-10), and reports checkpoint bytes. The scale case shows the pole spread stays 1024 for both mode C and mode g_m while the span moves between noise and `g_m`; no normalization gives 1.0 model-time error. The Gram case shows right-Gram calibration 2.27e-2 → 3.46e-15 and the wrong left multiplication stuck at 0.032.
 
 **`bench/run_twin_experiments.py` — the experiments.** Contains the deliberately small Burgers/advection solvers that produce data to be measured (WENO5, minmod/van Leer MUSCL, Roe flux). This is the only place allowed to contain a solver.
 
@@ -68,4 +166,4 @@ Three layers, separated so measurement code never contains a solver and solver c
 
 ## Where the numbers live
 
-`DESIGN.md §6.8` (twin experiments), `§6.9` (PDK extraction) and `§6.10` (Phase 0 analyzer) hold the quantitative record: ideal-mirror drift ~1e-15 (roundoff) versus 1.9e-5 at transistor level, the four-PDK lambda table (HBT 0.028, gf180 0.034, sky130 0.081, IHP MOS 0.970 /V), the drift-vs-lambda ratios (1.23 / 2.38 / 11.97) that confirm the leak mechanism, and the five Phase 0 verdicts (κ=N², κ=N⁴, Burgers → representation, Robertson → stiffness, 23/23 checks). Noise values in §6.9 are derived from `4kTγ/g_m`, not `.noise` output — do not describe them as measured. Cite these rather than re-deriving, and update them when a rerun changes a number.
+`DESIGN.md §6.8` (twin experiments), `§6.9` (PDK extraction), `§6.10` (Phase 0 analyzer), `§6.13` (Phase 1 front-end), `§6.14` (interconnect delay), `§6.15` (route closure) and `§6.16` (adaptive representation / transform contract) hold the quantitative record: ideal-mirror drift ~1e-15 (roundoff) versus 1.9e-5 at transistor level, the four-PDK lambda table (HBT 0.028, gf180 0.034, sky130 0.081, IHP MOS 0.970 /V), the drift-vs-lambda ratios (1.23 / 2.38 / 11.97) that confirm the leak mechanism, the five Phase 0 verdicts (κ=N², κ=N⁴, Burgers → representation, Robertson → stiffness, 23/23 checks), the five front-end classifications (Lorenz/Duffing polynomial, HH rational, Bessel rational with a domain, Gamma rejected; 25/25 checks), the delay results (uniform closed form 2.3e-16, scalar DDE τ_crit ratio 2/π, diffusion τ_crit 0.2578, phase budget 27.8 ps @100 MHz for 1°; 15/15 checks), the route results (0.3791 RC t50, 4-level fanout 11.45°, all-pass J_H 108× better than RC, deskew 39.8 ps → 3e-7 ps but 2.15° absolute, crosstalk floor 9.09%, τ_tol ratio 200 and 2Q=20.05; 38/38 checks), and the transform results (sensor σ 1.0000/0.1265, conservation 2.22e-16, shock x 0.7480, L2 4.59e-3, crossings 8→2, Haar isometry 3.5e-16, CDF53 `W_inv−W*` 0.684, adjoint gradients ~1.5e-10, pole spread 1024, Gram 2.27e-2→3.46e-15; 35/35 checks). Noise values in §6.9 are derived from `4kTγ/g_m`, not `.noise` output — do not describe them as measured. Cite these rather than re-deriving, and update them when a rerun changes a number.

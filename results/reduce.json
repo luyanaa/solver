@@ -1,0 +1,1912 @@
+{
+  "cases": {
+    "Lorenz": {
+      "name": "Lorenz",
+      "kind": "polynomial",
+      "level": 0,
+      "ok": true,
+      "reason": null,
+      "n": 3,
+      "states": [
+        "x",
+        "y",
+        "z"
+      ],
+      "augmentations": [],
+      "domain": {},
+      "degree": 2,
+      "n_monomials": 7,
+      "dense_monomials": 10,
+      "sparsity": 0.23333333333333334,
+      "divisions": [],
+      "invariants": [],
+      "canonical": {
+        "states": [
+          "x",
+          "y",
+          "z"
+        ],
+        "kind": "polynomial",
+        "degree": 2,
+        "n_monomials": 7,
+        "dense_monomials": 10,
+        "sparsity": 0.23333333333333334,
+        "divisions": [],
+        "invariants": [],
+        "numerator": [
+          {
+            "state": "x",
+            "powers": [
+              0,
+              1,
+              0
+            ],
+            "coeff": 10.0
+          },
+          {
+            "state": "x",
+            "powers": [
+              1,
+              0,
+              0
+            ],
+            "coeff": -10.0
+          },
+          {
+            "state": "y",
+            "powers": [
+              0,
+              1,
+              0
+            ],
+            "coeff": -1.0
+          },
+          {
+            "state": "y",
+            "powers": [
+              1,
+              0,
+              0
+            ],
+            "coeff": 28.0
+          },
+          {
+            "state": "y",
+            "powers": [
+              1,
+              0,
+              1
+            ],
+            "coeff": -1.0
+          },
+          {
+            "state": "z",
+            "powers": [
+              0,
+              0,
+              1
+            ],
+            "coeff": -2.6666666666666665
+          },
+          {
+            "state": "z",
+            "powers": [
+              1,
+              1,
+              0
+            ],
+            "coeff": 1.0
+          }
+        ],
+        "denominator": [
+          {
+            "state": "x",
+            "powers": [
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "y",
+            "powers": [
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "z",
+            "powers": [
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          }
+        ]
+      },
+      "canonical_err": 0.0
+    },
+    "Duffing": {
+      "name": "Duffing",
+      "kind": "polynomial",
+      "level": 0,
+      "ok": true,
+      "reason": null,
+      "n": 4,
+      "states": [
+        "x_0",
+        "x_1",
+        "s1",
+        "c1"
+      ],
+      "augmentations": [
+        [
+          "sin",
+          "(6/5*t)",
+          [
+            "s1",
+            "c1"
+          ]
+        ]
+      ],
+      "domain": {},
+      "degree": 3,
+      "n_monomials": 7,
+      "dense_monomials": 35,
+      "sparsity": 0.05,
+      "divisions": [],
+      "invariants": [
+        "(-1 + c1^2 + s1^2)"
+      ],
+      "canonical": {
+        "states": [
+          "x_0",
+          "x_1",
+          "s1",
+          "c1"
+        ],
+        "kind": "polynomial",
+        "degree": 3,
+        "n_monomials": 7,
+        "dense_monomials": 35,
+        "sparsity": 0.05,
+        "divisions": [],
+        "invariants": [
+          "(-1 + c1^2 + s1^2)"
+        ],
+        "numerator": [
+          {
+            "state": "x_0",
+            "powers": [
+              0,
+              1,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "x_1",
+            "powers": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "coeff": 0.3
+          },
+          {
+            "state": "x_1",
+            "powers": [
+              0,
+              1,
+              0,
+              0
+            ],
+            "coeff": -0.2
+          },
+          {
+            "state": "x_1",
+            "powers": [
+              1,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "x_1",
+            "powers": [
+              3,
+              0,
+              0,
+              0
+            ],
+            "coeff": -1.0
+          },
+          {
+            "state": "s1",
+            "powers": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "coeff": 1.2
+          },
+          {
+            "state": "c1",
+            "powers": [
+              0,
+              0,
+              1,
+              0
+            ],
+            "coeff": -1.2
+          }
+        ],
+        "denominator": [
+          {
+            "state": "x_0",
+            "powers": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "x_1",
+            "powers": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "s1",
+            "powers": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "c1",
+            "powers": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          }
+        ]
+      },
+      "invariant_drift": 9.880984919163893e-15,
+      "invariant_drift_perturbed": 0.000999999998806178,
+      "canonical_err": 0.0
+    },
+    "HH": {
+      "name": "HH",
+      "kind": "rational",
+      "level": 1,
+      "ok": true,
+      "reason": null,
+      "n": 10,
+      "states": [
+        "V",
+        "m",
+        "h",
+        "n",
+        "e1",
+        "e2",
+        "e3",
+        "e4",
+        "e5",
+        "e6"
+      ],
+      "augmentations": [
+        [
+          "exp",
+          "(-1/18*(65 + V))",
+          [
+            "e1"
+          ]
+        ],
+        [
+          "exp",
+          "(-1/10*(40 + V))",
+          [
+            "e2"
+          ]
+        ],
+        [
+          "exp",
+          "(-1/10*(35 + V))",
+          [
+            "e3"
+          ]
+        ],
+        [
+          "exp",
+          "(-1/20*(65 + V))",
+          [
+            "e4"
+          ]
+        ],
+        [
+          "exp",
+          "(-1/80*(65 + V))",
+          [
+            "e5"
+          ]
+        ],
+        [
+          "exp",
+          "(-1/10*(10 + V))",
+          [
+            "e6"
+          ]
+        ]
+      ],
+      "domain": {},
+      "degree": 6,
+      "n_monomials": 65,
+      "dense_monomials": 8008,
+      "sparsity": 0.0008116883116883117,
+      "divisions": [
+        "m: 1 + -1*e2",
+        "h: 1 + 1*e3",
+        "n: 1 + -1*e6"
+      ],
+      "invariants": [],
+      "canonical": {
+        "states": [
+          "V",
+          "m",
+          "h",
+          "n",
+          "e1",
+          "e2",
+          "e3",
+          "e4",
+          "e5",
+          "e6"
+        ],
+        "kind": "rational",
+        "degree": 6,
+        "n_monomials": 65,
+        "dense_monomials": 8008,
+        "sparsity": 0.0008116883116883117,
+        "divisions": [
+          "m: 1 + -1*e2",
+          "h: 1 + 1*e3",
+          "n: 1 + -1*e6"
+        ],
+        "invariants": [],
+        "numerator": [
+          {
+            "state": "V",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": -16.3161
+          },
+          {
+            "state": "V",
+            "powers": [
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": -0.3
+          },
+          {
+            "state": "V",
+            "powers": [
+              0,
+              0,
+              0,
+              4,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": -2772.0
+          },
+          {
+            "state": "V",
+            "powers": [
+              0,
+              3,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 6000.0
+          },
+          {
+            "state": "V",
+            "powers": [
+              1,
+              0,
+              0,
+              4,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": -36.0
+          },
+          {
+            "state": "V",
+            "powers": [
+              1,
+              3,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": -120.0
+          },
+          {
+            "state": "m",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 4.0
+          },
+          {
+            "state": "m",
+            "powers": [
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": -4.0
+          },
+          {
+            "state": "m",
+            "powers": [
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 0.1
+          },
+          {
+            "state": "m",
+            "powers": [
+              0,
+              1,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": -4.0
+          },
+          {
+            "state": "m",
+            "powers": [
+              1,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": -0.1
+          },
+          {
+            "state": "m",
+            "powers": [
+              0,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 4.0
+          },
+          {
+            "state": "h",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "coeff": 0.07
+          },
+          {
+            "state": "h",
+            "powers": [
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": -1.0
+          },
+          {
+            "state": "h",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0
+            ],
+            "coeff": 0.07
+          },
+          {
+            "state": "h",
+            "powers": [
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "coeff": -0.07
+          },
+          {
+            "state": "h",
+            "powers": [
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0
+            ],
+            "coeff": -0.07
+          },
+          {
+            "state": "n",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 0.1
+          },
+          {
+            "state": "n",
+            "powers": [
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": -0.1
+          },
+          {
+            "state": "n",
+            "powers": [
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 0.01
+          },
+          {
+            "state": "n",
+            "powers": [
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0
+            ],
+            "coeff": -0.125
+          },
+          {
+            "state": "n",
+            "powers": [
+              1,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": -0.01
+          },
+          {
+            "state": "n",
+            "powers": [
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              1,
+              1
+            ],
+            "coeff": 0.125
+          },
+          {
+            "state": "e1",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 0.90645
+          },
+          {
+            "state": "e1",
+            "powers": [
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 0.016666666666666666
+          },
+          {
+            "state": "e1",
+            "powers": [
+              0,
+              0,
+              0,
+              4,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 154.0
+          },
+          {
+            "state": "e1",
+            "powers": [
+              0,
+              3,
+              1,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": -333.3333333333333
+          },
+          {
+            "state": "e1",
+            "powers": [
+              1,
+              0,
+              0,
+              4,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 2.0
+          },
+          {
+            "state": "e1",
+            "powers": [
+              1,
+              3,
+              1,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 6.666666666666667
+          },
+          {
+            "state": "e2",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.63161
+          },
+          {
+            "state": "e2",
+            "powers": [
+              1,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 0.03
+          },
+          {
+            "state": "e2",
+            "powers": [
+              0,
+              0,
+              0,
+              4,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 277.2
+          },
+          {
+            "state": "e2",
+            "powers": [
+              0,
+              3,
+              1,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": -600.0
+          },
+          {
+            "state": "e2",
+            "powers": [
+              1,
+              0,
+              0,
+              4,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 3.6
+          },
+          {
+            "state": "e2",
+            "powers": [
+              1,
+              3,
+              1,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 12.0
+          },
+          {
+            "state": "e3",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.63161
+          },
+          {
+            "state": "e3",
+            "powers": [
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0
+            ],
+            "coeff": 0.03
+          },
+          {
+            "state": "e3",
+            "powers": [
+              0,
+              0,
+              0,
+              4,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0
+            ],
+            "coeff": 277.2
+          },
+          {
+            "state": "e3",
+            "powers": [
+              0,
+              3,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0
+            ],
+            "coeff": -600.0
+          },
+          {
+            "state": "e3",
+            "powers": [
+              1,
+              0,
+              0,
+              4,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0
+            ],
+            "coeff": 3.6
+          },
+          {
+            "state": "e3",
+            "powers": [
+              1,
+              3,
+              1,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0
+            ],
+            "coeff": 12.0
+          },
+          {
+            "state": "e4",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "coeff": 0.815805
+          },
+          {
+            "state": "e4",
+            "powers": [
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "coeff": 0.015
+          },
+          {
+            "state": "e4",
+            "powers": [
+              0,
+              0,
+              0,
+              4,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "coeff": 138.6
+          },
+          {
+            "state": "e4",
+            "powers": [
+              0,
+              3,
+              1,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "coeff": -300.0
+          },
+          {
+            "state": "e4",
+            "powers": [
+              1,
+              0,
+              0,
+              4,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "coeff": 1.8
+          },
+          {
+            "state": "e4",
+            "powers": [
+              1,
+              3,
+              1,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0
+            ],
+            "coeff": 6.0
+          },
+          {
+            "state": "e5",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0
+            ],
+            "coeff": 0.20395125
+          },
+          {
+            "state": "e5",
+            "powers": [
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0
+            ],
+            "coeff": 0.00375
+          },
+          {
+            "state": "e5",
+            "powers": [
+              0,
+              0,
+              0,
+              4,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0
+            ],
+            "coeff": 34.65
+          },
+          {
+            "state": "e5",
+            "powers": [
+              0,
+              3,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0
+            ],
+            "coeff": -75.0
+          },
+          {
+            "state": "e5",
+            "powers": [
+              1,
+              0,
+              0,
+              4,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0
+            ],
+            "coeff": 0.45
+          },
+          {
+            "state": "e5",
+            "powers": [
+              1,
+              3,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0
+            ],
+            "coeff": 1.5
+          },
+          {
+            "state": "e6",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1
+            ],
+            "coeff": 1.63161
+          },
+          {
+            "state": "e6",
+            "powers": [
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1
+            ],
+            "coeff": 0.03
+          },
+          {
+            "state": "e6",
+            "powers": [
+              0,
+              0,
+              0,
+              4,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1
+            ],
+            "coeff": 277.2
+          },
+          {
+            "state": "e6",
+            "powers": [
+              0,
+              3,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1
+            ],
+            "coeff": -600.0
+          },
+          {
+            "state": "e6",
+            "powers": [
+              1,
+              0,
+              0,
+              4,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1
+            ],
+            "coeff": 3.6
+          },
+          {
+            "state": "e6",
+            "powers": [
+              1,
+              3,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1
+            ],
+            "coeff": 12.0
+          }
+        ],
+        "denominator": [
+          {
+            "state": "V",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "m",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "m",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": -1.0
+          },
+          {
+            "state": "h",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "h",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "n",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "n",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1
+            ],
+            "coeff": -1.0
+          },
+          {
+            "state": "e1",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "e2",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "e3",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "e4",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "e5",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "e6",
+            "powers": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          }
+        ]
+      },
+      "rhs_err": 0.0,
+      "canonical_err": 1.1424589264360604e-15
+    },
+    "Bessel": {
+      "name": "Bessel",
+      "kind": "rational",
+      "level": 1,
+      "ok": true,
+      "reason": null,
+      "n": 4,
+      "states": [
+        "x",
+        "t",
+        "j1",
+        "k1"
+      ],
+      "augmentations": [
+        [
+          "besselj",
+          "t",
+          [
+            "j1",
+            "k1"
+          ]
+        ]
+      ],
+      "domain": {
+        "bessel_args": [
+          "t"
+        ],
+        "bessel_arg_min": 1.0,
+        "bessel_floor": 1e-06
+      },
+      "degree": 2,
+      "n_monomials": 6,
+      "dense_monomials": 15,
+      "sparsity": 0.1,
+      "divisions": [
+        "k1: 1*t"
+      ],
+      "invariants": [],
+      "canonical": {
+        "states": [
+          "x",
+          "t",
+          "j1",
+          "k1"
+        ],
+        "kind": "rational",
+        "degree": 2,
+        "n_monomials": 6,
+        "dense_monomials": 15,
+        "sparsity": 0.1,
+        "divisions": [
+          "k1: 1*t"
+        ],
+        "invariants": [],
+        "numerator": [
+          {
+            "state": "x",
+            "powers": [
+              0,
+              0,
+              1,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "t",
+            "powers": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "j1",
+            "powers": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "k1",
+            "powers": [
+              0,
+              0,
+              0,
+              1
+            ],
+            "coeff": -1.0
+          },
+          {
+            "state": "k1",
+            "powers": [
+              0,
+              1,
+              1,
+              0
+            ],
+            "coeff": -1.0
+          }
+        ],
+        "denominator": [
+          {
+            "state": "x",
+            "powers": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "t",
+            "powers": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "j1",
+            "powers": [
+              0,
+              0,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "k1",
+            "powers": [
+              0,
+              1,
+              0,
+              0
+            ],
+            "coeff": 1.0
+          }
+        ]
+      },
+      "t": 9.999999999999897,
+      "j": -0.24593576445134954,
+      "k": -0.043472746168877745,
+      "ref_j": -0.24593576445134832,
+      "ref_k": -0.0434727461688616,
+      "j_err": 4.965708545124035e-15,
+      "k_err": 3.714236513072565e-13,
+      "canonical_err": 0.0,
+      "rejected_zero": "rejected"
+    },
+    "Gamma": {
+      "name": "Gamma",
+      "kind": "rejected",
+      "level": 2,
+      "ok": false,
+      "reason": "Gamma \u662f differentially transcendental\uff08H\u00f6lder\uff09\uff1a\u6ca1\u6709\u6709\u9650\u9636\u4ee3\u6570\u5fae\u5206\u65b9\u7a0b\uff0c\u4e0d\u80fd\u6709\u9650\u589e\u5e7f",
+      "n": 1,
+      "states": [
+        "x"
+      ],
+      "augmentations": [],
+      "domain": {}
+    }
+  },
+  "checks": [
+    {
+      "name": "Lorenz kind",
+      "got": "polynomial",
+      "expected": "polynomial",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Lorenz states",
+      "got": 3,
+      "expected": 3,
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Lorenz degree",
+      "got": 2,
+      "expected": 2,
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Lorenz monomials",
+      "got": 7,
+      "expected": 7,
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Lorenz sparse",
+      "got": 0.23333333333333334,
+      "expected": "< 1",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Duffing kind",
+      "got": "polynomial",
+      "expected": "polynomial",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Duffing states",
+      "got": 4,
+      "expected": 4,
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Duffing degree",
+      "got": 3,
+      "expected": 3,
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Duffing monomials",
+      "got": 7,
+      "expected": 7,
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Duffing s\u00b2+c\u00b2 drift",
+      "got": 9.880984919163893e-15,
+      "expected": "< 1e-3",
+      "passed": true,
+      "kind": "abs"
+    },
+    {
+      "name": "Lorenz canonical rebuild",
+      "got": 0.0,
+      "expected": "< 1e-10",
+      "passed": true,
+      "kind": "abs"
+    },
+    {
+      "name": "Duffing canonical rebuild",
+      "got": 0.0,
+      "expected": "< 1e-10",
+      "passed": true,
+      "kind": "abs"
+    },
+    {
+      "name": "HH canonical rebuild",
+      "got": 1.1424589264360604e-15,
+      "expected": "< 1e-10",
+      "passed": true,
+      "kind": "abs"
+    },
+    {
+      "name": "Bessel canonical rebuild",
+      "got": 0.0,
+      "expected": "< 1e-10",
+      "passed": true,
+      "kind": "abs"
+    },
+    {
+      "name": "HH kind",
+      "got": "rational",
+      "expected": "rational",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "HH states",
+      "got": 10,
+      "expected": 10,
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "HH divisions",
+      "got": 3,
+      "expected": 3,
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "HH RHS rel err",
+      "got": 0.0,
+      "expected": "< 1e-10",
+      "passed": true,
+      "kind": "abs"
+    },
+    {
+      "name": "HH sparse",
+      "got": 0.0008116883116883117,
+      "expected": "< 0.01",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Gamma rejected",
+      "got": "rejected",
+      "expected": "rejected",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Bessel kind",
+      "got": "rational",
+      "expected": "rational",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Bessel domain",
+      "got": true,
+      "expected": true,
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Bessel J0 rel err",
+      "got": 4.965708545124035e-15,
+      "expected": "< 1e-6",
+      "passed": true,
+      "kind": "abs"
+    },
+    {
+      "name": "Bessel at x=0 rejected",
+      "got": "rejected",
+      "expected": "rejected",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Lorenz/Duffing share polynomial IR",
+      "got": "polynomial",
+      "expected": "polynomial",
+      "passed": true,
+      "kind": "value"
+    }
+  ],
+  "summary": {
+    "n_checks": 25,
+    "n_passed": 25
+  }
+}

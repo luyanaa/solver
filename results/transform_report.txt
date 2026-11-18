@@ -1,0 +1,119 @@
+
+==============================================================================
+Phase 4.5 — adaptive representation / TransformContract
+==============================================================================
+
+==============================================================================
+4.5A WENO 三算子：sensor → σ → face flux
+==============================================================================
+quantity            value               
+------------------  --------------------
+N / steps / dt      256 / 640 / 7.81e-04
+σ at static shock   1.0000              
+σ smooth (static)   0.1265              
+σ at final shock    0.9634              
+σ smooth (final)    0.0855              
+conservation drift  2.220e-16           
+shock x (adaptive)  0.7480              
+shock x (WENO5)     0.7480              
+L2 vs WENO5         4.591e-03           
+max cell crossings  2                   
+
+==============================================================================
+4.5B lifting wavelet：W / W_inv / W_star
+==============================================================================
+quantity                value    
+----------------------  ---------
+Haar isometry           3.511e-16
+Haar PR                 0.000e+00
+Haar adjoint dot        1.729e-17
+Haar noise gain         1.0000   
+CDF53 isometry          6.312e-01
+CDF53 PR                2.171e-16
+CDF53 W_inv != W_star   6.844e-01
+stationary translation  0.000e+00
+stationary inverse      8.882e-16
+
+==============================================================================
+4.5C transposeable edge / adjoint
+==============================================================================
+quantity                value    
+----------------------  ---------
+A↔Aᵀ identity           2.721e-16
+quadratic grad vs FD    1.478e-10
+adjoint ODE grad vs FD  1.770e-10
+checkpoint bytes        2424     
+
+==============================================================================
+4.5D scale-dependent poles：mode C vs mode g_m
+==============================================================================
+mode  pole spread  gm spread  noise spread  pole err  model-time err
+----  -----------  ---------  ------------  --------  --------------
+C     1024.0       1.0        1024.0        0.00e+00  0.00e+00      
+gm    1024.0       1024.0     1.0           0.00e+00  0.00e+00      
+none  -            1.0        1.0           -         1.00e+00      
+
+==============================================================================
+4.5E Gram calibration：G_T = T̃*T̃
+==============================================================================
+quantity                Haar       CDF53    
+----------------------  ---------  ---------
+isometry before         2.266e-02  6.512e-01
+isometry after          3.461e-15  3.699e-15
+PR after                3.199e-16  3.296e-16
+adjoint before          2.266e-02  6.935e-01
+adjoint after           3.449e-15  3.697e-15
+naive left isometry     0.032      -        
+left calibration after  3.416e-15  -        
+cond(G_T)               1.094      18.649   
+noise gain              1.0231     2.9499   
+
+==============================================================================
+ACCEPTANCE
+==============================================================================
+4.5A WENO 三算子
+[PASS] static shock σ: 1.0000 (threshold >0.8)
+[PASS] static smooth σ: 0.1265 (threshold <0.2)
+[PASS] adaptive conservation drift: 2.220e-16 (threshold <1e-8)
+[PASS] shock position error: 0.0000 (threshold <0.03)
+[PASS] L2 vs WENO5: 4.591e-03 (threshold <0.05)
+[PASS] max cell crossings: 2 (threshold <=3)
+[PASS] final smooth σ: 0.0855 (threshold <0.3)
+
+4.5B lifting wavelet
+[PASS] Haar isometry: 3.511e-16 (threshold <0.5%)
+[PASS] Haar PR: 0.000e+00 (threshold <0.2%)
+[PASS] Haar adjoint dot: 1.729e-17 (threshold <1e-3)
+[PASS] CDF53 PR: 2.171e-16 (threshold <0.2%)
+[PASS] CDF53 W_inv != W_star: 6.844e-01 (threshold >0.01)
+[PASS] stationary translation: 0.000e+00 (threshold <1e-12)
+[PASS] stationary inverse: 8.882e-16 (threshold <1e-12)
+
+4.5C transposeable edge / adjoint
+[PASS] A↔Aᵀ identity: 2.721e-16 (threshold <1e-12)
+[PASS] quadratic grad vs FD: 1.478e-10 (threshold <1e-6)
+[PASS] adjoint ODE grad vs FD: 1.770e-10 (threshold <1e-6)
+[PASS] checkpoint reported: 2424 (threshold >0)
+
+4.5D scale-dependent poles
+[PASS] mode C pole spread: 1024.0 (threshold 1024)
+[PASS] mode gm pole spread: 1024.0 (threshold 1024)
+[PASS] mode C pole error: 0.000e+00 (threshold <5%)
+[PASS] mode gm pole error: 0.000e+00 (threshold <5%)
+[PASS] mode C model time: 0.000e+00 (threshold <1e-12)
+[PASS] mode gm model time: 0.000e+00 (threshold <1e-12)
+[PASS] no-normalization fails: 1.000 (threshold >0.1)
+[PASS] mode C trades noise: gm 1.0, noise 1024.0 (threshold gm=1, noise=4^L)
+[PASS] mode gm trades g_m: gm 1024.0, noise 1.0 (threshold gm=4^L, noise=1)
+
+4.5E Gram calibration
+[PASS] Haar isometry before: 2.266e-02 (threshold >0.5%)
+[PASS] Haar isometry after: 3.461e-15 (threshold <0.5%)
+[PASS] Haar PR after: 3.199e-16 (threshold <0.2%)
+[PASS] Haar noise gain: 1.0231 (threshold <1.05)
+[PASS] Haar adjoint after: 3.449e-15 (threshold <0.5%)
+[PASS] naive left fails: 0.032 (threshold >0.01)
+[PASS] left calibration after: 3.416e-15 (threshold <0.5%)
+[PASS] CDF adjoint reduced: 6.935e-01 -> 3.697e-15 (threshold >10x)
+
+RESULT: 35/35 checks passed

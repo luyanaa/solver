@@ -1,0 +1,134 @@
+
+==============================================================================
+Phase 1.6 验收：route = H(s)，不是 wire length
+==============================================================================
+
+==============================================================================
+A. RC wire：distributed vs lumped
+==============================================================================
+                    quantity                value
+                           R              400.0 Ω
+                           C             400.0 fF
+                          RC             160.0 ps
+              DC group delay      80.00 ps (both)
+  t50 distributed (measured) 60.65 ps = 0.3791 RC
+  t50 distributed (0.3795RC)             60.72 ps
+       t50 lumped (ln2·RC/2)             55.45 ps
+              f3 distributed             2.42 GHz
+                   f3 lumped             1.99 GHz
+  同一个 DC 斜率（RC/2）不等于同一个波形：lumped π 的 t50 短 8.7%、
+  −3 dB 带宽低 18%；单极点模型不能同时当 delay 和 bandwidth 的模型。
+
+==============================================================================
+B. Buffered fanout：深度 × 相位 × 噪声
+==============================================================================
+  depth  latency class gain err phase err   noise verdict
+      1  79.6 ps    L2   0.225%     2.86° 10.0 µV    pass
+      4 318.3 ps    L3   0.896%    11.45° 20.0 µV    FAIL
+  g=0.999、f_p=2 GHz、σ=10 µV、budget 3°/1%：4 级在 100 MHz 已经 11.5°，
+  而 gain 只有 0.9%。限制 fanout 深度的是相位，不是增益，也不是噪声。
+  eta（τ_ideal=0 → 声明 latency）：depth4 19.9% → 0.90%
+
+==============================================================================
+C. 补延迟：all-pass vs RC
+==============================================================================
+              quantity all-pass RC (1 pole)
+            gain error 3.33e-16      15.33%
+  phase error @500 MHz   1.119°      3.858°
+                   J_H 5.60e-05    6.02e-03
+                   J_τ 68.1 ps²   769.7 ps²
+                 f_3dB      inf    0.80 GHz
+  τ=200 ps：all-pass 的幅度严格为 1，RC 在 500 MHz 已 −1.4 dB。
+  用 RC 补 delay 等于用幅度换相位；J_H 差 108×。
+
+==============================================================================
+D. Deskew：把 skew 修到零，绝对延迟不动
+==============================================================================
+               quantity                 value
+                     ω0               200 MHz
+    before / after skew 39.8 ps → 3.34e-07 ps
+           group spread  267.7 → 2.86e-02 ps²
+         common latency              59.82 ps
+    loop phase @100 MHz                 2.15°
+   1° reserve (27.8 ps)                  FAIL
+  5° reserve (138.9 ps)                  pass
+  对齐后三条 edge 都是 ~60 ps：skew=0，但闭环仍看到 2.15°。
+  所以 deskew 修的是 matched，不是 instantaneous（§2.8）。
+
+==============================================================================
+E. Feedback：绝对延迟预算
+==============================================================================
+    edge phase lag @100 MHz    τ_max verdict
+  130 ps              4.68° 138.9 ps    pass
+  150 ps              5.40° 138.9 ps    FAIL
+  两条 150 ps 的路径 skew=0；它们仍然同时违反 5° 预算。
+  feedback_critical 的 edge 不能靠 pad 解决：pad_can_fix=False。
+
+==============================================================================
+F. Crosstalk：C_m 的地板
+==============================================================================
+     C_m HF crosstalk     dB 1 V → victim
+   20 fF       0.0909 -20.83      90.9 mV
+    2 fF       0.0099 -40.09      9.90 mV
+  0.1 fF      0.00050  -66.0      0.50 mV
+  高频极限 H_12/H_11 = C_m/(C_2+C_m)=0.0909；transition 在 1.8 GHz。
+  1 mV/1 V 的预算要求 C_m < 0.11 fF；20 dB 屏蔽不够，要 40 dB 或差分。
+  500 MHz 处 2×2 η（σ_max(H−I)）= 0.289。
+
+==============================================================================
+G. 从 J 自动算 τ_tol
+==============================================================================
+       edge   |J_ij|     τ_tol  worst ω  HF limit
+  slow self 6.28e+06 138.52 ps 50.0 MHz 2777.8 ps
+  fast self 1.26e+09   0.69 ps 50.0 MHz   13.9 ps
+  osc cross 3.14e+08   2.77 ps 50.0 MHz   55.6 ps
+   fast←osc 1.26e+08   6.93 ps 50.0 MHz  138.9 ps
+  slow←fast 6.28e+07  13.85 ps 50.0 MHz  277.8 ps
+  高频极限 τ_tol = ε/|J_ij|：慢模态 2.8 ns，快模态 13.9 ps，差 200×。
+  Q=10 的 50 MHz 共振把每条 edge 的预算再压 2Q=20×；排序不变。
+  这就是 sensitivity-driven routing 的输入：不需要手写 critical path。
+
+==============================================================================
+H. 验收
+==============================================================================
+                            check                          got                  expected PASS
+       wire DC group delay = RC/2                     80.00 ps                  80.00 ps  yes
+            wire t50 by diffusion                    0.3791 RC                 0.3795 RC  yes
+         distributed t50 > lumped            60.72 vs 55.45 ps                         >  yes
+       distributed f3 > lumped f3             2.42 vs 1.99 GHz         f3_dist > f3_lump  yes
+            buffer depth1 closure                         True                      True  yes
+            buffer depth4 closure                        False                     False  yes
+                depth1 phase < 3°                       2.862°                      < 3°  yes
+                depth4 phase > 3°                      11.450°                      > 3°  yes
+                     depth4 noise                      20.0 µV                   < 50 µV  yes
+                     depth1 class                           L2                        L2  yes
+                     depth4 class                           L3                        L3  yes
+         depth4 eta declared vs 0             0.0090 vs 0.1988 declared < 5%, zero > 15%  yes
+               all-pass gain flat                     3.33e-16                   < 1e-12  yes
+         RC gain error at 500 MHz                        0.153                     > 0.1  yes
+        all-pass phase < RC phase             1.119° vs 3.858°                   ap < rc  yes
+            all-pass J_H / RC J_H                       107.5×                     > 10×  yes
+        all-pass J_tau / RC J_tau                        11.3×                      > 5×  yes
+                all-pass f3 = inf                          inf                       inf  yes
+               deskew skew before                      39.8 ps                   > 35 ps  yes
+                deskew skew after                  3.34e-07 ps                 < 0.01 ps  yes
+              deskew group spread      2.68e+02 → 2.86e-02 ps²                    > 5e3×  yes
+     deskew leaves absolute delay               2.15° @100 MHz                     2.15°  yes
+   deskewed loop fails 1° reserve                        False                     False  yes
+  deskewed loop passes 5° reserve                         True                      True  yes
+                   feedback τ_max                     138.9 ps                  138.9 ps  yes
+                  150 ps fails 5°                        False                     False  yes
+                 130 ps passes 5°                         True                      True  yes
+       matched 150 ps still fails                  skew=0.0 ps            absolute fails  yes
+      padding cannot fix feedback                        False                     False  yes
+               crosstalk HF limit                       0.0909                    0.0909  yes
+               shield improvement                     19.26 dB                   > 19 dB  yes
+             20 fF vs 1 mV budget                      90.9 mV                    > 1 mV  yes
+            0.1 fF vs 1 mV budget                      0.50 mV                    < 1 mV  yes
+            slow/fast τ_tol ratio                        200.0                       200  yes
+         resonance shrinks budget                       20.05×                  2Q = 20×  yes
+              resonant cross edge                      2.77 ps                   < 14 ps  yes
+             τ_tol ordered by |J| 0.69 < 6.93 < 13.85 < 138.52                increasing  yes
+             worst ω at resonance                     1.000 ω0                  ≈ 50 MHz  yes
+
+  38/38 checks passed

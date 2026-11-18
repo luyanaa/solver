@@ -4,7 +4,7 @@
 
 ---
 
-## 0. 先把设计钉死的三个结论
+## 0. 先把设计钉死的四个结论
 
 **(A) 刚度不可能靠缩放或换基消除。**
 时间缩放 t→at 把全部 λ 乘同一个数，相似变换 TJT⁻¹ 保持谱不变，因此
@@ -45,6 +45,15 @@
 | κ_t / 谱 | 特征值 | 频率窗 |
 
 **SNR、switch matrix、stiffness 不是三个问题，是同一个 (E,A) 的三个范数。**
+
+注：以上对**加性**扰动严格；乘性噪声 G(x)dW 的端口依赖状态，resolvent 只在加性/线性乘性时成立，边界见 §1.3。
+
+**(D) 噪声是可编程资源，但它和精度共用同一个 C。**
+SDE 的扩散系数不是免费的。注入电流噪声（单边 PSD S_I）给电容充电：
+
+    D = S_I / (2C²)        [V²/s，按 D = σ²/2 的定义]
+
+而同一个 C 又给出 §0(B) 的 σ² = αkT/C。想独立调 D，必须用专用 noise injector + 增益/滤波，但增益误差直接乘在 D 上，必须标定。白噪声近似还要求噪声带宽覆盖状态带宽：一阶系统要 B_noise ≥ 100·B_req 才能把方差误差压到 1% 以下。**“模拟解 SDE”不是把噪声接到电容上就完了：噪声源、电容、带宽、标定是一组耦合约束。**
 
 ---
 
@@ -88,9 +97,149 @@ E 奇异不是缺陷而是特性：代数约束（QSSA 后的快流形、理想�
 
 任一 > 1 即不可行，且**告诉你该拉哪根杠杆**：κ 超 → 删模态；Γ_proj‖ΔA‖ 超 → 降 Q / 校准 / 换基；‖H‖∞‖Δu‖ 超 → 衰减接口扰动或降闭环增益；E_tail 超 → 换局部表示；σ_y 超 → 加 C（但只加在 ‖H_i‖₂ 大的节点上）。
 
+注：SDE 的随机可实现性（噪声带宽、τ_c、D 范围、读出）不塞进这六轴，而是在 P6 作为独立的**随机证书**。它们不是可交易的余量，而是编译前置条件（§4.4）。
+
+**噪声轴不是单节点 SNR。** 对 ẋ=f(x)+B_n n(t) 在轨迹附近线性化：
+
+    δẋ = J(t) δx + B_n n(t),   J = ∂f/∂x
+    Ṗ = J P + P Jᵀ + B_n Q B_nᵀ
+    P_y = C P Cᵀ
+
+要优化的是 observable 的误差 `tr(WP)`（W=CᵀC 时就是 `tr(CPCᵀ)`），不是“这个 OTA 60 dB”。LTI 时解代数 Lyapunov；时变时沿轨迹积分，或用冻结时间近似并附有效性检查。这把 SNR、stiffness、non-normal 放大连到同一个 P 上：J 的慢模/非正规模决定噪声被放大多少，带宽进入 Q 和 B_n。
+
+### 1.3 SDE 的 descriptor 扩展：drift / diffusion 两套图
+
+**能。** 加性 SDE 与 §1 的 ODE 是同一套 descriptor，只是多一个常数 B_p；乘性 SDE 多一个状态依赖的扩散图。真正需要新增的是噪声合同、随机语义和随机证书。
+
+把 §1 的 descriptor 扩成
+
+    E dx = F(x,u,θ) dt + Σ_k G_k(x,u,θ) dW_k ,   y = H(x,u,θ)
+
+加性噪声是 G_k 与 x 无关的特例；线性乘性噪声是 G_k(x)=G_k x；一般乘性噪声是 G_k(x)。硬件侧仍然是
+
+    C_i dV_i/dt = I_{f,i} + I_{noise,i}
+
+所以 **SDE 不需要先离散成 Euler–Maruyama**：电容就是连续时间积分器。但“不离散”不等于“没有误差”：噪声的有限带宽、τ_c、相关矩阵和读出采样是新误差源。模拟的三条真实优势是：连续时间积分没有步长误差、N 条轨迹可以在同一阵列上并行、噪声是物理的而不是伪随机数。这条路线本身不新——可编程模拟计算机/FPAA 已经做过 ODE/PDE/SDE；本方案的区别是把噪声、刚度和表示放进同一套可计算判定（slack + 随机证书），而不是依赖手工配置。
+
+**可重构性在哪里**：硬件不随方程变，变的是配置——T3 的权值矩阵（A、B、C）、T7 的开关、T8 的 PSD/τ_c、T6 的阈值、T1/T4 的电容阵列。compiler 把五张图映射到这组配置；所以“方程很多种”是 compiler 的问题，不是 tile 的问题。
+
+compiler 的输入是五张图，而不是一个字符串公式：
+
+    STATE       x0: C0, range; x1: C1, range; ...
+    DRIFT       dx0 = add(mul(k0,x0), tanh(x1)); ...
+    DIFFUSION   g0 = mul(sigma0, noise0); g1 = mul(sigma1, x1, noise1); ...
+    NOISE       noise0: PSD, tau_c, rho_ij, mode=physical|replay
+    OBSERVATION y0 = x0; ...
+
+普通 ODE 只是 DIFFUSION 为空；Langevin 是 F=−∇V；Neural SDE 只是把 F/G 换成 MVM→NL→MVM。五张图最终都降到同一组 (E,A,B,C) 加 B_p 端口；对加性/线性化系统，§1.2 的 slack 仍然适用；乘性非线性部分由下面的分析边界和 P6 随机证书处理。
+
+**噪声合同**（缺一项就不能编译）：
+
+| 字段 | 含义 | 为什么必须写 |
+|---|---|---|
+| S_ξ(f) | 单边/双边 PSD 要注明 | 差 2×，直接错 3 dB |
+| τ_c | 相关时间 | 白噪声近似与 Itô/Stratonovich 的判据 |
+| ρ_ij | 噪声源相关矩阵 | 共享电源/地的串扰 |
+| B_noise | PSD 平坦带宽 | 一阶系统要 ≥100·B_req |
+| mode | physical / replay | 采样 vs CRN |
+| 量化/滤波 | replay 的 DAC 位数、重构滤波器 | 决定 replay 的有效 τ_c |
+| 标定 | 增益、PSD、ρ 的残差 | D 是乘法误差 |
+
+**分析边界**（写进 `analysis/`，不要过度承诺）：
+
+- **加性**（G 与 x 无关）：现有 Lyapunov 精确；有色噪声用增广状态，仍是 LTI。
+- **线性乘性** G_k(x)=G_k x：二阶矩精确，
+
+      dP/dt = A P + P Aᵀ + Σ_k G_k P G_kᵀ + Q
+
+  向量化后是 n² 的 Sylvester 方程，n≤32 可解。**均方稳定 ≠ 样本稳定**：二阶矩认证的是方差，不是几乎必然稳定性。
+- **非线性乘性**：二阶矩不闭合，只能 Monte Carlo / 统计线性化；H∞ 不能直接宣称。
+
+**PDE 的噪声多一条约束**：Q-Wiener 的协方差必须 trace-class。1D 空间白噪声通常可以；2D/3D 的空间白噪声 Σσ_k²=∞，必须给相关长度/谱。离散化时噪声幅度随 cell 体积缩放，否则网格越细噪声越强。这条进 P0.5。
+
+### 1.4 Itô / Stratonovich 是编译期合同，不是实现细节
+
+对 dx = f dt + G dW，两种解释的 drift 差一项：
+
+    f_S,i = f_I,i − ½ Σ_{j,k} G_{jk} ∂G_{ik}/∂x_j
+
+所以 compiler 必须显式记录两个字段：
+
+    interpretation ∈ {ito, stratonovich}      用户模型
+    hardware_limit ∈ {stratonovich, ito}      电路实际极限
+
+两者不同时，P0.5 加/减修正漂移。方向要写死：
+
+- 模型 Itô、硬件 Stratonovich ⇒ 硬件漂移取 f_S = f_I − ½ Σ G ∂G；
+- 模型 Stratonovich、硬件 Itô ⇒ 硬件漂移取 f_I = f_S + ½ Σ G ∂G。
+
+加性噪声（∂G/∂x=0）两项相同；乘性噪声不同。线性乘性 G_k(x)=G_k x 时修正退化为
+
+    A_S = A − ½ Σ_k G_k²
+
+**不能默认“模拟 = Stratonovich”。** Wong–Zakai 说的是 τ_c→0 的光滑噪声逼近极限；真实电路 τ_c 有限、还有 delay，偏差是 O(τ_c)，甚至会出现 Stratonovich→Itô transition。合同里写 τ_c，验收里测偏差。
+
+可证伪的标量测试：dx = μx dt + σx dW。
+
+    Itô:          E[x(t)] = x₀ e^{μt}
+    Stratonovich: E[x(t)] = x₀ e^{(μ+σ²/2)t}
+
+两条曲线在 σ²t ~ 1 时明显分开，这是 §6.11 的 GBM 验收。第一版只承诺标量/对角、两两可交换的 G；非交换 G 的 Lévy area 与多维修正留到后面。
+
+### 1.5 可划归性：高阶方程 → canonical form
+
+**先消阶数，再谈函数空间。** n 维 r 阶方程 x^(r)=F(t,x,…,x^(r−1)) 令 z=(x,x′,…,x^(r−1))，即得
+
+    ż = [z₂, z₃, …, F(t,z)]
+
+阶数只乘状态数（n·r 个积分器），不增加 primitive 类型。隐式 G(t,x,…,x^(r))=0：det ∂G/∂x^(r) ≠ 0 时由隐函数定理局部解成显式；否则是 DAE，进 descriptor 的奇异 E。**index > 1 的 DAE 必须先做 index reduction**，否则 §6.10 的 Lyapunov/H∞ 需要额外的 index-1/正则性条件，不能直接套用。
+
+**“可划归”不是“能被多项式逼近”，而是三个等级：**
+
+| 等级 | 定义 | 误差度量 | compiler 行为 |
+|---|---|---|---|
+| Level 0 精确有限 | 存在有限状态增广，右侧由 B={+,×,INT,φ_i} 构造，且在不变流形上恒等 | 0（符号/高精度验证） | 接受，生成 exact 配置 |
+| Level 1 ε-可划归 | ∃E~∈Closure(B)，Cost(E~)≤N_max，在 (K,T,Ω,O) 上 d_O<ε | QoI 误差，不是逐点状态 | 接受，附误差证书 |
+| Level 2 统计可划归 | 逐点轨迹不可比（混沌/长期），但不变测度/谱/相关函数在 ε 内 | 统计距离 | 只承诺统计量，不承诺轨迹 |
+
+Level 1 的合同写成
+
+    R = (B, K, T, Ω, O, ε, N_max, d_O)
+
+E 可划归 ⇔ ∃E~∈Closure(B)：Cost(E~)≤N_max 且 d_O(E,E~;K,T,Ω)<ε。没有 O 和 d_O 的“可划归”没有工程意义；硬件只在 K×[0,T]×Ω 上正确。
+
+**B 的 differential-algebraic 字典：**
+
+| primitive | 增广 | 关系 | 代价/注意 |
+|---|---|---|---|
+| sin/cos | 2 状态 | ṡ=c·v, ċ=−s·v, s²+c²=1 | 二次；必须维护不变流形 |
+| exp | 1 状态 | ẏ=y·ẋ | 线性×；y>0 要 limiter |
+| tanh | 1 状态 | ẏ=(1−y²)ẋ | 二次；|y|<1 要 limiter |
+| Bessel | 2 状态（+ x 的导数） | 线性 ODE，系数含 1/x；在 t 域还需 ẋ, ẍ | 有理，不是多项式；x 需远离 0 |
+| Gamma | — | Hölder：无有限阶代数微分方程 | 不可有限增广；只能原生块/有界近似 |
+
+所以“sin/cos/exp/tanh 可以消掉”是对的，但**只在不变流形上**：初值不满足 s²+c²=1 或硬件漂移出流形，得到的是另一个系统。compiler 必须选择：原生 NL 块，还是增广状态 + 投影/反馈。判据是
+
+    Cost(增广) + Cost(不变流形维护) < Cost(原生块)，且条件数可接受
+
+否则原生块更便宜。例：单摆 θ̈+γθ̇+sinθ=0 用增广是 4 状态 [θ,ω,s,c]、ω̇=−γω−s、s²+c²=1；用原生 sin 块只有 2 状态。两者都“对”，但代价不同。
+
+**canonical form（结构化，不是完整多项式展开）：**
+
+    F(x) = A x + B(x⊗x) + Σ_r U_r φ_r(V_r x) + R(x)
+           linear   low-rank quadratic   few special funcs   sparse residual
+
+标量二次 xᵀBx 且 B=Σ λ_r u_r u_rᵀ 时，代价从 O(n²) 降到 O(Rn)；向量值二次是 3-tensor，低秩分解要逐分量做，不能假装成一个矩阵。
+
+**误差不是 ‖F−F~‖∞。** 对 Lipschitz L 的向量场，Grönwall 给
+
+    ‖x(t)−x~(t)‖ ≲ e^{Lt}‖x₀−x~₀‖ + (ε_f/L)(e^{Lt}−1)
+
+所以 ε_f≪1 本身没有意义，真正的是 (ε_f,L,T)。LT≫1 或混沌时，改测 attractor / stationary distribution / spectrum / correlation / Lyapunov spectrum（Level 2）。这就是 §6.1 的 QoI 指标在函数层的版本。
+
 ---
 
-## 2. 五条尺度律（它们决定架构，不是审美）
+## 2. 七条尺度律（它们决定架构，不是审美）
 
 ### 2.1 精度–速度–功耗
 
@@ -104,9 +253,19 @@ E 奇异不是缺陷而是特性：代数约束（QSSA 后的快流形、理想�
 
 **结论：功耗与面积都不是瓶颈**（1000 节点 @ 10 µV @ 10 MHz ⇒ ~0.1 W、~3 mm² 电容）。真正稀缺的是 κ_hw、路由寄生和校准漂移。资源该投在**拓扑与校准**，而不是"更省电的 OTA"。
 
+**工艺包络不是一个 f_T 数。** 每种工艺给
+
+    P_tech = (V_swing, B_accurate, S_n(f), DR, g_m/I_D, f_T, f_max, R_sw, C_sw)
+
+三层频率要分开：f_signal ≪ f_block ≪ f_T, f_max。能保证模拟精度的是 f_signal，不是“晶体管还能工作”的频率。compiler 不问“f_T=10 GHz 能不能做 1 GHz solver”，而问“这个映射在所需误差下需要多少 B/SNR/P”。
+
+精度–带宽–能量没有免费项：σ²τ = αkT/g_m，σ² ∝ B，σ² = kT/C。想提高 SNR 就加 C；要保持 ω_c=g_m/C 就加 g_m；加 g_m 就加功耗。
+
 ### 2.2 加速的代价
 
 B_hw ≈ A_t·B_model，且白噪声下 σ² ∝ B ⇒ **加速 A_t 倍，噪声功率涨 A_t 倍**。又由 §2.1，σ²τ 固定 ⇒ 加速不改变 σ²τ，只改变 τ 落在窗口哪一端。真正的约束是 §0(A) 的窗口宽度。
+
+不要套通信容量 `BT log(1+SNR)`：模拟 ODE 的约束是状态协方差/observable 误差，不是比特率。
 
 ### 2.3 κ 的相似不变性（对直觉的修正）
 
@@ -114,6 +273,10 @@ B_hw ≈ A_t·B_model，且白噪声下 σ² ∝ B ⇒ **加速 A_t 倍，噪声
 
 - **"用专用 stiff 线性块实现"不降低 κ**。它降低的是"实现成本"（每模态一条便宜的一阶支路，而不是让通用积分器跨 8 个数量级），但芯片仍要能产生 τ ∈ [10 ns, 1 ms]。
 - 能改 κ 的只有两种：**删模态**（快模态被奴役且稳定 ⇒ g(x,y)=0 ⇒ 从谱里消失）、**多速率**（付同步误差，§4.3）。
+
+工程上还要把 κ_hw 换成"可用"带宽比：f_max,usable = min(GBW_OTA, 寄生极点)，f_min,usable = max(漏电流, 1/f 转角, 漂移)。数学 κ_t 与 κ_t,usable 的差就是 §9 风险 1；compiler 用后者做判定，不用前者安慰自己。
+
+另外，κ 是相似不变的，但 **Γ/瞬态不是**；§4.0 的 V=Sx 预条件可以在不改谱的前提下降低 Γ。
 
 ### 2.4 λ_k = −νk²：spectral 对模拟比对数字更重要
 
@@ -131,9 +294,61 @@ N=64：4×10³（轻松）；N=1024：10⁶（贴边）；biharmonic N=128：2.7
 
 **规则：Q ≲ 50 才允许"免校准"；更高 Q 必须 trimming/校准，或分解为一阶节。** 这就是"2% 的 switch network 在高 Q 环里造成大 pole shift"的定量版，也是 §1.2 中 Γ_proj‖ΔA‖ < 1 的工程化形式。
 
+### 2.6 随机精度–速度–功耗
+
+把 §0(B) 的精度律和 SDE 的扩散系数放在一起：
+
+    σ² = αkT/C ,   D = S_I/(2C²)   （S_I 为单边电流 PSD，D = σ²/2）
+
+同一个 C 同时决定“状态精度”和“扩散强度”。专用 noise injector 可以解耦，但：
+
+- 增益误差 ε_g 直接给 D 乘 (1+ε_g)²；**D 的标定精度就是分布精度**。
+- 本征热噪声给出底噪 D_int；有效 D = D_inj + D_int，注入必须显著高于底噪。
+- 白噪声近似要求 B_noise ≥ 100·B_req：一阶系统的方差误差是 (2/π)arctan(f_c/B)，f_c=10B 时已经低 6.4%。
+- replay DAC 的更新率 f_s 决定它只能做 f_s/2 以内的噪声；10 MHz 系统要 1 GHz DAC，功耗/面积不便宜。**物理热噪声做采样，replay 做 CRN/梯度**，不是冗余。
+
+数量级（300 K，R=1 kΩ）：
+
+| C | σ_th = √(kT/C) | D = S_I/(2C²) |
+|---|---|---|
+| 1 pF | 64 µV | 8.3 V²/s |
+| 1 fF | 2.0 mV | 8.3e6 V²/s |
+
+OU 的稳态方差是 D/λ，必须同时满足“落在状态摆幅内”和“高于 kT/C 底噪”。这两个不等式给出 D 的可用区间；超了就换 C、换 injector 或降带宽。
+
+### 2.7 表示资源律：monomial 数量与 low-rank 二次
+
+n 个状态、总 degree p 的稠密多项式有
+
+    N_mono = C(n+p, p)
+
+n=100、p=4 就是 4.6e6 项，已经超过任何 crossbar。Stone–Weierstrass 只说“能逼近”，不说“能高效实现”。所以 canonical form 必须是结构化的：
+
+- 线性项 A x：T3 MVM，O(n²) 权值（或稀疏/低秩）。
+- 标量二次 xᵀBx，B 低秩 R：Σ λ_r (u_rᵀx)²，O(Rn) 乘法器。
+- 特殊函数 φ_r(V_r x)：T2 NL，每个一块。
+- 稀疏残差 R(x)：只给真正需要的项。
+
+**状态增广不是免费的**：每个增广状态 = 1 个积分器 + 1 份噪声/失调/漂移/校准。用 §2.1 的 σ²τ 和 §6.7 的资源律给增广定价；能原生 NL 就不增广，能低秩就不稠密。
+
+**Carleman 截断是一种 closure，不是无损表示。** 对多项式系统，monomial 提升在无限维时精确；截断后可能改变稳定性，且 monomial 数按 N_mono 爆炸。它和 Fourier 投影、QSSA 一样，必须附 closure 误差，不能当作“精确线性化”。
+
+### 2.8 Analog timing closure：四条，不是一条
+
+数字 STA 只问 t_comb < T_clk；这台机器至少要问四个：
+
+| 条件 | 数学 | 违反后的物理 |
+|---|---|---|
+| 器件带宽 | f_dyn/f_device ≪ 1 | OTA 的 GBW/寄生极点进入动力学 |
+| 模拟 skew | ω_max Δτ_route ≪ 1 | wire 从 interconnect 变成 DDE；一阶等价于 E=I+A∘T（§6.14、§6.15 的 per-edge closure） |
+| 约束时序 | τ_constraint ≪ τ_state,min | Poisson/KCL 松弛跟不上，elliptic 变 parabolic |
+| 噪声 | P_hw ≺ P_error,budget | 相关噪声不能靠 ensemble 平均消掉 |
+
+第一条给出 f_signal ≪ f_block ≪ f_T,f_max（§2.1）。第二条把 A_t 与芯片几何绑死：A_t 越大，ω_max 越大，允许的 τ 越小；1° 相位预算在 100 MHz 只有 27.8 ps（§6.14）。第三条是 T10 的 timing：ε_c=τ_constraint/τ_state,min，稳态约束被硬件松弛成 C_y ẏ=−Ay+b，必须保证 ε_c 足够小。第四条不是“加 C”：correlated noise 的协方差是低秩的，不能按 1/√N 平均；global reference 上的噪声会变成全芯片相关噪声。
+
 ---
 
-## 3. 分层 fabric：8 tile + 1 supervisor
+## 3. 分层 fabric：10 tile + 1 supervisor
 
 不做"很多 op-amp + 一个巨大 crossbar"。理由不是审美，而是 §2.5：crossbar 寄生随规模线性增长，容差随 Q 放大，两者相乘不可控。
 
@@ -146,7 +361,9 @@ N=64：4×10³（轻松）；N=1024：10⁶（贴边）；biharmonic N=128：2.7
 | T5 | **Flux** | cell C + 非线性 flux + limiter | 单调性丧失、g_m 失配 | KCL 天然守恒 |
 | T6 | **Event** | 比较器 + 事件锁存 + 复位 + S&H | 抖动 ẋ·δt、亚稳态 | 迟滞防 Zeno |
 | T7 | **Route** | 局部电流网格 + 缓冲主干 + 开关阵 | Y_c(s) = G_c + sC_c | 跨 island 只走电流 |
-| T8 | **Noise** | 物理噪声源 / 可重放 PRNG+DAC | 用于 SDE 与鲁棒性测试 | Q 可控 |
+| T8 | **Noise** | 物理热噪声 / 可重放 PRNG+DAC；PSD、τ_c、ρ 可编程 | 1/f、带宽、量化、相关 | B_noise ≥ 100·B_req |
+| T9 | **Statistics** | 片上均值/协方差/直方图/似然累加 | 乘法器失配、积分泄漏 | 只读 O(p²) 统计量 |
+| T10 | **Constraint** | 稀疏代数约束 A(x)y=b(x)：Poisson/KCL/压力投影的物理松弛网 | 松弛速度、条件数、残差 | 共享的场/约束资源 |
 | S | **Supervisor** | 数字：配置、换基、校准、时序 | — | 不在模拟信号路径 |
 
 ### 3.1 两条不可违反的接口契约
@@ -164,21 +381,311 @@ N=64：4×10³（轻松）；N=1024：10⁶（贴边）；biharmonic N=128：2.7
 4. 闭环判据：‖G_loop·Δ_route‖∞ < 1，Δ_route 用**结构化界**（每个开关的 R_on、C 区间），用 μ 而非范数，否则过度保守
 5. 成本函数保留 φ / X_talk 项，但**权重由 ∂σ_y/∂p（敏感度）给出**，不是手调
 
+写成一项：
+
+    C_route = w_R R + w_C C + w_φ Δφ + w_X X_talk + w_N N_noise
+
+权重由当前 dynamical graph 的敏感度 ∂σ_y/∂p 和 Γ 给出；wire length 只是其中一项。
+
 R_on 与寄生 C 的冲突（做宽降 R_on、升 C）就体现在 G_c 与 C_c 同时进 Y_c——优化的是 ‖H_c‖∞，不是 R_on。
+
+**configuration switch 只做准静态配置；被模拟的开关必须是 computational primitive。** 不能在每次仿真开关动作时去开关 routing transmission gate——那会把 R_on、C_off、charge injection、clock feedthrough 混进模型。理想开关用有限斜率 G(V_c)；真实 MOS 用 compact-model 的有限带宽；拓扑事件用 T6。
+
+**信号分四级，fast state 只允许前两级。** local / neighbor（同一或相邻 island）走直接电流；regional 走 buffered differential/current-mode trunk；global 只放 slow control、parameter、reference、constraint result。configuration 走 digital distribution + local DAC，不做 global analog parameter voltage——否则一条 global reference 的噪声会变成全芯片相关噪声，ensemble averaging 消不掉。
+
+**buffer 不是 memory，是阻抗隔离 + 能量补充。** 连续时间机器里所有状态一直同时存在，不需要“存住再发”。buffer 把 state capacitor 看到的总负载从 C_s+ΣC_in+C_wire 降到 C_s+C_in,buf；后面的大负载由 buffer 驱动。代价是每个 buffer 加 G(s)、offset、THD、噪声；fanout tree 的深度受 N_b σ_b² 限制，不能像数字 clock tree 那样无限加。
+
+**长线优先在 source 侧做 contribution reduction，不要 broadcast state。** 传统 crossbar 把 x_j 广播给所有 sink；更好的做法是在 source 附近先算 I_ij=g_ij V_j，按 region 求和后再走线，到 destination 直接进 summing node。communication 的对象从 global state 变成 locally reduced contribution，fanout tree 自然变浅。
+
+**每条 edge 的 closure 不是“长度 < L”，而是在 0<ω<ω_dyn,max 内**
+
+    H_ij(s) = H_wire(s) · ∏_k H_buf,k(s) ≈ g_ij e^{−sτ_ij}
+
+同时满足 |g_ij−g_ij^ideal|<ε_g、|φ_ij−φ_ij^ideal|<ε_φ、S_n,route<S_n,budget。这是 §2.8 第二条的 per-edge 版本；`C_route` 的 φ 项就是从这个条件来的。
+
+`twin/route.py` 把这条写成可算的：wire 默认用分布式 1/cosh√(sRC)（不是一个极点），buffer 用 g/(1+s/ω_p)，pad 用 all-pass (1−sτ/2)/(1+sτ/2)；`route_closure` 一次返回 gain/phase/noise/feedback-absolute 四个 pass、η_route、J_H、J_τ 与 latency class。§6.15 是它的 38 项验收。
+
+每条 edge 还带一个 `transposeable` 标志：forward 用 `I_j += g·V_i`，adjoint 用 `I_i += g·V_j`，`A↔A^T` 只是重新配置 switch matrix（§5.8）。比较器、事件、reset 这类不可转置元件必须显式标出，adjoint 在段边界处切换策略，不能假装整条路径都可逆。
+
+### 3.3 T8/T9：噪声合同与反问题读出
+
+T8 不是“一个噪声源”，是一个 bank：
+
+- **物理模**：独立电阻/OTA 热噪声，PSD 由温度、R、增益决定；带宽由寄生/放大器决定，可到 GHz。
+- **replay 模**：PRNG → DAC → 重构滤波器；seed、位数、更新率、滤波器全部进配置。
+- **相关矩阵**：用 T3 的混合矩阵从 m 个独立源合成 ρ_ij；混合矩阵失配进 Δ，不假设理想。
+- **标定**：PSD、τ_c、ρ 三项都要在片上调；标定残差直接进 P6 的随机证书。
+
+T9 是反问题的关键：没有它，N 条轨迹的原始波形会把 ADC/链路打爆。
+
+- 累加：时间平均、协方差、互相关、直方图（比较器 bank）、Gaussian log-likelihood。
+- 读出：每个 ensemble 只回传 O(p²) 个数，数字端做 EnKF/SMC/优化。
+- 约束：T9 的乘法器失配与积分泄漏进 Δ；长时间积分要复位/斩波，否则 1/f 与漏电会污染统计量。
+
+噪声路由也有合同：T7 的寄生电容/电阻会改变噪声 PSD，共享电源/地会产生 ρ_ij。跨 island 的噪声走差分电流对，不走单端电压。
+
+整机层次（不是新架构，是把 §3 的 tile 按 SDE 语义重新标注）：
+
+    digital host
+      ├─ equation compiler (P0–P7)
+      ├─ placer / router
+      └─ optimizer / calibration / seed
+              │
+    ─────────────────────────────────────
+    Analog dynamical fabric
+      State T1/T4 → Drift T2/T3 → Σ → ∫ → State
+                        ↑                    │
+      Diffusion T2/T3 ← Noise T8            │
+      Constraint T10 (Poisson/KCL) ↔ State/Flux
+      Event T6 (comparator/reset) ──────────┘
+      Observation → T9 → ADC
+      Route T7（配置、寄生、相关）
+
+### 3.4 约束 fabric：Poisson / KCL / 压力投影
+
+三类 workload 共享的不是“ODE 积分器”，而是一个稀疏代数约束：
+
+    A(x) y = b(x)
+
+- **MD 的 Coulomb**：∇·(σ∇φ)=ρ；电阻/gm mesh 的节点电压就是离散 Poisson 解。
+- **NS 的压力投影**：∇²p = −ρ∇·[(u·∇)u]；同一块 mesh，源项来自 advection。
+- **SPICE 的 KCL**：Σ I=0；没有独立动态状态的节点就是 algebraic variables。
+
+硬件不是数字求解器，而是快速松弛：
+
+    C_y ẏ = −A y + b,    τ_relax ~ C_y/λ_min(A)
+
+这个式子只对 SPD/对称部分正定的 A 给出单调松弛；非对称 KCL 要用 λ_min((A+Aᵀ)/2) 或谱横坐标，且必须检查反馈稳定性——电阻 mesh 的 M-矩阵性质不能直接搬到有源 gm 网络。稳态就是约束解；残差、条件数、松弛速度进 P6。动态状态在 T1/T4，代数节点在 T10；两者通过电流/电压接口耦合。T10 是可共享资源：MD 的 field、NS 的 pressure、SPICE 的 KCL 用同一块可编程稀疏 mesh，只是源项和边界条件不同。
+
+**约束 fabric 的 timing 条件。** 真实模型要求 A y=b 是 instantaneous；硬件给的是
+
+    τ_c ẏ + A y = b
+
+必须保证
+
+    ε_c = τ_constraint / τ_state,min ≪ 1
+
+否则 MD 出现假 retardation，NS 的 pressure projection 传播不动，SPICE 的 KCL 没收敛。τ_constraint 由 λ_min((A+Aᵀ)/2) 和 C_y 决定；这是 §2.8 的第三条，也是 T10 与 T1 之间唯一的硬时序契约。
+
+| workload | 最大困难 | 主要 fabric |
+|---|---|---|
+| MD | moving particles + long-range force | 局部 particle T1/T2 + T10 Poisson |
+| NS | multiscale cascade + incompressibility | 局部守恒 T5 + 多分辨率 + T10 |
+| SPICE | DAE + extreme stiffness + events | T1/T4 + T10 KCL + T6 event |
+
+**守恒律做进拓扑，不靠匹配**：MD 的 pair force 成对产生；CFD 的 flux 从 cell A 流出等量流入 B；KCL 的节点电流自动求和。这样 conservation 不受 transistor mismatch 一阶破坏。
+
+**顶层架构的修正**：核心不是“analog integrator array”，而是 **continuous state fabric + sparse constraint fabric**；积分器只是其中一半。
+
+### 3.5 器件与电压等级：不要让一个 MOS 同时解决速度、噪声、摆幅
+
+| class | 典型器件 | 用途 | 代价 |
+|---|---|---|---|
+| A0 ±0.2–0.4 V | LV RF MOS / HBT | 高速、低噪声 g_m、MVM、buffer | 摆幅小，SNR 靠 C |
+| A1 ±1–2 V | 3.3/5 V MOS + MIM | state、积分器、regional driver | 速度中等 |
+| A2 5–20 V | HV MOS/LDMOS | 大摆幅、global driver、特殊 constraint/接口 | C_gd/C_oss/R_on 大，f_T 低 |
+
+三条规则：
+
+- **HV 器件不放在 RF node 上**：500 fF 的 C_off 在 2 GHz 是 159 Ω，已经不是“关掉的开关”。
+- **RF/fast domain** 只见 LV/MV MOS、HBT、Schottky、MIM、low-C switch；**HV domain** 只见 LDMOS、thick-oxide、大二极管；中间用 buffer/transconductor/level converter。
+- **HV 的优势是摆幅**：V_FS 从 0.5 V 到 3 V，kT/C 的 SNR 提高 15.6 dB；同 SNR 下 C 降 36 倍。劣势是面积和寄生；所以 HV 只做“大尺度”的 global/constraint/actuator，不做高密度 state。
+
+**工艺选择**：单一 RF CMOS 或单一 BCD 都不是最优；最有趣的是 RF-capable BCD/HVCMOS/SOI mixed-signal（XT011/XH035 这一类），因为它允许把速度、噪声、摆幅、隔离、global driver 分给不同器件。SOI/DTI 的价值不只是耐压，而是把 noisy high-swing domain 与 low-noise analog dynamics 隔开。HBT 的 g_m/I_C=1/V_T≈38.7 V⁻¹ 适合做 line driver/buffer，不适合存 state；MOS/MIM 存 state；CMOS digital 做配置/校准。
+
+### 3.6 校准：校准方程，不是晶体管
+
+目标不是 g_m=1.000000 mS，而是
+
+    当前硬件实现的无量纲动力学 ≈ 目标无量纲动力学
+
+误差拆成四项：**common-mode scale**（全局 g_m/C 漂移，等价于改 A_t）、**low-rank systematic**（空间梯度/温度）、**local mismatch**（Pelgrom）、**random noise**（不可校，只能表征）。前两项只需更新 scaling；第三项局部校准；第四项进 P6 的随机证书。
+
+**primitive behavioral model**：每个 INT/MUL/route/NL 保存实测 H(s)、offset、THD、噪声 PSD，而不是 nominal transistor 参数。compiler 针对“当前这颗芯片的 calibrated digital twin”编译，而不是 TT_25C.lib。
+
+**三个时间尺度**：foreground（上电扫 gain/offset/pole/NL/noise）、background（pilot + lock-in，ω_p 放在 workload 能量低的位置）、run-time residual（replica + 物理残差）。不要在运行中的计算节点上塞 pilot；用 replica tile（每 32–64 tile 一个）或 shadow block。
+
+**物理残差是免费 reference**：MD 的 ΔH、NS 的 ‖∇·u‖、SPICE 的 ΣI、KVL 的 ΣV 都是 R(x)=0。在线最小化 ‖R(x)‖²+λL_pilot 就是 self-supervised calibration。ratio accuracy 比 absolute accuracy 重要：unit-element arrays + ratiometric 设计。
+
+**噪声不能校掉**：估计 S_n(f)、Q、ρ_ij；SDE 的注入是 Q_inj=Q_target−Q_hw≥0。若 Q_hw>Q_target，只能加 C、降带宽、加 bias、改器件或换 placement。
+
+**placement 也可以适应硬件**：温度梯度下把高 SNR state 迁到噪声低的 tile，把不敏感中间量放热 tile；这比强行把硬件调回去更便宜。
+
+### 3.7 Heterogeneous substrates：state 是 generalized physical coordinate
+
+T1–T10 默认 state 是电压。这是实现选择，不是数学要求。把 §1 的 descriptor 放宽到
+
+    E_q·q̇ = F_q(q) + Σ_r C_qr·z_r ,    q ∈ { V, I, x_mech, P_fluid, c_chem, a_optical }
+
+`q` 是广义坐标，`E_q` 是该域的容量（C、m、C_f、…），`F_q` 是该域的 constitutive law（I=g(V)、−kx−cẋ、−L_R P、S·v(c)、…），`C_qr` 是跨域 transducer。三件事随之改变：
+
+1. **κ_hw 变成 per-domain**。电子窗约 1e-8–1e-3 s，MEMS 约 1e-6–1e-1 s，微流控约 1e-3–1e2 s，光子约 1e-12–1e-9 s（但没有 storage）。一个系统可以同时用多个窗，前提是跨域边界被显式 sample 或锁相；这不是"两块 analog 不同速直连"（§9 不做项），而是有合同的 multirate 边界。
+2. **transducer 是一等公民**。每次跨域都要付 gain、nonlinearity、noise、bandwidth、energy，并且它自己就是一个 §1.2 的扰动端口。
+3. **compiler 的算子集从 `{+,×,∫}` 变成 `{E_CMOS, E_MEMS, E_fluid, E_optical}`**。判据仍是 (error, energy, bandwidth, area, communication) 上的 slack 向量，只是每轴按 substrate 重算。
+
+| substrate | 最自然的 primitive | 数学形式 | 不擅长 |
+|---|---|---|---|
+| CMOS 积分器 | 一阶 ODE / 积分 | C·V̇ = I | 高 Q、长延迟、二阶机械模态 |
+| CMOS 非线性 | 乘法 / 饱和 / 比较 | I=g(V)、tanh | 精确线性、大动态范围 |
+| MEMS resonator | 二阶 ODE / 共振 | mẍ+cẋ+kx=F | 速度、可编程性、pull-in |
+| 电阻 / gm mesh | graph Laplacian / 约束 | GV=I | 动态、非对称耦合 |
+| 微流控 | 输运 / 扩散 / 守恒 | C_f·Ṗ = −L_R P + Q | 速度（ms–min） |
+| 化学反应网络 | 多项式非线性 ODE | ċ = S·v(c) | 可控性、可观测性、寿命 |
+| 光子 | 线性变换 / 卷积 / 传输 | y=Wx、e^{−jβL} | 非线性、存储、local 短连 |
+
+同一个 PDE 可以按算子拆成四路：
+
+    ∂_t u = L[u] + N[u] + C[u] + η
+    L → RC/MEMS/photonic 物理算子；N → CMOS 非线性；
+    C → elliptic/constraint fabric；η → 标定过的物理噪声
+
+这不是把数字算法逐条翻译成电路，而是把每个算子放到本身就服从同类定律的介质上。优势来自"介质天然做的事"，不是"低精度换低功耗"。
+
+#### MEMS：二阶 ODE 是免费的
+
+    mẍ + cẋ + kx = F(t),    ω0 = √(k/m),    Q = mω0/c
+
+单模态就是一个二阶 dynamical primitive。不需要 OTA+C 去"模拟"二阶系统——机械结构自己就在解这个方程。耦合后
+
+    MẌ + CẊ + KX = Bu
+
+`M,K,C` 编码矩阵，generalized eigenproblem `Kφ=ω²Mφ` 直接是模态基准。Duffing `+αx³`、参数激励、mode coupling、bistability 都是免费的物理非线性。
+
+三条工程约束：
+
+- **高 Q 是双刃**。Q=10³–10⁵ 给窄带、低相位噪声、长衰减，也意味着 τ_settle ~ 2Q/ω0 很长，且 Q 随温度/应力/封装漂移。高-Q pole 用 gm-C 实现会被噪声和 dynamic range 限制，MEMS 反而天然适合——前提是它能被标定。
+- **接口是非线性的**。静电驱动 `F ∝ V²`，电容读出 `ΔC/C`。`V↔x` 不是理想 g_m：要么差分线性化，要么进 behavioral model 标定。
+- **可编程性差**。M/K 固定，compiler 只能选 bank 里的哪个 resonator、调耦合/增益/反馈。MEMS 是 fixed-function accelerator，不是通用 tile。
+
+**时间基准**：`ω0=√(k/m)` 可以作为片上 dynamical reference。它比测温+LUT 更直接，因为测的是同类的物理时间常数。用法是把绝对精度转成 ratio accuracy：
+
+    g_m/C = [ (g_m/C) / ω_ref ] · ω_ref
+
+括号里是两次频率计数之比，`ω_ref` 的温漂被 characterize 后进 §3.6 的 common-mode scale。它不是绝对时钟，也不消除温漂；它只是把"测温度再查表"换成"测另一个时间常数"。
+
+#### 微流控：同一类 graph Laplacian
+
+chamber + channel：
+
+    C_f·dP_i/dt = Σ_j Q_ji − Σ_j Q_ij ,    Q_ij = (P_i − P_j)/R_ij
+    ⇒  C_f·Ṗ = −L_R·P + Q
+
+与 `C·V̇ = −G·V + I` 同构：`P↔V, Q↔I, R_f↔R`。这不是类比，是同一类 graph Laplacian dynamics。扩散、输运、reaction-diffusion 天然可做。
+
+加入化学（mass action `v = k∏c^ν`）：
+
+    ċ = S·v(c)
+
+`S` 是化学计量矩阵，`v` 是非线性——直接给出乘法，也就是 GPAC primitive（§1.5）的湿件版本。
+
+但时间尺度是 ms–min，比电子慢 6–9 个数量级。所以定位不是快 solver，而是
+
+    fast electronic solver  ↔  slow physical/chemical system
+
+电子部分实时估计 `θ̂`，控制 valve/heater/electrode/pump，读 concentration/fluorescence/impedance/electrochemical signal。真实系统 `ċ=f(c,θ)`，片上模型 `ċ̂=f(ĉ,θ̂)`，误差 `e=c−ĉ` 在线更新 `θ̂`。整个芯片变成 experiment + model + parameter inference 的闭环；这比"analog 比 GPU 快多少"更独特。
+
+代价：蒸发、气泡、堵塞、表面吸附、温度/pH 漂移、生物污染。它们是慢漂移，正好进 §3.6 的 background calibration 和 §1.2 的 slack；但不能假设"流体网络 = 理想 RC"。
+
+#### 光子：只买 global dense 与 linear transform
+
+    V_i → modulator → λ_i → waveguide → photodiode → I_j
+
+`I_PD ∝ P_opt`，直接注入 `C_j·V̇_j`。这与 §3.2 的 "voltage state → current communication" 一致，而且 PD 输出天然是电流。
+
+WDM 让一条 waveguide 承载 N 个 λ：
+
+    物理线数 < 逻辑通道数
+
+ring/MZI 调 weight 给
+
+    I_j = Σ_i w_ji·P_i    ⇒    y = W x
+
+MVM 恰好是 `ẋ = Ax + N(x)` 里最贵的部分。
+
+但它不是免费午餐：laser power、shot noise（σ²∝P）、PD 噪声、modulator linearity、ring thermal drift（~0.1 nm/K 量级）、波长校准、optical loss、EO conversion overhead。对 100 µm 的 local link 光基本没有意义。规则：
+
+    local → electrical
+    regional → electrical / current-mode
+    global dense → optical / WDM
+
+与 §2.8 的 latency hierarchy 一致。光子买的是"不随 L² 增长的带宽"，不是"更快的晶体管"。
+
+#### 优先级与 benchmark 梯度
+
+研究价值排序：
+
+1. **CMOS FPAA + MEMS**：接口最自然（g_m 驱动、C 读出），MEMS 本身就是 dynamical element；先做 resonator bank + CMOS programmable coupling/readout。
+2. **CMOS FPAA + photonics**：解决 large-scale connectivity / MVM / transform；如果 state 数真的上规模，这项最终可能比 MEMS 更重要。
+3. **CMOS + microfluidics**：不做通用高速 solver，做 real physical system + analog model + inverse solver 的闭环平台。
+
+Benchmark 梯度（不要一开始上 NS DNS）：
+
+| 代 | benchmark | 验证什么 | 主 substrate |
+|---|---|---|---|
+| 1 | Poisson/Laplace、diffusion、reaction-diffusion | physical operator 本身在求解 | 电阻/gm mesh + RC + CMOS NL |
+| 2 | stiff ODE、DAE/SPICE、SDE/Langevin | multirate、constraint、noise-as-computation | CMOS + T10 + T8 |
+| 3 | MD、Navier–Stokes、wave/Maxwell | heterogeneous 组合 | CMOS + MEMS/photonic mesh |
+
+哪些问题值得换 substrate：
+
+| 问题 | 数字难点 | 物理 solver 潜力 | 最适 substrate |
+|---|---|---|---|
+| Poisson/Laplace | 大 sparse linear solve | ★★★★★ | 电阻/gm mesh |
+| diffusion/heat | 大网格、长时间积分 | ★★★★★ | RC / MEMS / fluidic mesh |
+| reaction-diffusion | 非线性 + 空间耦合 | ★★★★★ | CMOS + fluidic/chemical |
+| stiff ODE | 极端时间尺度 | ★★★★ | CMOS + multirate |
+| DAE/SPICE | 每步 Newton + 稀疏解 | ★★★★★ | CMOS constraint network |
+| wave | 二阶 PDE | ★★★★ | MEMS lattice |
+| Maxwell | 3D mesh + CFL | ★★★ | photonic structure |
+| incompressible NS | 全局压力解 | ★★★★ | CMOS + physical Poisson mesh |
+| MD long-range | N-body | ★★★★ | CMOS local + field solve |
+| SDE / optimization | 大规模 ensemble | ★★★★★ | noisy analog |
+
+**哪些不会被救**（与 §9 一致）：
+
+- state count 不减少：1024³ 仍是十亿 states；analog 不降低自由度。
+- 精度–速度守恒仍成立，只是每域用自己的噪声机制（MEMS 的 thermo-mechanical `S_x=4kT·c`，光子的 shot noise）。
+- 高-Re DNS、6D Boltzmann、quantum many-body、长期 chaotic trajectory 不在承诺内；chaos 只承诺统计量（Lyapunov spectrum / attractor statistics / correlation / spectrum），与 §1.5 Level 2 一致。
+
+**不变的是判定机器**：`κ_hw` 变 per-domain，`Γ` 按 transducer 耦合矩阵算，routing 从 RC 换成 loss/thermal/calibration 或 fluidic 公差。§1.2 的 slack 向量仍然适用，只是每轴多一个 domain 下标；§3.2/§6.15 的 per-edge closure 也仍然适用，只是 `H_ij(s)` 换成该域的传递函数。
 
 ---
 
-## 4. 编译器：7 个 pass
+## 4. 编译器：pass 结构
 
     equation
       → P0 离散化/结构化        (M,K,f) 或 (L,N) 分裂
+      → P0.5 随机语义            ito/stratonovich、修正漂移、G 可微性、Q-Wiener trace-class
       → P1 谱与正则性分析        λ, κ_t, Γ, 谱系数衰减率 p
+      → P1.5 噪声可实现性        PSD/带宽/τ_c/ρ、D 的动态范围
       → P2 表示选择              basis T / splitting / 局部表示
       → P3 尺度对齐              A_t, 频窗检查
+      → P3.5 随机尺度对齐        G 的 range scaling、D 与状态摆幅
       → P4 扰动预算              H2 per source, C 按敏感度分配
       → P5 布局与路由            config c, Y_c, Δ, small-gain
-      → P6 可行性证书            slack 向量 / 不可行原因
-      → P7 配置生成 + 校准计划
+      → P5.5 噪声路由与相关      寄生对 PSD 的影响、ρ 校准
+      → P6 可行性证书            slack + 随机证书（带宽/τ_c/D 范围/读出）
+      → P7 配置生成 + 校准计划    含噪声增益、seed、T9 统计配置
+
+### 4.0 前端：从方程到 descriptor
+
+P0 之前先做这套规范化，顺序不能反：
+
+    ODE/PDE/SDE
+      → jet / first-order reduction        z=(x,x′,…)；隐式判 det ∂G/∂x^(r)
+      → nondimensionalization              x_i=X_i x̂_i, t=T₀τ；Re/Pe 等无量纲数
+      → state augmentation                 sin/cos/exp/tanh/Bessel；记录不变流形
+      → differential-algebraic reduction    消冗余状态；找不到有限增广就拒绝
+      → spectral / spatial projection      û=P_N u；算 closure defect
+      → sparse polynomial + special-function IR
+      → state/time scaling                 V_i=S_i x_i, J_V=T₀ S J_x S⁻¹
+      → analog primitive graph
+
+对应关系：P0 做 jet/DAE 与无量纲化；P2 做增广/消元和投影；P3 做 S/T₀；P4 做 NL/MVM 预算。
+
+**scaling 是预条件，不是单位换算。** V=Sx 不改变特征值/κ，但改变 Γ、瞬态增长和硬件扰动范数；S 要同时满足 |V_i|≤V_max 和 Γ(T₀SAS⁻¹) 尽量小。逐项 O(1) 是目标，不是教条——把 J_ij 强行压到 O(1) 可能把物理刚度藏进 C_i 的失配里。
+
+**DAE 检查**：det ∂G/∂x′=0 时先做 index reduction；index>1、pencil 不正则、或解对输入导数敏感时，P6 直接拒绝，不用 Lyapunov/H∞ 硬算。
 
 ### 4.1 P2 决策树（"落地"的核心）
 
@@ -215,6 +722,19 @@ R_on 与寄生 C 的冲突（做宽降 R_on、升 C）就体现在 G_c 与 C_c �
 
 否则不严格。写进 compiler 合法性检查，不接受"差不多"。
 
+### 4.4 随机 pass 的合法性条件
+
+P0.5/P1.5/P6 不是"建议"，是拒绝编译的条件：
+
+1. G 必须在状态域上 C¹（Itô 修正需要 ∂G/∂x）；不满足就只允许加性噪声。
+2. τ_c/τ_min ≤ 0.01，否则白噪声近似不成立；要么换物理噪声源，要么把 τ_c 写进模型（增广状态）。
+3. B_noise ≥ 100·B_req；replay 模还要 f_s ≥ 2·B_noise 和足够位数。
+4. D 的可用区间：D_min（高于本征底噪）到 D_max（状态不饱和）必须包含目标 D。
+5. SPDE 的 Q 必须 trace-class；2D/3D 空间白噪声直接拒绝，要求相关长度。
+6. 读出：N·p·2B_req 超过 T9/ADC 预算时，必须降 N、降带宽或加片上统计。
+
+任一条不满足，P6 写"不可行"，不允许"差不多"。
+
 ---
 
 ## 5. 表示层：basis 是一等公民，且是双向杠杆
@@ -232,6 +752,8 @@ R_on 与寄生 C 的冲突（做宽降 R_on、升 C）就体现在 G_c 与 C_c �
                      硬件量              条件数税
 
 **这是"开关矩阵对频域影响"的表示层版本**：Γ 是同一个量，只是扰动从"寄生"换成了"换基矩阵的有限精度"。
+
+在 ISA 里它就是一个显式原语 `BASIS_TRANSFORM(T, T⁻¹)`，硬件是 T3/T7 的 MVM。稠密 T 是 O(n²) 权值/时间；Fourier/DCT/wavelet 用结构化因子（O(n log n) 或稀疏），不要假装 O(n²) 的 T 是免费的。
 
 ### 5.2 pseudo-spectral 回路
 
@@ -263,6 +785,215 @@ limiter 用饱和跨导（tanh 型光滑 minmod）实现简单，但**丧失严�
 
 比较器噪声+延迟 ~ns ⇒ 对 |ẋ| ~ 10⁶ 的状态，相对精度 10⁻³ 是极限。这个数直接决定哪些 hybrid 系统能上、哪些不能。
 
+**三类跳变要分开**：理想模型跳变（R_OFF/R_ON = 10¹²/1）→ 有限斜率 G(V_c) = G_off + (G_on−G_off)·S((V_c−V_T)/ΔV)；真实 MOS 开关 → 用 compact-model 的有限带宽，不真的去开关 routing transmission gate；拓扑事件（ideal diode/comparator/reset）→ T6 的 comparator/event/reset。不要用无限快的理想开关逼连续网络产生无限斜率。
+
+### 5.6 多项式基与特殊函数：硬件 ISA 的选择
+
+**不要用 monomial 1,x,x²,… 做硬件多项式基。** |x|>1 时 x²⁰ 爆动态范围；|x|≤1 时 monomial 的 Vandermonde 条件数仍然很差。用 Chebyshev：
+
+    T_{n+1}(x) = 2x·T_n(x) − T_{n−1}(x),    |T_n(x)| ≤ 1 on [−1,1]
+
+代价是 2 个状态 + 1 个乘法器 + 1 个减法器；系数 c_n 用 T3 加权求和。Legendre 同理。这正好落在 T1/T2/T3 上。
+
+**基的选择表：**
+
+| PDE/解类型 | 基 | 硬件映射 |
+|---|---|---|
+| periodic smooth | Fourier | T3/T4 对角增益 |
+| finite interval smooth | Chebyshev/Legendre | T1 递推 + T2/T3 |
+| irregular geometry | FEM | T5/T2 局部 |
+| localized structures | wavelet | T5/T7 多分辨率 |
+| shocks/discontinuity | FV/DG | T5 flux |
+| radial/spherical | Bessel/spherical harmonics | T3 权值 + T1 |
+
+**PDE 的 closure defect 要进合同：**
+
+    r_closure = (I−P_N) F(u_N),    η_closure = ‖r_closure‖ / ‖F(u_N)‖
+
+分母用 ‖F(u_N)‖ 或一个固定的参考尺度，避免 ‖F‖→0 时零除。Fourier 的二次非线性会产生 |k|≤2N 的卷积；2/3 规则只消 aliasing，不消 closure。η_closure 超 ε 时，P6 必须降 N、换基或标为不可行。这是 §5.2 “spectral ↔ physical 往返”的定量版，也是 §6.1 的 W_d 在表示层的对应物。
+
+**原生 NL vs 状态增广**：§1.5 的字典给的是“可消”，不是“应该消”。增广状态要付积分器噪声、失调、漂移和不变流形维护；只有当增广 + 维护比原生块更便宜、条件数更好时才用它。
+
+### 5.7 WENO 不是 stencil，是三个算子
+
+经典 WENO 对 `u_t+f(u)_x=0` 构造候选重构
+
+    f̂_{i+1/2} = Σ_k ω_k f̂^{(k)}_{i+1/2},   ω_k = α_k/Σ_j α_j,   α_k = d_k/(ε+β_k)^p
+
+`β_k` 是 local smoothness indicator。所以它实际做的是
+
+    u → {β_k} → local representation selection → f̂
+
+这不是一个固定 stencil，而是 `z=T(u)u`：`T` 依赖当前状态。光滑区 `T→T_high-order`，间断面 `T→one-sided/local`。等价地，它定义一个状态依赖的有效相互作用长度
+
+    ℓ_eff = ℓ_eff(x,t,u,∇u,…),   smooth: ↑,   shock: ↓
+
+对硬件，重要的不是复现 WENO5 的算术，而是把这层拆成三个可独立实现的算子：
+
+    S:   u → σ(x)          singularity / smoothness detector
+    T_σ: u → z             state-dependent representation / scale transform
+    F_σ: z → F_{i+1/2}     conservative flux operator
+
+    ∂_t u = −∇·F_{S(u)}[ T_{S(u)} u ]
+
+**σ 是连续量，不是 if/else。** 数字算法的硬切换在模拟域会引入新的 discontinuous dynamics；用
+
+    σ(β) = 1/(1+exp(−k(β−β_0))),   F = (1−σ)F_smooth + σF_shock
+
+保持连续。`σ` 是 representation coordinate，不是 mode flag；`β_0`、`k`、迟滞窗口都是配置，不是物理常数。
+
+**分工：analog 算候选通量，digital 算/选权重。** 三路候选 `F_0,F_1,F_2` 在 analog 并行存在；数字块根据采样到的 `β_k` 算 `w_k`（或只做 `β` 区间选择）；analog 用加权电流求和 `I_F=Σ w_k I_k`。这就是 §3.2 的 "analog data plane + digital control plane" 用在一个具体算子上。但 `w_k` 的更新率必须受限于 supervisor 的判决延迟，否则 `σ` 在阈值附近抖动，重新引入 §6.2 的开关注入噪声；`σ` 需要和 §6.6 一样带迟滞和速率限制。
+
+**最便宜的 sensor 不是 WENO 权重，是归一化二阶差分：**
+
+    S_i = |u_{i+1} − 2u_i + u_{i−1}| / (|u_{i+1}−u_i| + |u_i−u_{i−1}| + ε)
+
+difference → abs → normalize → threshold，输出 `s_i∈[0,1]`。它只需要 T2 的差分/绝对值/归一化，不需要除法器阵列。WENO 的 `β_k` 只在需要更精确的权重时才算；sensor 决定“要不要算”。
+
+`ε` 必须是**相对场幅的 floor**（~1% range），不能是 1e-12 的绝对数：光滑极值处一阶差分为零，`0/0` 会让 σ 饱和成 1（§6.16 实测 sine 的 σ 从 1.0 降到 0.1265）。σ 的上升/下降速率还必须不对称：上升快（抓住激波），下降慢（hold time）。对称速率会形成 `σ↓ → 中心格式 → 振荡 → S↑ → σ↑ → MUSCL → S↓` 的 representation 反馈极限环；实测同一 cell 的穿越次数从 8 降到 2。
+
+**守恒不能因为表示切换而丢。** 无论 `F_smooth` 是谱通量还是局部 FV 通量，混合必须发生在**同一个 face flux** 上：
+
+    C_i·V̇_i = F_{i−1/2} − F_{i+1/2}
+
+相邻 cell 用同一个 `F_{i+1/2}`，内部通量 telescoping，`Σ_i C_i V̇_i = 0` 由拓扑保证（§5.4、§6.4）。禁止先混合状态再各自算通量；那会把守恒误差变成 `O(σ)`，且不可观测。
+
+**与 multiresolution 的关系**：`u=u_coarse+u_detail`，`|d^{(l)}_i|>ε_l` 的区域激活更细一级 state；WENO 的 `β_k` 与小波 detail coefficient 都在检测 local regularity。区别是 wavelet detail 是线性的、可逆的，WENO 权重是非线性的、只用于通量。所以架构上应是
+
+    multiresolution transform → regularity detector → adaptive refinement
+    WENO/FV                  → singularity-handling operator（只在 σ 高的区域）
+
+而不是“整个 domain 统一 WENO”。这也是 §3.7 的 substrate 分配在表示层的版本：`σ≈0` 用 Fourier/Chebyshev/photonic transform，`σ≈0.5` 用 local polynomial CMOS，`σ≈1` 用 conservative FV/WENO current network。
+
+### 5.8 TransformContract：forward / inverse / adjoint 是同一个 primitive
+
+§5.1 只写了 `T` 与 `T⁻¹`。PDE 的 adjoint、反问题、preconditioner 还要求第三个对象 `T^*`。三者一般不同：
+
+    biorthogonal:  T⁻¹ ≠ T^*,   orthonormal:  T⁻¹ = T^*
+
+所以硬件合同必须分开写：
+
+    forward:  z = T x
+    inverse:  x = T⁻¹ z        （perfect reconstruction）
+    adjoint:  λ_z = T^{-*} λ_x （gradient / sensitivity）
+
+把三者当同一个东西，会在 biorthogonal wavelet 或非正交 lifting 上得到错误的梯度；这类错误不会让 forward 解看起来错，只会让优化/反问题慢慢偏。
+
+**等距性要用物理 metric 说。** 裸电压的 Euclidean norm 不是能量；真正的 metric 是存储能量
+
+    ‖x‖_M² = x^* M x,   M = diag(C) 或 mass matrix
+
+所以条件不是 `T^*T=I`，而是
+
+    T^* W T = M
+
+若 transform domain 用 Euclidean metric（`W=I`），则希望 `T^*T=M`；或先 whitening `y=M^{1/2}x` 再做 unitary。§0(B) 的 `σ²=αkT/C` 已经说明 C 是物理量，这里只是把它提升成内积。
+
+**Parseval 对噪声是设计原则。** 若 `T` unitary 且噪声各向同性 `Σ_n=σ²I`，则
+
+    tr(T Σ_n T^*) = tr Σ_n
+
+不产生 `κ(T)` 式的额外放大。反过来，非 unitary 的 `T` 会把噪声按 `σ_max(T)/σ_min(T)` 重新分配；这不是“数学不优雅”，是 SNR 预算里必须出现的一项。
+
+**算子对角化：目标不是 `Λ`，是 `D+B`。** 广义特征问题
+
+    A φ_k = λ_k E φ_k,   Φ^* E Φ = I,   x = Φ z
+    ⇒  ż = Λ z + Φ^* B u
+
+对 `E=diag(C)`、`A` 为导体网络的 diffusion/RC 情形，这就是把耦合网络变成一组近乎独立的模态积分器；单模态时 `λ_k=−1/(R_kC_k)`，耦合时 `λ_k` 是 `−G C⁻¹` 的模态值。但 exact diagonalization 只在 `A,E` 构成合适 self-adjoint pair 时可用；非正规时 `κ(Φ)≫1`，硬用特征基会把模拟误差放大 `‖Φ‖‖Φ⁻¹‖`。所以 compiler 的目标放宽成
+
+    T A T⁻¹ = D + B,   D diagonal,   B sparse / small norm
+
+`B` 是允许的局部耦合，`D` 是本地增益。对非正规问题，优先 unitary Schur、orthogonal block basis、POD/SVD、wavelet sparse representation，而不是病态特征基。判据仍是 §0(C) 的 resolvent：`Γ` 比 `κ(Φ)` 更能说明实际放大。
+
+**forward 与 adjoint 共享变换。** 若 `z=Tx`，`δJ=⟨λ_x,δx⟩`，`δx=T⁻¹δz`，则
+
+    λ_z = T^{-*} λ_x
+
+unitary 时 `λ_z=Tλ_x`；forward 与 adjoint 用同一个变换，只是方向相反。若 `A_T=TAT⁻¹` 被对角化，则 `A_T^*=TA^*T⁻¹`；normal operator 的 forward/adjoint 是同一组 mode、共轭增益：
+
+    forward mode k:  gain = λ_k
+    adjoint mode k:  gain = λ_k^*
+
+self-adjoint 的 real PDE 里 `λ_k∈ℝ`，两者完全相同。这是“一块硬件同时跑 forward 与 adjoint”的数学依据，不是技巧。
+
+**时间方向要单独处理。** 空间 Fourier 在同一时刻对整个场做变换，没问题；时间 Fourier/因果滤波器的 `L2` adjoint 是 time-reversed `h^*(−t)`，需要未来数据。连续时间 adjoint 写成
+
+    −E^T λ̇ = J_F(x)^T λ + q
+    τ = T − t  ⇒  E^T dλ/dτ = J_F(x(T−τ))^T λ + q
+
+所以流程是 forward run → checkpoint → reverse replay → transpose routing/connectivity → forward-in-τ。**`TRANSPOSEABLE` 的 edge 应该在架构第一版就有**：
+
+    EDGE i j gain=g TRANSPOSEABLE=true
+    forward:  I_j += g V_i
+    adjoint:  I_i += g V_j
+
+`A ↔ A^T` 只是重新配置 switch matrix，不需要复制一套模拟硬件。这与 §5.1 的 `BASIS_TRANSFORM` 是同一类原语：一个可转置的稀疏线性算子，而不是一个固定功能的模块。
+
+### 5.9 小波：lifting、undecimated 与 scale-dependent g_m/C
+
+对 PDE solver，小波的价值不是“像 CWT 那样做时频检测”，而是同时提供三件事：局部性、可逆性、可预测的 adjoint。所以优先 DWT/lifting，而不是几十路 bandpass CWT filter bank。
+
+**lifting 的硬件形态。** 把样本分成 `x_e,x_o`：
+
+    d = x_o − P x_e
+    s = x_e + U d
+
+    [s;d] = [[I,U],[0,I]] · [[I,0],[−P,I]] · [x_e;x_o]
+
+所有连接都是 local，系数少，可用电流求和，可 hierarchical reuse。adjoint 按 `(AB)^*=B^*A^*` 反向执行 transpose：
+
+    adjoint lifting = 反向顺序 + 转置/共轭的 predict/update
+
+所以硬件只需要 switchable edge direction + programmable sign/gain，不需要两套 filter bank。这与 §5.8 的 `TRANSPOSEABLE` edge 是同一个原语。
+
+**不要真的 decimate。** 连续时间 field state 做 `↓2` 会引入 sample clock 和 aliasing；用 undecimated/stationary wavelet representation，保留所有 location，只改变 scale：
+
+    N_coeff > N
+
+代价是 redundancy，收益是 translation invariance、shock 移动时 coefficient 不跳格、adjoint 直接。第一代机器宁可多花 state，也不要引入 hidden S/H。若必须 decimate，decimation 必须进 §3.2 的 route contract，而不是当作免费的索引操作。
+
+**scale-dependent time normalization。** 对 `ψ_{j,k}(x)=2^{j/2}ψ(2^j x−k)`，
+
+    ‖∂_x^m ψ_{j,k}‖ ~ 2^{mj}
+
+Laplacian `m=2` 给 `2^{2j}`：高尺度 detail 天然是快 dynamics，也是 stiffness 的来源。若所有 state 用同一个 C，pole 阶梯就是 `4^L`。两种都可行的实现方式：
+
+    mode C:   C_j ∝ 4^{−j}, g_m 固定   → g_m 范围小，噪声 ∝ 4^{j}
+    mode g_m: g_m,j ∝ 4^{j}, C 固定    → 噪声不变，g_m 范围 4^{L}
+
+两者都不改变 `κ_t`（§0(A) 仍然成立），改变的是把 pole 跨度放在 g_m 还是 C/噪声上；`κ_t` 本身仍由 `λ_j` 决定。判据：校准后每级 pole 的 `g_m/C` 残差、相对增益误差和噪声（`σ²=αkT/C_j`）都要进 slack；不能只调 C 不管噪声，也不能只调 g_m 不管范围。
+
+**adjoint-driven analog AMR。** 小波系数本身就是 singularity sensor：smooth 区 `|c_{j,k}|` 随 j 快速下降，shock 附近在多个 j 上持续存在。再加上 adjoint 系数 `λ_{j,k}`，定义
+
+    R_{j,k} = |c_{j,k}| · |λ_{j,k}|
+
+它直接告诉硬件：这个 location、这个 scale 值不值得保持高精度。于是可以开启 finer state、提高 bias/current、给更大电容、分配低噪声 tile、reroute 到短路径。这是 §6.7 资源分配律的 adjoint 加权版本：不是按 `1–5%` 的面积猜，而是按 `R_{j,k}` 排序。
+
+**Gram matrix calibration。** 真实模拟变换 `T̃=T+ΔT`，`T̃^*T̃≠I`。不要逐个 OTA 调 gain；直接测
+
+    G_T = T̃^* T̃
+
+若 `G_T≈I+ΔG`，数字端算 `K≈G_T^{−1/2}`，**右乘** `T_cal=T̃ K`，使 `T_cal^*T_cal≈I`。左乘要用**左 Gram** `T̃T̃^*` 与 `T_cal=K T̃`；两者一般不可交换。实测用右 Gram 配左乘 `K T̃` 得到 isometry 0.032（0.2% 扰动；2% 时 0.342），右乘后 3.46e-15（§6.16）——这是硬件标定最容易犯的一个矩阵边错误。这是 hardware whitening/orthogonalization，也是 §3.6 “校准数学 contract，而不是晶体管”的直接实例。biorthogonal 情形测 `Ψ̃^*Ψ`，目标是 `I`；`G_T` 的条件数决定 `G_T^{−1/2}` 是否会放大噪声，必须一起报。
+
+**TransformContract（compiler 的输入，不是事后报告）：**
+
+    TRANSFORM wavelet_lifting_L3
+      metric            = energy_M        # M=diag(C) 或 mass matrix
+      forward           = W
+      inverse           = W_inv
+      adjoint           = W_star
+      isometry_error    < 0.5%            # ‖W*W − M‖ / ‖M‖
+      PR_error          < 0.2%            # ‖W_inv W − I‖
+      group_delay_skew  < 20 ps
+      noise_gain        < 1.03
+      transposeable     = true
+      scale_levels      = 3
+
+物理综合不要求 `W_HW=W_ideal` 逐项相同，而要求上面这些**数学合同**成立，再加上 `Δτ_g、S_n、DR`。这和我们对待 route 的方式一致：不要求每条 wire 的 R、C 等于 nominal，而要求 `H_ij(s)` 在带宽内满足 gain/phase/noise/absolute-delay。
+
+**实现优先级**：local lifting wavelet fabric + transposeable gm/current edges + scale-dependent `g_m/C` + Gram-matrix calibration。它同时满足局部互连、multiresolution、shock handling、adjoint 复用，而且不会重新引入一个巨大的 global analog crossbar（§9 不做项）。
+
 ---
 
 ## 6. 奇异区：QoI 才是指标，formal order 不是
@@ -289,6 +1020,8 @@ limiter 用饱和跨导（tanh 型光滑 minmod）实现简单，但**丧失严�
   红线：κ_num ≳ 0.1·κ_diapycnal（≈1e−6 m²/s）时，长期环流（heat/salt transport、PV、层结、斜压不稳定）不可信。
 
 ⇒ **验收指标固定为五元组 (W_d, ν_num 或 κ_num, 守恒漂移, x_s(t) 轨迹, smooth 区 L2)**，阶数不进验收。
+
+对湍流/混沌，五元组里的 x_s(t) 和 smooth 区 L2 只能作短期验证；长期契约换成 E(k)、⟨u_i u_j⟩、相关函数、涡量统计。逐点轨迹契约不合理，噪声/失配的容忍度按统计量重算；但硬件噪声 PSD 必须低于要解析的物理 fluctuation，或明确作为 subgrid stochastic model 的一部分。
 
 ### 6.2 模拟 fabric 里没有"cell 数"这个旋钮
 
@@ -508,6 +1241,152 @@ robustness_io = 22.3×1% = 0.22。其余三个算例没有失配模型，这两�
 - **鲁棒轴是两个轴**：Γ_proj‖ΔA‖（失配，离不稳定多远）与 ‖H‖∞‖Δu‖（接口，small-gain）。全 Γ 含零模态极点，只进诊断不进 slack；1% 预算只是投影验收的探针，没有失配模型时记 NaN。
 - **表示阈值 = tol_L2²**（默认 1% ⇒ 1e-4）。**Burgers 的表示轴必须用物理状态算**：精确解 p=1.44、E_tail=2.6e-4（representation=2.57）；WENO 捕捉解 p=7.28、E_tail=4.4e-5（representation=0.44）。捕捉格式用 ν_num 换掉了谱尾，所以它不能用来证明"表示轴可行"。
 
+### 6.11 SDE 正问题：三个可证伪实验
+
+| 实验 | 解析对照 | 验什么 | 通过线 |
+|---|---|---|---|
+| OU: dx=−λx dt+√(2D)dW | Var=D/λ, ACF=e^{−λt} | 加性噪声、带宽、标定 | Var ±3 dB；ACF 时间常数 ±5% |
+| GBM: dx=μx dt+σx dW | Itô E=x₀e^{μt}；Stratonovich E=x₀e^{(μ+σ²/2)t} | Itô/Stratonovich 语义 | 两条预测分开 >3σ，实测落在声明的那条 ±10% |
+| 双势阱: dx=−V′(x)dt+√(2T)dW | p∝e^{−V/T} | 采样、动态范围、长时间漂移 | 1D 直方图 KL < 0.05 |
+
+三个都先用数字孪生跑（`bench/run_sde.py`），再接 T8/T9 硬件。OU 先测"噪声源本身"，GBM 先测"乘性语义"，双势阱测"分布"。
+
+**噪声带宽的单独验收**：把 B_noise 从 100·B_req 降到 10·B_req，OU 的稳态方差应下降约 6.4%；如果测不到这个下降，说明模型或标定有错。这个实验把"噪声源带宽"从规格表变成了可证伪的数。
+
+### 6.12 反问题：数字优化器 + 模拟 ensemble + 片上统计
+
+正问题是"给定 θ 跑轨迹"；反问题是"给定 y(t) 求 θ、x₀，甚至 f/G"。不建议全模拟：
+
+    digital host                     analog fabric
+    ------------                     -------------
+    θ_k, 优化器, 先验, 校准   →      N 条轨迹 x^{(n)}(t; θ_k)
+    likelihood / 重采样        ←      T9: 均值/协方差/直方图/似然
+    checkpoint / seed 管理     ↔      replay noise
+
+三条路径都记录、都在数字孪生里实现，但适用域不同：
+
+| 路径 | 需要什么 | 适合 | 代价 |
+|---|---|---|---|
+| CRN 有限差分 | 同一 noise realization 重放 | 低维参数、黑箱 | 2p 个 ensemble；差分方差 ~ δ²Var(∂L) |
+| EnKF / SMC | 粒子统计量 | 低维参数、非线性 | N 个粒子；T9 读出 |
+| 模拟 adjoint | ∂f/∂x、∂f/∂θ、x(t) checkpoint | PDE 高维系数、ODE/加性噪声 | 反向配置 + 存储/重放 |
+
+Langevin 优化 dθ=−∇L dt+√(2T)dW 单独记录：它只在 ∇L 可在硬件内计算、且漂移是梯度流时成立；否则稳态不是 e^{−L/T}。乘性噪声的 pathwise adjoint 有额外项，且反向 SDE 可能不稳定；第一版不作为主路径。
+
+**读出预算是反问题的第一约束**：N 条轨迹 × p 个输出 × 2B_req 的原始数据率，N=100、p=10、B=10 MHz 就是 20 Gsample/s。T9 把每个 ensemble 压成 O(p²) 个统计量，数字端才接得住。没有 T9，"模拟 ensemble"只是把 ADC 换成更大的瓶颈。
+
+**可辨识性要单独检查**：单条轨迹的 Fisher 信息随 T 增长；参数维数高时 CRN 的 2p 成本会爆。P6 先算敏感度矩阵，再决定 N 和 T，不能先跑再说。
+
+**稀疏编码是同一套动力学的应用**：`min_a ½‖y−AΦa‖²+λ‖a‖₁` 的连续时间 LCA 电路就是 `transform → threshold → sparse state`，落到 T2/T3/T9 的组合，不需要新 tile。它和 Langevin 一样，是“把优化写成 ODE”的实例，不是通用 posterior 机器。
+
+### 6.13 前端可划归性：五个算例的实际分类（§1.5 的验收）
+
+    python3 -m bench.run_reduce        # 25/25 checks passed
+
+| 系统 | 增广 | states | kind | degree | monomials | dense | sparsity | 结论 |
+|---|---|---|---|---|---|---|---|---|
+| Lorenz | — | 3 | polynomial | 2 | 7 | 10 | 0.233 | 直接落 T2/T3 |
+| Duffing | sin(6t/5) → (s,c) | 4 | polynomial | 3 | 7 | 35 | 0.05 | s²+c² 漂移 9.9e-15 |
+| HH | 6×exp | 10 | rational | 6 | 65 | 8008 | 8.1e-4 | 3 个分母，需 divider |
+| Bessel J0 | J0(t) → (j,j′) | 4 | rational | 2 | 6 | 15 | 0.10 | t≥1 可增广；t=0 拒绝 |
+| Gamma | — | 1 | rejected | — | — | — | — | Hölder，无有限增广 |
+
+四条结论：
+
+1. **Lorenz/Duffing 确实落到同一 sparse polynomial IR**：两者都是 7 个 monomial，dense 上界分别是 10/35。这是 §2.7 的 `N_mono=C(n+p,p)` 的直接对照。
+2. **标准 HH 不是 polynomial。** α_m/α_n 的 1/(1−exp) 把它变成 rational；6 个 exp 增广后 10 个状态、3 个分母、65 个 numerator monomial（dense 8008）。要上硬件必须显式有 divider 原语，或者做一次有文档的 polynomial fit；不能因为“HH 很常见”就把它算进 polynomial 类。这是对 §7 Phase 1 早期措辞的修正。
+3. **exp 增广的 degree 会继承 V̇ 的复杂度。** HH 的 exp 状态方程是 ė=e·(−V̇/10)，而 V̇ 本身是 degree 5 的多项式，于是 exp 方程 degree 6。增广不是免费的：它把 V 的复杂度复制到每个 exp 状态上；但 65 个 monomial 仍远小于 dense 8008。
+4. **不变流形不是自稳定的。** Duffing 的理想 RK4 漂移 9.9e-15；把 ṡ 乘 (1+1e-3) 后漂移升到 1.0e-3。§1.5 的“只在流形上等价”在这里是可测的，不是哲学。
+
+Gamma 与 Bessel 的边界也按 §1.5 执行：Gamma 直接拒绝（native-only）；Bessel J0 增广成 1/t 的有理系统，t≥1 时与 `scipy.special.jv` 的相对误差 5e-15，t=0 时拒绝——这正是“x 远离 0”的工程含义。
+
+### 6.14 互连延迟不是 latency，是 E 的改变（analog skew 的一阶模型）
+
+若 x_j 到 i 的路径延迟为 τ_ij：
+
+    ẋ_i(t) = Σ_j A_ij x_j(t − τ_ij)
+
+对 ωτ ≪ 1：
+
+    [I + (A∘T)] ẋ = A x ,    E = I + A∘T
+
+所以 delay 的一阶效应是把 ODE 偷偷变成带 mass matrix 的 descriptor，而不是“结果晚了几 ps”。这个 E 可以直接进 §1 的 descriptor 分析器。
+
+`python3 -m bench.run_skew`（15/15）的四组数：
+
+| 算例 | 结果 |
+|---|---|
+| 均匀 2×2，τ=0.01 | 广义极点与闭式 λ/(1+τλ) 的误差 2.31e-16；一阶 −τλ² 的误差 3.14e-2；κ 3.205→3.275；Γ 1.057→1.057；cond(E)=1.022 |
+| 标量 DDE，a=−1 | τ=1e-3/1e-2/1e-1 的相对误差 5.01e-7/5.12e-5/6.45e-3；精确 τ_crit=π/2=1.571，一阶给 1.000，ratio=0.6366=2/π |
+| 扩散链 n=8，τ=5e-3 | κ 32.163→32.780；Γ 8.291→8.291；cond(E)=1.019；一阶 τ_crit=0.2578；0.9τ_crit 稳定、1.1τ_crit 不稳定 |
+| 相位预算 | 100 MHz：1°→27.78 ps；10°→277.78 ps |
+
+三条结论：
+
+1. **均匀延迟有闭式**：E=I+τA 与 A 可交换，广义极点就是 λ/(1+τλ)。所以 pole shift 的符号/量级不用仿真就能算：实稳定模态变得更稳定，复模态的阻尼会被改变。
+2. **一阶模型只在 ωτ≪1 时可信**：标量 DDE 的精确稳定边界是 |a|τ=π/2，而 E=I+τA 给 |a|τ=1，乐观 2/π≈0.637 倍。§2.8 的 ω_max Δτ_route≪1 不能省；一阶 mass matrix 不能替代相位/稳定边界检查。
+3. **相位预算直接给 A_t 设上限**：1° @100 MHz 只有 27.8 ps。芯片几何、buffer 延迟、wire RC 一旦超过这个量级，A_t 就不能再往上加；此时 wire 已经不是 interconnect，而是被求解动力学的一部分。
+
+### 6.15 Route 是 transfer function：per-edge closure 与 sensitivity-driven budget
+
+`python3 -m bench.run_route`（38/38）把 §3.2 的 per-edge 条件做成可测的：
+
+    H_ij(s) = H_wire(s) · ∏_k H_buf,k(s) · e^{−sτ_ij}
+
+七组结果：
+
+| 算例 | 结果 |
+|---|---|
+| RC wire 400 Ω / 400 fF | DC group delay 80.00 ps（distributed/lumped 相同）；distributed t50=60.65 ps=0.3791 RC（FD 实测，与 0.3795 差 0.1%）；lumped 55.45 ps；f_3dB 2.42 vs 1.99 GHz |
+| buffered fanout | g=0.999、f_p=2 GHz、σ=10 µV：1 级 79.6 ps/L2、增益 0.225%、相位 2.86°、噪声 10 µV → pass；4 级 318.3 ps/L3、增益 0.896%、相位 11.45° → fail |
+| all-pass vs RC | τ=200 ps、500 MHz：all-pass 增益误差 3.3e-16、相位 1.12°、J_H 5.6e-5、J_τ 68.1 ps²；RC 15.3%、3.86°、J_H 6.0e-3（108×）、J_τ 769.7 ps²（11.3×）；RC f_3dB 0.80 GHz |
+| deskew | 20/45/60 ps 三条 edge：skew 39.8 ps→3.3e-7 ps，group-delay spread 267.7→0.029 ps²；共同延迟 59.8 ps 在 100 MHz 仍是 2.15°，1° reserve 失败、5° 通过 |
+| feedback | ω_c=100 MHz、φ_reserve=5° → τ_max=138.9 ps；130 ps 通过、150 ps 失败；两条 150 ps 的 skew=0 但都失败 |
+| crosstalk | C_m=20 fF、C=200 fF：HF 地板 C_m/(C+C_m)=0.0909（−20.8 dB）；2 fF→−40.1 dB；1 V 摆幅下 20 fF 给 90.9 mV，1 mV 预算要求 C_m<0.11 fF |
+| sensitivity | 慢/快模态 τ_tol 比 200（=a_f/a_s）；Q=10 的 50 MHz 共振把每条预算再压 2Q=20.05×；worst ω=50.0 MHz；排序 0.69/6.93/13.85/138.5 ps |
+
+五条结论：
+
+1. **同一个 DC 斜率不是同一个模型。** distributed 与 lumped π 的 DC group delay 都是 RC/2=80 ps，但 t50 差 8.7%、f_3dB 低 18%。用单极点替代 wire 会在 delay 和 bandwidth 上同时给错方向；`twin/route.py` 默认分布式 1/cosh√(sRC)，0.3795 这个系数是可测的（FD 0.3791）。
+2. **fanout 深度的第一个约束是相位，不是噪声。** 2 GHz 极点、3° 预算、100 MHz：1 级 2.86° 刚好过，4 级 11.45° 失败，而增益只掉 0.9%、噪声只有 20 µV。§3.2 的“buffer tree 深度受 N_bσ_b² 限制”要加一条同样硬的相位限制。
+3. **deskew 修的是 matched，不是 instantaneous。** 三条 edge 对齐到 3.3e-7 ps 后，共同延迟 59.8 ps 在 100 MHz 仍是 2.15°；1° reserve（27.8 ps）失败。零 skew 不恢复原 ODE（§2.8），feedback edge 必须单独做绝对延迟检查。
+4. **crosstalk 有地板，而且不能靠 buffer 修。** HF 极限是 C_m/(C_2+C_m)=9.09%，与 R、buffer 无关；1 mV/1 V 的预算要求 C_m<0.11 fF，20 dB 屏蔽不够。它进的是相关噪声项，不是可以 ensemble 平均掉的独立噪声（§9 风险 25）。
+5. **延迟预算可以从 J 直接算出来。** τ_tol=ε_φ/(ω|J_ij|‖(jωI−J)⁻¹‖)；高频极限是 ε/|J_ij|，共振处再乘 resolvent 峰值（Q=10 时约 2Q）。所以 router 的输入是 (J, ε_φ)，不需要手写 critical path：
+
+    equation → J → S_τ,ij → τ_tol → latency class → placement/routing
+
+`route_closure` 把这四条 closure（gain / phase / noise / feedback absolute）与 η、J_H、J_τ、latency class 一起返回，正好对应 §2.8 的 analog STA。注意最后一条与前面三条不同：前三条可以靠 pad/deskew 修，feedback absolute delay 只能靠 locality 或重新分解动力系统。
+
+**与已有 FPAA P&R 的关系。** 这条 sensitivity-driven routing 不是从零开始。Baskaya–Reddy–Lim–Anderson（TVLSI 2006）已经用 switch 数 + path balance 做 clustering/placement；Baskaya–Anderson–Lim（TCAS-II 2009）进一步把每个 net 对三种 wire type 的 SPICE 性能偏差做成 3×n net-sensitivity matrix（2n+1 次仿真），并以 `α·num_sw + β·Σ(nc_j+num_col_j)` 为 SA 的 cost，报告 fc error −50%、gpass −90%、ripple −91%，且只最小化 switch 数反而会恶化性能。Hasler–Twigg（ISCAS 2007）用 OTA-based routing 提高 fabric 速度；Wang–Vrudhula（TODAES 2002）给出 behavior → function decomposition → macrocell → P&R 的流程；George 等（TVLSI 2016）把 interdigitated A/D block 与 MSP430 放在同一 routing grid 上。它们的 sensitivity 仍然是 scalar 性能指标（fc、gain、ripple、rolloff）对 wire type 的偏差；本节把它换成 edge 的 `H_ij(s)` / `τ_g` / `S_n` / Jacobian，并把 feedback absolute delay 作为不可 pad 的第四条。无法满足 instantaneous contract 时，按 Lelarasmee 等的 waveform relaxation（TCAD 1982）把系统 partition 成 multirate islands，而不是继续加 buffer。文献与阅读状态见 `ref/README.md`。
+
+### 6.16 Adaptive representation 的 35 项验收：WENO 三算子与 TransformContract
+
+`python3 -m bench.run_transform`（35/35）把 §5.7–§5.9 的三条规则变成可测的：
+
+    S: u → σ,   T_σ: u → z,   F_σ: z → F_{i+1/2}
+    forward / inverse / adjoint 分开验证；混合只在同一个 face flux 上
+
+六组结果：
+
+| 算例 | 结果 |
+|---|---|
+| WENO sensor | 理想 step σ=1.0000；光滑 sine max σ=0.1265（`rel_eps=1%`） |
+| Burgers adaptive | N=256、640 步：守恒漂移 2.22e-16；激波位置与 WENO5 都是 x=0.7480；L2=4.59e-3；每 cell 最大 σ 穿越 2 次（对称 tracker 是 8 次） |
+| lifting wavelet | Haar：isometry 3.51e-16、PR 0、adjoint dot 1.73e-17；CDF53：PR 2.17e-16、`W_inv≠W*` 0.684；stationary 平移误差 0、逆变换 8.88e-16 |
+| transposeable edge | `A↔Aᵀ` 恒等式 2.72e-16；二次型梯度 vs FD 1.48e-10；离散 adjoint ODE 梯度 vs FD 1.77e-10；checkpoint 2424 B（3 状态 × 100 步） |
+| scale poles | L=6：pole spread 1024（两种 mode 相同）；mode C：gm spread 1、noise spread 1024；mode gm：gm 1024、noise 1；两种 model-time 误差均 0；不归一化误差 1.0 |
+| Gram calibration | Haar isometry 2.27e-2→3.46e-15；CDF53 0.651→3.70e-15；PR 3.2e-16；noise gain 1.023；cond(G_T) 1.094 / 18.649；naive left 0.032，correct left 3.42e-15 |
+
+七条结论：
+
+1. **`ε` 必须是相对场幅的 floor，不是 1e-12 的绝对数。** 光滑极值处一阶差分为零，绝对 ε 会让 `0/0` 饱和成 σ=1；取 `ε=1%·range` 后，step 仍是 1.0，sine 降到 0.1265。这是硬件偏置（ADC/DAC 满量程的小分数），不是数值细节。
+2. **对称的 σ tracker 会形成 representation 反馈极限环。** 实测同一 cell 的 σ 穿越 8 次：σ 降 → 中心格式 → 振荡 → S 升 → σ 升 → MUSCL → S 降。把 attack/release 改成 400/10 后降到 2 次。所以 §5.7 的“迟滞 + 速率限制”必须写成不对称 hold time；这是 §9 开放问题“adaptive representation 闭环稳定性”的第一个实测实例。
+3. **守恒确实是拓扑。** 混合发生在 face flux 上，漂移 2.22e-16；激波位置与 WENO5 完全一致（同一网格）；L2 4.59e-3。smooth 区用 4 阶中心，shock 区用二阶 MUSCL/minmod，两者都不需要全局重构。
+4. **PR ≠ adjoint ≠ inverse。** CDF53 的 PR 是 2.17e-16，但 `W_inv−W*` 是 0.684；一个变换可以完美重构却给出错误梯度。`TransformContract` 必须同时测三者，不能把 synthesis 当 adjoint。
+5. **Gram 标定乘错边不会正交化。** 右 Gram `G_T=T̃*T̃` 必须配右乘 `T_cal=T̃ G_T^{-1/2}`；用 `K T̃` 实测 isometry 0.032（2% 扰动时 0.342），右乘后 3.46e-15。左乘要用左 Gram `T̃T̃*`。两者一般不可交换。
+6. **per-scale C/gm 是 trade-off，不是 κ 降低。** L=6 的 pole spread 在两种 mode 下都是 1024；mode C 把跨度放在噪声（1024），mode gm 放在 g_m（1024）。两种 model time 都精确；`κ_t` 不变，变的只是跨度落在哪个物理量上。
+7. **undecimated wavelet 的 adjoint 是局部的。** stationary Haar 的平移误差 0、逆变换 8.9e-16；3 级只多 4 个数组，不需要 ↓2 的隐藏 S/H。lifting 的 predict/update 与 `TRANSPOSEABLE` edge 是同一个原语。
+
 ---
 
 ## 7. 分阶段落地（每阶段都有可证伪的验收）
@@ -518,10 +1397,12 @@ robustness_io = 22.3×1% = 0.22。其余三个算例没有失配模型，这两�
 - **验收**：diffusion(N=64/1024)、biharmonic(N=128)、Burgers、Robertson 的判定与解析对照 23/23 通过（±3 dB / ±0.5 decade）
 
 ### Phase 1：单 island（4 积分器 + 1 小 MVM + 比较器）
+- **前端验收（`bench/run_reduce.py`，25/25 通过）**：Lorenz/Duffing 落到同一 sparse polynomial IR（3/4 状态、degree 2/3、各 7 个 monomial）；sin/cos 增广的 s²+c² 漂移 9.9e-15，把 ṡ 乘 (1+1e-3) 后升到 1.0e-3；**标准 HH 落到 rational IR（6 个 exp 增广 + 3 个分母），不是 polynomial**；Bessel J0 在 t≥1 可增广（相对误差 5e-15），t=0 拒绝；Gamma 拒绝。见 §6.13。
 - **验收**：实测 σ² = α kT/C 与 σ²τ = α kT/g_m 各在 ±3 dB 内；实测 Q 容差规则（Q = 10/50/200 三档，验证 pole shift ∝ Q·Δ）
 
 ### Phase 2：spectral tile（8 模态扩散）
 - **验收**：τ_k ∝ 1/k² 实现误差 < 5%；预测 κ 与实际一致；与数字参考解 L2 误差符合 σ_y 预测；实测 §6.7 的 E_smooth(N) 曲线（决定 N 该买多少）
+- **约束 fabric 验收**：电阻/gm mesh 解 2D Poisson，残差 <1e-3；实测 τ_relax ∝ 1/λ_min(A)；KCL 节点 |ΣI| <1e-6
 
 ### Phase 3：flux tile（1D Burgers 含激波）—— 按 §6.1 五元组验收
 - 守恒：Σ V_i 与 Σ V_i·V_i 漂移 < 1e-4
@@ -533,10 +1414,67 @@ robustness_io = 22.3×1% = 0.22。其余三个算例没有失配模型，这两�
 ### Phase 4：分层路由 + 换基 + 事件
 - **验收**：η_route 与 ‖G_loop·Δ‖∞ 的预测-实测误差；一次真实 basis switching（smooth↔shock）的切换瞬态与噪声代价；实测重构注入噪声是否落在 §6.2 的 45 nV/√Hz 量级
 
+### Phase 4.5：adaptive representation 与 TransformContract（§5.7–§5.9）—— 已验收 35/35
+
+`twin/transform.py` + `bench/run_transform.py`；结果见 §6.16。核心实现：`smoothness_indicator`（相对场幅的 ε floor）、`SigmaTracker`（attack/release 不对称）、`blend_face_flux`（同一 face）、`LiftingWavelet`（Haar 与 CDF53）、`gram_calibrate`（右/左 Gram）、`adjoint_ode_gradient`（离散 RK4 map 的转置）、`scale_poles`（mode C/gm）。
+
+- **4.5A WENO 三算子**：Burgers 移动激波，`S→σ→F_σ` 与 WENO5 参考对比。
+  验收：守恒量漂移 <1e-4（混合发生在 face flux 上，不是先混状态）；`σ` 在阈值附近无极限环（迟滞/速率限制生效）；shock 离开后 `σ→0` 且谱表示恢复；QoI（`W_d`/`x_s`）与 WENO5 差 <10%。
+- **4.5B TransformContract**：3 级 lifting wavelet，测 `W`、`W_inv`、`W_star`。
+  验收：`isometry_error<0.5%`、`PR_error<0.2%`（§5.9 的合同字段）；adjoint 内积测试 `⟨Wx,y⟩=⟨x,W^*y⟩` 误差 <1e-3；`noise_gain<1.03`；`W_inv` 与 `W_star` 分开验证（biorthogonal 情形不得混用）。
+- **4.5C adjoint 复用**：线性系统 forward/backward，transposeable edge 只重配置方向。
+  验收：adjoint 梯度与有限差分差 <5%；`A↔A^T` 后模拟残差与数字转置一致；时间反演需要 checkpoint 的存储量可报告。
+- **4.5D scale-dependent `g_m/C`**：扩散方程在 wavelet 基下按 scale 归一化 pole；同时验证 mode C（调 `C_j`）与 mode g_m（调 `g_m,j`）。
+  验收：校准后每级 pole 残差 <5%；相对增益误差 <1%；两种 mode 的 `g_m` 范围 / 噪声范围 trade-off 与预测一致；model time 恢复误差 <1%。
+- **4.5E Gram calibration**：注入已知扰动，测 `G_T=T̃^*T̃`，数字端 `G_T^{−1/2}`。
+  验收：校准后 `‖T_cal^*T_cal−I‖<0.5%`；`G_T` 的条件数与噪声放大一起报告；校准前后 adjoint 梯度误差下降一个量级以上。
+
 ### Phase 5：explicit singular state（shock fitting）
 - 1D nozzle 移动激波 + 跨声速翼型截面：x_s(t) 与 RH 解析解对比
 - 拓扑事件：生成 / 合并 / 消失各触发一次，验证 reset map 与事件后重初始化（这里最容易崩）
 - 同 QoI 对比 Phase 3 的 capturing：验证"M_int 小、T_int 长时，fitting 用更少状态达到同等 W_d"
+
+### Phase 6：随机动力学与反问题（SDE 扩展）
+
+- **6A 加性 SDE**：OU 的 Var/ACF、噪声带宽、T8 标定；验收见 §6.11。
+- **6B 乘性语义**：GBM 的 Itô/Stratonovich 分离；修正漂移的符号与幅度；验收 ±10%。
+- **6C 反问题**：CRN 有限差分 + EnKF/SMC + adjoint，三条都在数字孪生里同时实现；硬件验收先做低维参数恢复，验收：θ 恢复误差 <10%，且 CRN 的方差比独立噪声低 10×。
+- **6D Langevin/双势阱**：直方图 vs e^{−V/T}；KL < 0.05；T 的标定。
+- **6E 研究项**：模拟 adjoint 的乘性噪声版本、neural SDE、低维 Fokker–Planck 验证；不作为 Phase 6 的验收承诺。
+- **总则**：每个实验先数字孪生（`bench/run_sde.py`），再硬件；硬件阶段必须报告 τ_c、B_noise、D 标定残差三个数。
+
+### Phase 7：pre-silicon 与第一颗 characterization chip
+
+验证金字塔（每层只回答一个问题）：
+
+    PDK/device model
+      → transistor SPICE（primitive 的 gain/pole/noise/offset）
+      → primitive characterization database
+      → layout + PEX/EM/substrate/thermal（cluster）
+      → calibrated behavioral model（当前芯片的数字孪生）
+      → full workload（不是全芯片 transistor SPICE）
+
+五条验收：
+
+- **corner ≠ Monte Carlo**：global variation 与 local mismatch 分开跑，再跑 combined；每个 MC sample 是一个 hardware model，最后看 P(workload passes)，不是只看 3σ gain。
+- **噪声不能靠 corner**：thermal/1f/shot/supply/substrate/digital coupling 分开表征；多节点要 S_ij(f)，不只 S_ii。
+- **transient noise**：comparator/switch/SDE 的事件抖动 σ_t 比输入 PSD 更有意义；`.noise` 只覆盖线性化 PSD。
+- **calibration-in-the-loop**：SPICE 给出 g_m/C，pilot 测量，DAC 更新，再测；报告 post-calibration 分布，不是 raw。
+- **第一颗芯片是 Characterization Vehicle，不是 processor**：primitive bank + 不同长度/扇出/模式的 route + C bank + 器件 bank + replica/温度/噪声/loopback + 同一 cell 的 32 份不同位置。目标是把“PDK model → measured primitive → calibration residual → system error”闭环跑通，而不是跑 CFD。
+
+**投入顺序**：behavioral → primitive SPICE → PEX/EM/substrate/thermal → calibration loop → 小规模 test chip → 完整 VLSI。分立器件 PCB 原型只验证 compiler/time scaling/校准流程，不验证片上 mismatch、kT/C、switch 寄生和 substrate coupling。
+
+### Phase 8：heterogeneous substrates（研究阶段，按 §3.7 的优先级）
+
+不做"三种 substrate 一起上"。每次只加一个域，并且先有 `substrate.py` 的 constitutive law + transducer cost，再有数字孪生。
+
+- **8A CMOS + MEMS**：resonator bank（2–4 个模态）+ CMOS programmable coupling/readout。
+  验收：实测 `ω0` 与 `√(k/m)` 一致（±10%）；Q 与 `mω0/c` 一致；Duffing `α` 的符号与幅度可辨识；用 `ω_ref` 校准 `g_m/C` 的残差 <1%；2×2 coupled resonator 的模态频率与 `Kφ=ω²Mφ` 对比 <5%。
+- **8B CMOS + photonics**：先单波长 link 的 `S_n`/linearity/thermal drift，再 WDM 的 `y=Wx`。
+  验收：PD 电流对光功率的线性度 <1%；ring 热漂移在闭环校准后 <1 pm；4×4 MVM 误差 <5%；`η_route` 与 §6.15 的电子 route 同一量级。
+- **8C CMOS + microfluidics**：不做 solver，做 1D reaction-diffusion cell + 电子模型闭环。
+  验收：`θ` 的在线恢复误差 <10%（与 Phase 6C 同口径）；`e=c−ĉ` 收敛到测量噪声底；蒸发/温度慢漂移被 background calibration 跟踪。
+- **总则**：硬件阶段必须报告每域的 `κ_hw`、transducer 的 gain/噪声/带宽/能量四个数，以及跨域边界的 sample/锁相误差。任何一个没进 §1.2 的 slack，就不算验收。
 
 ---
 
@@ -559,6 +1497,21 @@ robustness_io = 22.3×1% = 0.22。其余三个算例没有失配模型，这两�
 | 浅水 tidal bore | bore speed、质量/动量守恒 | flux tile；κ_num 要求松 |
 | 温盐锋面 / 密度流 | κ_num、front thickness | 必须保正 + 超前换基 |
 | Rayleigh–Taylor / 界面破碎 | M_int、T_int 判据 | capturing，fitting 会崩 |
+| OU 过程 | 加性噪声 / 噪声带宽 | Var=D/λ，ACF=e^{−λt} |
+| GBM（乘性） | Itô vs Stratonovich | 两条均值曲线必须分开 |
+| 双势阱 Langevin | 采样 / 标定 | 直方图 vs e^{−V/T} |
+| 1D stochastic Burgers/heat | 噪声离散化 / trace-class | 谱与二阶矩 |
+| OU/GBM 参数辨识 | CRN + T9 读出 | θ 恢复误差 <10% |
+| MEMS resonator bank（2 模态） | 二阶 ODE / 高 Q | `ω0=√(k/m)`、`Q=mω0/c`；τ_settle~2Q/ω0 |
+| MEMS Duffing | 物理非线性 | α 可辨识；不承诺任意 α |
+| 1D fluidic diffusion | graph Laplacian 同构 | `P↔V`；τ~R_f·C_f |
+| 1D reaction–diffusion | 化学 ODE + 输运 | `ċ=S·v(c)` 提供乘法 |
+| photonic 4×4 MVM | 线性变换 | `y=Wx` 误差 <5% |
+| Burgers + adaptive σ | representation switching | 守恒漂移 <1e-4；无阈值抖动 |
+| lifting wavelet（3 级） | isometry / PR / adjoint | `isometry<0.5%`、`PR<0.2%`、内积测试 <1e-3 |
+| biorthogonal wavelet | `W_inv≠W_star` | 用 synthesis 当 adjoint 会产生可测梯度偏差 |
+| diffusion + wavelet 预条件 | scale-dependent `g_m/C` | pole 跨度降低，model time 恢复 <1% |
+| 非正规 shear + block Schur | `κ(Φ)` vs `Γ` | 禁止病态特征基；用块正交基 |
 
 ---
 
@@ -569,6 +1522,29 @@ robustness_io = 22.3×1% = 0.22。其余三个算例没有失配模型，这两�
 - 纯模拟（必须有数字 supervisor 做配置/校准/换基）
 - "能表达任意 ODE"的宣称，只做 region 判定
 - "两块 analog 各自跑不同时间再直连"
+- 不承诺任意 SDE：只做有限维、Markov、Gaussian（白或有色）噪声；跳变/重尾需要 shot-noise tile，暂不做
+- 不把 Fokker–Planck 作为硬件模式；它只在 n≤3 做验证
+- 不承诺 neural SDE 训练；它是 Phase 6E 的研究项
+- 不宣称“解任意 ODE/PDE”；只解 (K,T,Ω,O,ε) 上的投影/截断动力学（§1.5、§5.6）
+- 不用稠密 monomial 展开做高维多项式：n=100、p=4 是 4.6e6 项（§2.7）
+- 不做没有不变流形维护的状态增广：sin/cos/exp/tanh 只在各自流形上等价
+- 不承诺 Gamma 等 differentially transcendental 函数的有限增广
+- 不宣称 analog 降低 state count：高-Re DNS、6D Boltzmann、quantum many-body 不在承诺内
+- 不承诺长期 chaotic trajectory；只承诺统计量（§1.5 Level 2）
+- 不把微流控当通用高速 solver；它只做 physical-model-in-the-loop
+- 不把 MEMS 当可任意重编程的 tile；它是 fixed-function bank
+- 不做"全光模拟计算"；光子只做 communication + linear transform，不做非线性与存储
+- 不把 WENO5 的公式逐项硬件化；只实现 `S → T_σ → F_σ` 三算子
+- 不做"大型 analog FFT crossbar"；用 local lifting wavelet fabric + transposeable edges
+- 不用病态特征基做非正规算子的对角化；宁可 `D+B` 或块正交
+
+**五条物理设计原则**
+
+1. 不做 arbitrary global crossbar；local interaction + 少量 global field/constraint。
+2. 把守恒/reciprocity 做进拓扑（pair force、flux cancellation、KCL），不靠两路独立乘法器恰好匹配。
+3. fabric switch 只做准静态配置；被模拟的 switch 是 computational primitive（有限斜率/compact model/event），不是 transmission gate。
+4. 不强迫一种物理时间尺度覆盖所有问题；multirate 用 waveform relaxation/S&H，不用两块 analog 直接不同速相连。
+5. 表示切换用连续 `σ` 和同一个 face flux，不用 mode flag 硬切；新的 discontinuity 只能来自物理或事件，不能来自编译器。
 
 **风险（按杀伤力排序）**
 1. κ_hw 估计过于乐观：实际受低频 1/f 与漏电双重挤压，τ_max 可能只有 100 µs ⇒ κ_hw 降到 10⁴，直接砍掉一半 PDE
@@ -578,6 +1554,62 @@ robustness_io = 22.3×1% = 0.22。其余三个算例没有失配模型，这两�
 5. **模拟无 rewind**：换基若滞后于 Gibbs 出现，误差不可逆（过冲穿过非线性 EOS/饱和元件后信息已丢）；τ_lead 预算必须实测，不能假设
 6. tanh limiter 非 TVD：若目标应用要求严格 TVD（如某些 ocean front 诊断），此 tile 方案不成立，需换 limiter 拓扑
 7. s ≳ 10% 时架构优势消失（§6.7）：这决定机器只对"奇异区局部化"的问题有意义
+8. 噪声带宽不足：T8 的 B_noise 或 replay DAC 的 f_s 不够，OU 方差会低 6% 以上；这是系统性偏差，不是随机误差
+9. 1/f 污染：低频 1/f 会改变长时间稳态分布；需要斩波/高通或把 1/f 增广进模型
+10. 噪声相关：共享电源/地使 ρ_ij≠0；T3 混合矩阵的失配会把它变成不可控的 D 误差
+11. 读出带宽：N 条轨迹的原始波形无法全回传；没有 T9 就没有反问题
+12. 可辨识性：低维参数也需要足够 T 和 N；单轨迹的 Fisher 信息有限
+13. Itô/Stratonovich 偏差：τ_c 有限时 O(τ_c) 偏差；合同写错会让所有矩系统性偏
+14. closure defect 被低估：Fourier 的非线性把能量搬到 |k|>N；η_closure 超 ε 时解会“看起来对、统计量错”
+15. 不变流形漂移：sin/cos/exp/tanh 增广离开 s²+c²=1 或 |y|<1 后不再等价；投影/反馈会引入额外噪声
+16. DAE index：det ∂G/∂x′=0 且 index>1 时，descriptor 的广义谱/正则性假设失效；必须先 index reduction
+17. scaling 把刚度藏进失配：S 能把 J_ij 压到 O(1)，但 C_i 的失配/噪声会变大；κ 不变，Γ 可能变好也可能变坏
+18. 低秩假设不成立：B 的秩 R 接近 n 时，O(Rn) 退化回 O(n²)，T3 装不下
+19. 特殊函数的 differential-algebraic 复杂度被低估：Bessel 需要 1/x，Gamma 不可有限增广；误判在仿真后期才暴露
+20. 约束 fabric 的松弛速度/条件数：λ_min(A) 太小或 A 病态时，T10 的 τ_relax 可能比动态时间尺度还慢
+21. routing cost 权重错配：C_route 的权重若不用 dynamical sensitivity，会把 wire length 优化成错误方向
+22. current-mode 镜像失配/噪声：低阻节点求和省寄生，但镜像电流的失配和噪声会进入状态
+23. 统计契约模糊：对湍流/混沌，O 选错会把"统计正确"误判为"轨迹正确"
+24. analog skew 被当成 latency：ω_max Δτ 不满足时 wire 把 ODE 变成 DDE；一阶 E=I+A∘T 乐观 2/π，不能替代相位/稳定边界检查
+25. global correlated noise：global reference/电源/地的噪声是低秩相关的，ensemble averaging 消不掉；必须走信号分级 + 差分电流 + 局部 DAC
+26. constraint lag：τ_constraint/τ_state,min 不够小，elliptic 约束被硬件松弛成 parabolic；MD 假 retardation、NS pressure 滞后、SPICE KCL 不收敛
+27. analog buffer tree 的噪声/失真累积：数字 repeater 可再生，模拟 buffer 不能；N_b σ_b² 限制 fanout 深度。3°/100 MHz、2 GHz 极点时只允许 1 级，相位比噪声更早成为约束（§6.15）
+28. HV 器件的寄生进入 RF node：C_off/C_gd 让“关掉的开关”在高频变成负载；必须分 RF/fast 与 HV/large-swing domain
+29. 校准把噪声当 offset 校：噪声不可反相消除，只能估计 S_n/Q/ρ；Q_hw>Q_target 时只能改 C/带宽/器件/placement
+30. pre-silicon 只跑 corner：corner 不覆盖 mismatch、transient noise、substrate coupling、electrothermal；必须 calibration-in-the-loop + MC + PEX/EM
+31. matched skew 被当成 closure：deskew 把 skew 修到 0 不改变绝对 loop delay；feedback edge 必须用 τ<φ_reserve/ω_c 单独判，零 skew 仍然给 ẋ=Ax(t−τ0)（§6.15）
+32. crosstalk 地板被当成可修：HF 极限 C_m/(C_2+C_m) 与 R/buffer 无关；1 mV/1 V 要求 C_m<0.11 fF，20 dB 屏蔽不够，且它进的是相关噪声（§6.15）
+33. MEMS 的 Q/ω0 温漂与老化：`ω_ref` 本身也漂，ratio accuracy 不能替代绝对表征；`τ_settle~2Q/ω0` 会让高 Q 模态的观测窗变长
+34. MEMS 接口非线性被当成 g_m：静电驱动 `F∝V²`、电容读出 `ΔC/C`；当成线性会把 Duffing α 与驱动幅度混在一起
+35. MEMS 的 pull-in/stiction/迟滞：驱动接近 pull-in 时状态不再连续；必须留 margin 或进事件模型，不能靠"再校准"
+36. 微流控的不可逆慢漂移：蒸发、气泡、堵塞、表面吸附改变 `R_f/C_f` 且不可逆；只能 background calibration + 冗余通道，不能假设流体网络=理想 RC
+37. 光子的热漂移与标定：ring `dλ/dT`、laser 波长/功率漂移、PD 暗电流；WDM 通道间串扰是相关的，ensemble averaging 消不掉
+38. transducer 成本被低估：每次跨域都付 gain+noise+bandwidth+energy；`V↔x`、`V↔P`、`V↔a` 没有一个是免费的，它必须进 §1.2 的 slack
+39. heterogeneous slack 被压成一个数：不同域的 `κ_hw` 不能混用；跨域边界必须显式 sample/锁相，否则"整体可行"是假的
+40. `σ` 混合作用在 state 上而不是 face flux 上：守恒误差变成 `O(σ)`，且 `Σ C_i V̇_i=0` 不再由拓扑保证（§5.7、§6.4）
+41. weight/σ 更新延迟与抖动：数字权重更新率低于模拟动态时，`σ` 在阈值附近形成极限环，重新引入开关注入噪声；实测对称 tracker 在同一 cell 穿越 8 次，attack/release 400/10 降到 2 次。必须迟滞 + 不对称 hold time（§5.7、§6.16）
+42. undecimated wavelet 的冗余被当成免费：`N_coeff>N`，state 数、功耗、读出带宽都按 redundancy 增长；第一代要把它算进 `N_max`
+43. biorthogonal 的 inverse 与 adjoint 混用：`W_inv≠W_star`，用 synthesis 当 adjoint 会让 forward 解看起来正确、梯度/反问题缓慢偏（§5.8）
+44. 时间反演不可行：事件/reset/开关使轨迹不可逆，checkpoint 也可能放不下；adjoint 只能在可逆段内做，跨事件段要用段间伴随或数字回退
+45. Gram 标定本身病态：`G_T` 条件数大时 `G_T^{−1/2}` 放大测量噪声；`isometry_error` 与 `noise_gain` 必须同时报，不能只报前者
+46. per-scale `C_j`/`g_m,j` 的副作用：调 pole 的同时改 `σ²=αkT/C`、g_m 范围和相对增益；每级必须单独标定，不能用一个全局 gain 补
+47. `D+B` 的 `B` 并不自动小：非正规强耦合时 `B` 可能仍是稠密的，`‖T‖‖T⁻¹‖` 也未必降；必须有 `Γ` 的前后对比，不能只看形式
+48. wavelet detail 被当成 shock 概率：湍流/高频光滑结构也会产生大 `|d_{j,k}|`；`σ` 是 regularity coordinate，不是"有激波"的二值判决
+49. Gram 标定乘错边：`G_T=T̃*T̃` 配左乘 `K T̃` 不会正交化（0.2% 扰动实测 isometry 0.032、2% 时 0.342，对比右乘 3.46e-15）；右 Gram 必须右乘 `T̃ G_T^{-1/2}`，左乘要用 `T̃T̃*`。公式对、矩阵边错是典型失败（§5.9、§6.16）
+50. sensor 的 `ε` 取绝对小量：光滑极值处一阶差分为零，`0/0` 会把 sine 判成 shock（实测 σ=1.0）；`ε` 必须是场幅的 ~1% floor（§5.7、§6.16）
+
+**开放问题（不阻塞当前阶段）**
+- **最小 dynamical basis**：是否存在一组 B，使大量科学 ODE/PDE 经 state augmentation 后都落入低阶 polynomial system？
+- **closure selection**：给定 (K,T,Ω,O,ε)，如何自动选 Fourier/Chebyshev/FV/DG/wavelet，并给 η_closure 证书？
+- **不变流形修正**：如何在不增加噪声/不引入新失配的前提下把 s²+c²=1、|y|≤1 拉回？
+- **differential-algebraic complexity 的可计算度量**：minimal augmentation dimension + degree + invariant cost，而不是“这个函数常不常见”
+- **统一约束求解器**：把 MD electrostatics、NS pressure projection、SPICE KCL 都写成 A(x)y=b(x)，同一块 T10 要覆盖多大的条件数/规模范围？
+- **自适应多分辨率**：quadtree/octree tile 的物理重配置如何在 charge injection 与 τ_lead 约束下做到不破坏守恒？
+- **multirate DAE**：waveform relaxation 的收敛率与 S&H 误差如何进 P6 的可行性证书？
+- **异构 operator placement**：给定 (K,T,Ω,O,ε)，如何在 {CMOS, MEMS, fluidic, photonic} 上分配算子，使 slack/energy 最优？每次跨域的 transducer 成本如何进 P6，而不是事后加总？
+- **adaptive representation 的闭环稳定性**：`sensor → σ → weights → flux → state` 是一个新的反馈回路，它会不会产生原系统没有的振荡/分岔？如何用 §1.2 的 Γ 和 small-gain 判定，而不是靠调参？
+- **可转置性的边界**：哪些 primitive 天然可转置（gm/current edge、lifting predict/update），哪些不可（比较器、事件、reset）？跨事件段的 adjoint 怎么定义？
+- **Gram 标定的可观测性**：`G_T=T̃^*T̃` 的哪些元素能在片测，哪些只能靠假设？测量矩阵的秩/条件数是多少，`G_T^{−1/2}` 的噪声增益如何进随机证书？
 
 ---
 
@@ -591,7 +1623,13 @@ robustness_io = 22.3×1% = 0.22。其余三个算例没有失配模型，这两�
         ✅ resolvent.py   # Γ 与 Γ_proj（QZ 投影零模态）；pseudospectra 待补
         ✅ regularity.py  # 谱系数衰减拟合、E_tail、shock sensor
         ✅ slack.py       # 六轴 slack 向量（鲁棒拆失配/接口）+ 不可行原因
+        ✅ skew.py        # DDE → E=I+A∘T；均匀延迟闭式极点、τ_crit、相位预算
+        sde.py            # Itô/Stratonovich、线性乘性协方差、均方稳定、噪声可实现性
       lowering/
+        ✅ reduce.py      # jet/一阶化、状态增广、rational 化、canonical form
+                          # 实测：Lorenz/Duffing polynomial；HH rational；Gamma 拒绝
+        normalize.py      # 无量纲化 + V=Sx 预条件（J_V=T₀SJ_xS⁻¹）
+        closure.py        # P_N 投影、η_closure、基选择
         split.py          # F = L + N，CSP/QSSA
         basis.py          # T 的候选集 + 条件数税
         scaling.py        # A_t 公式 + 频窗检查
@@ -599,20 +1637,39 @@ robustness_io = 22.3×1% = 0.22。其余三个算例没有失配模型，这两�
         interface.py      # §6.4 单通量源+镜像；§6.5 fitting/capturing selector
       twin/
         ✅ spice/extract.py  # 真实 PDK 提取：ngspice 电流镜 → λ, g_m/I_D, r_o, ratio
-        noise.py          # 热 / 1f(Lorentzian 增广) / 抖动 / 电荷注入(含重构注入)
-        route.py          # Y_c(s) → descriptor → η_route
+        noise.py          # 热/1f/抖动/电荷注入 + PSD、replay、相关矩阵、ADC/T9 模型
+        constraint.py     # A(x)y=b(x)：Poisson/KCL 松弛网 + τ_relax/残差
+        calib.py          # primitive behavioral model、replica、pilot、物理残差、placement
         ✅ coupling.py     # spectral↔local 接口守恒：单通量源 + 电流镜像
         ✅ qoi.py          # W_d → ν_num；Osborn–Cox → κ_num；x_s(t) 对比
+        ✅ route.py        # H(s)=wire+buffer+delay；η/J_H/J_τ、S_τ,ij、latency class、route_closure
+                          # 实测：0.3795 RC 可测；fanout 4 级 11.45°；all-pass J_H 108× 优于 RC
+        substrate.py      # §3.7 constitutive law + transducer cost：MEMS m,c,k；fluidic C_f,R；
+                          # photonic loss/SNR/thermal；给出每域 κ_hw 与 S_n
+        ✅ transform.py    # §5.7–§5.9：smoothness sensor/σ（相对 ε floor + attack/release）、
+                          # lifting wavelet、W_inv/W_star、Gram 右/左标定、transposeable edge
+                          # 实测：守恒 2.2e-16；CDF53 W_inv≠W* 0.684；isometry 2.3e-2→3.5e-15
       bench/
         ✅ run_twin_experiments.py  # §6.8 五组对照（3 min）
         ✅ run_phase0.py            # Phase 0 五算例验收（~2 min）
+        ✅ run_reduce.py            # Phase 1 前端：Lorenz/Duffing/HH/Bessel/Gamma（25/25）
+        ✅ run_skew.py              # Phase 1.5 互连延迟：E=I+A∘T、τ_crit、相位预算（15/15）
+        ✅ run_route.py             # Phase 1.6 route closure：wire/buffer/all-pass/deskew/crosstalk/敏感度（38/38）
+        ✅ run_transform.py         # Phase 4.5：WENO 三算子、lifting adjoint、Gram 标定（35/35）
+        run_substrate.py            # Phase 8：MEMS 模态/Duffing、fluidic diffusion、photonic MVM
+        run_sde.py                  # OU/GBM/双势阱；CRN/EnKF/adjoint 三条反问题路径
         diffusion.py biharmonic.py burgers.py robertson.py shear.py hh.py
         airfoil.py bore.py front.py   # 20 个 benchmark 待补；当前模型在 run_phase0.py 内
       results/                    # report.txt / twin_experiments.json /
                                   # device_extract.json / phase0.json /
-                                  # phase0_report.txt / png / 提取日志
+                                  # phase0_report.txt / reduce.json /
+                                  # reduce_report.txt / skew.json /
+                                  # skew_report.txt / route.json /
+                                  # route_report.txt / png / 提取日志 /
+                                  # transform.json / transform_report.txt（Phase 4.5）/
+                                  # sde.json / sde_report.txt（Phase 6）
 
-关键 API（与实现一致）：
+关键 API（✅ 已实现；SDE 三行是 Phase 6 的目标接口）：
 
     sys  = Descriptor(E, A, B, C, D)
     ly   = solve_generalized_lyapunov(sys, Q)  # ly.P, ly.sigma_y, ly.rel_residual
@@ -622,10 +1679,44 @@ robustness_io = 22.3×1% = 0.22。其余三个算例没有失配模型，这两�
                     gamma_proj=res["Gamma_proj"], hinf=hi["value"])
                                                # sl.values, sl.violated, sl.status
 
+    red  = reduce_system(System(states, rhs))  # red.kind: polynomial/rational/rejected
+                                               # red.canonical, red.augmentations
+
+    sk   = skew_report(A, delay_mass_matrix(A, tau))
+                                               # sk["kappa_skew"], sk["tau_crit_first_order"]
+    tau1 = phase_budget(2*np.pi*100e6, 1.0)    # 27.78 ps
+
+    e    = RouteEdge((Wire(2000, 0.2, 0.2),))  # distributed 1/cosh√(sRC)
+    rc   = route_closure(e, RouteSpec(2*np.pi*1e8, feedback_critical=True,
+                                      omega_c=2*np.pi*1e8))
+                                               # rc["pass_gain/phase/noise/absolute"]
+    S, tol = edge_sensitivity(J, 2*np.pi*1e8)  # S_τ,ij；tol=ε_φ/S
+    dk   = deskew(edges, 2*np.pi*2e8)          # dk["skew_before/after"], dk["edges"]
+
+    sde  = linear_sde_covariance(A, [G0, G1], Q)  # sde.P, sde.mean_square_stable
+    fS   = ito_to_stratonovich(f, G, x)           # 修正漂移
+    nr   = noise_realizability(spec)              # B_noise/B_req, tau_c, D 范围
+
+    tf   = LiftingWavelet(64, "haar", levels=3)   # W, W_inv, W_star（CDF53 用 "cdf53"）
+    rep  = gram_calibrate(W_hw)                   # rep["isometry_after"/"pr_after"/"adjoint_after"]
+    sig  = SigmaTracker(beta0=0.15, k=16, hysteresis=0.08,
+                        max_rate=400, release_rate=10).update(S, dt)
+    Fl   = blend_face_flux(F_smooth, F_shock, sig)  # 同一 face；实测 drift 2.2e-16
+
 ---
 
 ## 一句话总结
 
-不是"模拟电路能不能表示方程"，而是：**给定 (E,A)、工艺窗口 κ_hw 和扰动端口 B_p，是否存在 θ = (T, A_t, σ, c, w) 使 ‖H‖₂ ≤ σ_req、‖GΔ‖∞ < 1、κ_t ≤ κ_hw。** 三个数，一个判定，一张 slack 向量；越界的哪一轴，决定 compiler 拉哪根杠杆。
+不是"模拟电路能不能表示方程"，而是：**给定 (E,A)、工艺窗口 κ_hw 和扰动端口 B_p，是否存在 θ = (T, A_t, σ, c, w) 使 ‖H‖₂ ≤ σ_req、‖GΔ‖∞ < 1、κ_t ≤ κ_hw。** 三个数，一个判定，一张 slack 向量；越界的哪一轴，决定 compiler 拉哪根杠杆。这就是“经过 basis T、时间缩放 A_t 和硬件映射之后，动力学条件数落在硬件可实现域内”的精确版本。
+
+T10 的代数约束也按同一逻辑判定：τ_relax ~ C_y/λ_min(A) 是约束层的条件数；A 病态时，约束解和动态解一起失效。
+
+对 SDE，再加一组**不可交易的随机证书**：噪声带宽、τ_c、D 的范围与读出。它们回答的不是"余量还剩多少"，而是"这个随机过程能不能被忠实地产生"。
+
+而“可划归”本身也是一个合同：存在 E~∈Closure(B)，Cost(E~)≤N_max，且在 (K,T,Ω,O) 上 d_O<ε——不是“多项式能逼近”，也不是“这个函数常见”。
 
 而奇异区不是"降阶"，是**把 QoI 从点值阶数换成 (W_d/ν_num、守恒漂移、x_s(t))**：95–99% 的流场保持高阶，1–5% 的自由度交给一个狭窄、严格守恒、拓扑上不可能泄漏的 flux 层。WENO 式的降阶因此从"精度损失"变成**资源局部化机制**。
+
+异构 substrate 不改变这套判定，只改变取值域：state 是 generalized coordinate `q` 而不是电压，`κ_hw` 按域给，`Γ` 按 transducer 耦合矩阵算，每次跨域的成本（gain/噪声/带宽/能量）必须进 slack。MEMS 提供二阶动力学与时间基准，微流控提供同一类 graph Laplacian，光子提供不随 L² 增长的 global dense 连接——它们各自做自己"天然会做"的算子，而不是把 CMOS 变成万能介质。
+
+WENO 也不是一个 stencil：把它拆成 `S → T_σ → F_σ`，`σ` 连续、混合发生在同一个 face flux 上，才和模拟 fabric 兼容。表示层的合同从 `T` 与 `T⁻¹` 扩成 `T、T⁻¹、T^*`：等距性用 energy metric 说，forward/adjoint 共享同一块可转置硬件，Gram 矩阵标定的是数学合同而不是晶体管。

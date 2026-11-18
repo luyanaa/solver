@@ -1,0 +1,246 @@
+{
+  "cases": {
+    "uniform": {
+      "A": [
+        [
+          -1.0,
+          0.5
+        ],
+        [
+          0.2,
+          -3.0
+        ]
+      ],
+      "tau": 0.01,
+      "ideal": [
+        [
+          -0.9511911518298484,
+          0.0
+        ],
+        [
+          -3.0488088481701516,
+          0.0
+        ]
+      ],
+      "poles_desc": [
+        [
+          -0.9603256847721505,
+          0.0
+        ],
+        [
+          -3.1446842601403238,
+          0.0
+        ]
+      ],
+      "poles_skew": [
+        [
+          -0.9603256847721507,
+          0.0
+        ],
+        [
+          -3.1446842601403238,
+          0.0
+        ]
+      ],
+      "formula_err": 2.3121802160036384e-16,
+      "leading_err": 0.03144684260140185,
+      "kappa_ideal": 3.205253583682969,
+      "kappa_skew": 3.2746018460252255,
+      "gamma_ideal": 1.0569303851841418,
+      "gamma_skew": 1.0569303851841418,
+      "E_cond": 1.0218583469818632,
+      "tau_crit": 0.3279969489068443
+    },
+    "scalar": {
+      "a": -1.0,
+      "rows": [
+        {
+          "tau": 0.001,
+          "s_desc": -1.001001001001001,
+          "s_dde": [
+            -1.001001502671886,
+            0.0
+          ],
+          "err": 5.011689627784825e-07
+        },
+        {
+          "tau": 0.01,
+          "s_desc": -1.0101010101010102,
+          "s_dde": [
+            -1.0101527198538753,
+            0.0
+          ],
+          "err": 5.119003478271099e-05
+        },
+        {
+          "tau": 0.1,
+          "s_desc": -1.1111111111111112,
+          "s_dde": [
+            -1.1183255915896297,
+            0.0
+          ],
+          "err": 0.006451144937373426
+        }
+      ],
+      "tau_crit_exact": 1.5707963267948966,
+      "tau_crit_first": 1.0,
+      "ratio": 0.6366197723675814
+    },
+    "diffusion": {
+      "n": 8,
+      "tau": 0.005,
+      "kappa_ideal": 32.1634374775263,
+      "kappa_skew": 32.77986925638797,
+      "gamma_ideal": 8.290859369381566,
+      "gamma_skew": 8.290859369381566,
+      "E_cond": 1.0191656062661925,
+      "tau_crit": 0.2577728010314411,
+      "stable_below": true,
+      "stable_above": false
+    },
+    "shear": {
+      "A": [
+        [
+          -1.0,
+          10.0
+        ],
+        [
+          0.0,
+          -2.0
+        ]
+      ],
+      "tau": 0.001,
+      "kappa_ideal": 2.0,
+      "kappa_skew": 2.0020040080160317,
+      "gamma_ideal": 5.1225455325078935,
+      "gamma_skew": 5.1225455325079094,
+      "max_rel_shift": 0.002004008016031955
+    },
+    "nonuniform": {
+      "rows": [
+        {
+          "a": -1.0,
+          "tau": 0.001,
+          "pole": -1.001001001001001,
+          "dde": -1.001001502671886,
+          "err": 5.011689627784825e-07
+        },
+        {
+          "a": -2.0,
+          "tau": 0.005,
+          "pole": -2.0202020202020203,
+          "dde": -2.0203054397077507,
+          "err": 5.119003478271099e-05
+        },
+        {
+          "a": -5.0,
+          "tau": 0.01,
+          "pole": -5.2631578947368425,
+          "dde": -5.270598355154602,
+          "err": 0.0014116917883684116
+        }
+      ]
+    },
+    "phase": {
+      "f": 100000000.0,
+      "tau_1deg": 2.777777777777778e-11,
+      "tau_10deg": 2.777777777777778e-10
+    }
+  },
+  "checks": [
+    {
+      "name": "uniform pole formula",
+      "got": "2.31e-16",
+      "expected": "< 1e-12",
+      "passed": true
+    },
+    {
+      "name": "uniform leading \u2212\u03c4\u03bb\u00b2",
+      "got": "3.14e-02",
+      "expected": "< 5e-2",
+      "passed": true
+    },
+    {
+      "name": "scalar DDE \u03c4=1e-03",
+      "got": "5.01e-07",
+      "expected": "< 1e-05",
+      "passed": true
+    },
+    {
+      "name": "scalar DDE \u03c4=1e-02",
+      "got": "5.12e-05",
+      "expected": "< 1e-03",
+      "passed": true
+    },
+    {
+      "name": "scalar DDE \u03c4=1e-01",
+      "got": "6.45e-03",
+      "expected": "< 2e-02",
+      "passed": true
+    },
+    {
+      "name": "scalar \u03c4_crit ratio",
+      "got": "0.636620",
+      "expected": "2/\u03c0 = 0.636620",
+      "passed": true
+    },
+    {
+      "name": "diffusion \u03ba grows",
+      "got": "32.163 \u2192 32.780",
+      "expected": "\u03ba_skew > \u03ba_ideal",
+      "passed": true
+    },
+    {
+      "name": "diffusion E well-conditioned",
+      "got": "1.019",
+      "expected": "< 1.5",
+      "passed": true
+    },
+    {
+      "name": "diffusion stable below \u03c4_crit",
+      "got": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "diffusion unstable above \u03c4_crit",
+      "got": false,
+      "expected": false,
+      "passed": true
+    },
+    {
+      "name": "phase budget 1\u00b0",
+      "got": "27.78 ps",
+      "expected": "27.78 ps",
+      "passed": true
+    },
+    {
+      "name": "phase budget 10\u00b0",
+      "got": "277.78 ps",
+      "expected": "277.8 ps",
+      "passed": true
+    },
+    {
+      "name": "nonuniform diagonal roots",
+      "got": "1.41e-03",
+      "expected": "< 5e-3",
+      "passed": true
+    },
+    {
+      "name": "shear \u0393 finite",
+      "got": "5.123 \u2192 5.123",
+      "expected": "finite",
+      "passed": true
+    },
+    {
+      "name": "shear pole shift",
+      "got": "2.00e-03",
+      "expected": "> 0",
+      "passed": true
+    }
+  ],
+  "summary": {
+    "n_checks": 15,
+    "n_passed": 15
+  }
+}

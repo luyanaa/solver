@@ -1,0 +1,343 @@
+{
+  "cases": {
+    "weno": {
+      "n": 256,
+      "nsteps": 640,
+      "dt": 0.00078125,
+      "cfl": 0.2,
+      "shock_sigma_static": 0.9999985465719391,
+      "smooth_sigma_static": 0.12650736176169364,
+      "shock_sigma_final": 0.9634222198920787,
+      "smooth_sigma_final": 0.08554787155934242,
+      "conservation_drift": 2.220446049250313e-16,
+      "conservation_drift_ref": 0.0,
+      "shock_x_ad": 0.748046875,
+      "shock_x_ref": 0.748046875,
+      "shock_x_error": 0.0,
+      "l2_vs_weno5": 0.004591023364228606,
+      "max_cell_crossings": 2,
+      "mean_cell_crossings": 0.20703125
+    },
+    "lifting": {
+      "n": 64,
+      "haar_isometry": 3.510833468576701e-16,
+      "haar_pr": 0.0,
+      "haar_dot": 1.7285541145942888e-17,
+      "haar_noise_gain": 1.0000000000000009,
+      "haar_condition": 1.0000000000000009,
+      "cdf_isometry": 0.6312389753893499,
+      "cdf_pr": 2.1711407411334088e-16,
+      "cdf_adjoint_error": 0.6843955447734049,
+      "cdf_condition": 4.000000000000002,
+      "stationary_translation_error": 0.0,
+      "stationary_inverse_error": 8.881784197001252e-16,
+      "stationary_redundancy": 4
+    },
+    "adjoint": {
+      "n": 8,
+      "n_edges": 24,
+      "transpose_identity_error": 2.7212442928693957e-16,
+      "quadratic_grad_fd_error": 1.4779786842546e-10,
+      "adjoint_ode_fd_error": 1.7704010896157663e-10,
+      "checkpoint_bytes": 2424,
+      "checkpoint_states": 303
+    },
+    "scale": {
+      "levels": 6,
+      "C_pole_spread": 1024.0,
+      "gm_pole_spread": 1024.0,
+      "C_pole_error": 0.0,
+      "gm_pole_error": 0.0,
+      "C_model_time_error": 0.0,
+      "gm_model_time_error": 0.0,
+      "none_model_time_error": 1.0,
+      "C_gm_spread": 1.0,
+      "C_noise_spread": 1024.0,
+      "gm_gm_spread": 1024.0,
+      "gm_noise_spread": 1.0,
+      "C_omega": [
+        1.0,
+        4.0,
+        16.0,
+        64.0,
+        256.0,
+        1024.0
+      ],
+      "gm_omega": [
+        1.0,
+        4.0,
+        16.0,
+        64.0,
+        256.0,
+        1024.0
+      ]
+    },
+    "gram": {
+      "haar_isometry_before": 0.02265702803946109,
+      "haar_isometry_after": 3.460831209866647e-15,
+      "haar_pr_after": 3.198534293342009e-16,
+      "haar_noise_gain": 1.023112766652848,
+      "haar_cond": 1.093560929230544,
+      "haar_adjoint_before": 0.02265885110444191,
+      "haar_adjoint_after": 3.4493954391546508e-15,
+      "naive_left_isometry": 0.032032012507597026,
+      "haar_left_isometry_after": 3.416206516777404e-15,
+      "cdf_isometry_before": 0.6511551362465882,
+      "cdf_isometry_after": 3.699390494571444e-15,
+      "cdf_pr_after": 3.29584825800458e-16,
+      "cdf_noise_gain": 2.9498781984727827,
+      "cdf_cond": 18.648954793618756,
+      "cdf_adjoint_before": 0.6935048577724705,
+      "cdf_adjoint_after": 3.696553050858616e-15
+    }
+  },
+  "checks": [
+    {
+      "name": "static shock \u03c3",
+      "ok": true,
+      "value": "1.0000",
+      "threshold": ">0.8",
+      "case": "weno"
+    },
+    {
+      "name": "static smooth \u03c3",
+      "ok": true,
+      "value": "0.1265",
+      "threshold": "<0.2",
+      "case": "weno"
+    },
+    {
+      "name": "adaptive conservation drift",
+      "ok": true,
+      "value": "2.220e-16",
+      "threshold": "<1e-8",
+      "case": "weno"
+    },
+    {
+      "name": "shock position error",
+      "ok": true,
+      "value": "0.0000",
+      "threshold": "<0.03",
+      "case": "weno"
+    },
+    {
+      "name": "L2 vs WENO5",
+      "ok": true,
+      "value": "4.591e-03",
+      "threshold": "<0.05",
+      "case": "weno"
+    },
+    {
+      "name": "max cell crossings",
+      "ok": true,
+      "value": 2,
+      "threshold": "<=3",
+      "case": "weno"
+    },
+    {
+      "name": "final smooth \u03c3",
+      "ok": true,
+      "value": "0.0855",
+      "threshold": "<0.3",
+      "case": "weno"
+    },
+    {
+      "name": "Haar isometry",
+      "ok": true,
+      "value": "3.511e-16",
+      "threshold": "<0.5%",
+      "case": "lifting"
+    },
+    {
+      "name": "Haar PR",
+      "ok": true,
+      "value": "0.000e+00",
+      "threshold": "<0.2%",
+      "case": "lifting"
+    },
+    {
+      "name": "Haar adjoint dot",
+      "ok": true,
+      "value": "1.729e-17",
+      "threshold": "<1e-3",
+      "case": "lifting"
+    },
+    {
+      "name": "CDF53 PR",
+      "ok": true,
+      "value": "2.171e-16",
+      "threshold": "<0.2%",
+      "case": "lifting"
+    },
+    {
+      "name": "CDF53 W_inv != W_star",
+      "ok": true,
+      "value": "6.844e-01",
+      "threshold": ">0.01",
+      "case": "lifting"
+    },
+    {
+      "name": "stationary translation",
+      "ok": true,
+      "value": "0.000e+00",
+      "threshold": "<1e-12",
+      "case": "lifting"
+    },
+    {
+      "name": "stationary inverse",
+      "ok": true,
+      "value": "8.882e-16",
+      "threshold": "<1e-12",
+      "case": "lifting"
+    },
+    {
+      "name": "A\u2194A\u1d40 identity",
+      "ok": true,
+      "value": "2.721e-16",
+      "threshold": "<1e-12",
+      "case": "adjoint"
+    },
+    {
+      "name": "quadratic grad vs FD",
+      "ok": true,
+      "value": "1.478e-10",
+      "threshold": "<1e-6",
+      "case": "adjoint"
+    },
+    {
+      "name": "adjoint ODE grad vs FD",
+      "ok": true,
+      "value": "1.770e-10",
+      "threshold": "<1e-6",
+      "case": "adjoint"
+    },
+    {
+      "name": "checkpoint reported",
+      "ok": true,
+      "value": 2424,
+      "threshold": ">0",
+      "case": "adjoint"
+    },
+    {
+      "name": "mode C pole spread",
+      "ok": true,
+      "value": "1024.0",
+      "threshold": "1024",
+      "case": "scale"
+    },
+    {
+      "name": "mode gm pole spread",
+      "ok": true,
+      "value": "1024.0",
+      "threshold": "1024",
+      "case": "scale"
+    },
+    {
+      "name": "mode C pole error",
+      "ok": true,
+      "value": "0.000e+00",
+      "threshold": "<5%",
+      "case": "scale"
+    },
+    {
+      "name": "mode gm pole error",
+      "ok": true,
+      "value": "0.000e+00",
+      "threshold": "<5%",
+      "case": "scale"
+    },
+    {
+      "name": "mode C model time",
+      "ok": true,
+      "value": "0.000e+00",
+      "threshold": "<1e-12",
+      "case": "scale"
+    },
+    {
+      "name": "mode gm model time",
+      "ok": true,
+      "value": "0.000e+00",
+      "threshold": "<1e-12",
+      "case": "scale"
+    },
+    {
+      "name": "no-normalization fails",
+      "ok": true,
+      "value": "1.000",
+      "threshold": ">0.1",
+      "case": "scale"
+    },
+    {
+      "name": "mode C trades noise",
+      "ok": true,
+      "value": "gm 1.0, noise 1024.0",
+      "threshold": "gm=1, noise=4^L",
+      "case": "scale"
+    },
+    {
+      "name": "mode gm trades g_m",
+      "ok": true,
+      "value": "gm 1024.0, noise 1.0",
+      "threshold": "gm=4^L, noise=1",
+      "case": "scale"
+    },
+    {
+      "name": "Haar isometry before",
+      "ok": true,
+      "value": "2.266e-02",
+      "threshold": ">0.5%",
+      "case": "gram"
+    },
+    {
+      "name": "Haar isometry after",
+      "ok": true,
+      "value": "3.461e-15",
+      "threshold": "<0.5%",
+      "case": "gram"
+    },
+    {
+      "name": "Haar PR after",
+      "ok": true,
+      "value": "3.199e-16",
+      "threshold": "<0.2%",
+      "case": "gram"
+    },
+    {
+      "name": "Haar noise gain",
+      "ok": true,
+      "value": "1.0231",
+      "threshold": "<1.05",
+      "case": "gram"
+    },
+    {
+      "name": "Haar adjoint after",
+      "ok": true,
+      "value": "3.449e-15",
+      "threshold": "<0.5%",
+      "case": "gram"
+    },
+    {
+      "name": "naive left fails",
+      "ok": true,
+      "value": "0.032",
+      "threshold": ">0.01",
+      "case": "gram"
+    },
+    {
+      "name": "left calibration after",
+      "ok": true,
+      "value": "3.416e-15",
+      "threshold": "<0.5%",
+      "case": "gram"
+    },
+    {
+      "name": "CDF adjoint reduced",
+      "ok": true,
+      "value": "6.935e-01 -> 3.697e-15",
+      "threshold": ">10x",
+      "case": "gram"
+    }
+  ],
+  "passed": 35,
+  "total": 35
+}

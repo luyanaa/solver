@@ -1,0 +1,77 @@
+
+==============================================================================
+Phase 1 前端验收：方程 → canonical IR
+==============================================================================
+
+==============================================================================
+A. 分类与 canonical IR
+==============================================================================
+   system       kind level  n degree monomials dense sparsity divisions                                  note
+   Lorenz polynomial     0  3      2         7    10    0.233         0                                      
+  Duffing polynomial     0  4      3         7    35     0.05         0                                      
+       HH   rational     1 10      6        65  8008 0.000812         3                                      
+   Bessel   rational     1  4      2         6    15      0.1         1                                      
+    Gamma   rejected     2  1      -         -     -      n/a         0 Gamma 是 differentially transcendenta…
+
+==============================================================================
+B. 状态与增广
+==============================================================================
+  Lorenz   states = x, y, z
+  Duffing  states = x_0, x_1, s1, c1
+           + sin     (6/5*t)                  → s1, c1
+  HH       states = V, m, h, n, e1, e2, e3, e4, e5, e6
+           + exp     (-1/18*(65 + V))         → e1
+           + exp     (-1/10*(40 + V))         → e2
+           + exp     (-1/10*(35 + V))         → e3
+           + exp     (-1/20*(65 + V))         → e4
+           + exp     (-1/80*(65 + V))         → e5
+           + exp     (-1/10*(10 + V))         → e6
+  Bessel   states = x, t, j1, k1
+           + besselj t                        → j1, k1
+  Gamma    rejected: Gamma 是 differentially transcendental（Hölder）：没有有限阶代数微分方程，不能有限增广
+
+==============================================================================
+C. 验收
+==============================================================================
+                               check                    got   expected PASS
+                         Lorenz kind             polynomial polynomial  yes
+                       Lorenz states                      3          3  yes
+                       Lorenz degree                      2          2  yes
+                    Lorenz monomials                      7          7  yes
+                       Lorenz sparse    0.23333333333333334        < 1  yes
+                        Duffing kind             polynomial polynomial  yes
+                      Duffing states                      4          4  yes
+                      Duffing degree                      3          3  yes
+                   Duffing monomials                      7          7  yes
+                 Duffing s²+c² drift  9.880984919163893e-15     < 1e-3  yes
+            Lorenz canonical rebuild                    0.0    < 1e-10  yes
+           Duffing canonical rebuild                    0.0    < 1e-10  yes
+                HH canonical rebuild 1.1424589264360604e-15    < 1e-10  yes
+            Bessel canonical rebuild                    0.0    < 1e-10  yes
+                             HH kind               rational   rational  yes
+                           HH states                     10         10  yes
+                        HH divisions                      3          3  yes
+                      HH RHS rel err                    0.0    < 1e-10  yes
+                           HH sparse  0.0008116883116883117     < 0.01  yes
+                      Gamma rejected               rejected   rejected  yes
+                         Bessel kind               rational   rational  yes
+                       Bessel domain                   True       True  yes
+                   Bessel J0 rel err  4.965708545124035e-15     < 1e-6  yes
+              Bessel at x=0 rejected               rejected   rejected  yes
+  Lorenz/Duffing share polynomial IR             polynomial polynomial  yes
+
+  25/25 checks passed
+
+==============================================================================
+D. 读法
+==============================================================================
+  - Lorenz/Duffing 都落到 polynomial IR：n=3/4，monomials=7/7，dense=10/35。
+    Duffing 的 cos(ωt) 增广成 (s,c)，s²+c²−1=0；RK4 的实测最大漂移 9.88e-15。
+    把 s· 乘以 (1+1e-3) 后漂移升到 1.00e-03——不变流形不是自稳定的。
+  - 标准 HH 是 rational，不是 polynomial：6 个 exp 增广 + 3 个分母
+    （m: 1 + -1*e2; h: 1 + 1*e3; n: 1 + -1*e6）。α/β 的 1/(1−exp) 必须用 divider 原语或额外拟合；
+    这是对 §7 Phase 1 早期措辞的修正。
+    HH 的 degree=6 是因为 exp 状态继承 V̇ 的复杂度；sparsity=8.1e-04，
+    但 numerator monomials=65，仍远小于 dense=8008。
+  - Bessel J0 可精确增广成有理系统（1/t），t≥1 时相对误差 5.0e-15；
+    t=0 被拒绝：1/x 增广在 x=0 处失效。Gamma 没有有限阶代数增广。
