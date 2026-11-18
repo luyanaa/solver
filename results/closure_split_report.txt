@@ -1,0 +1,83 @@
+
+==============================================================================
+B1 closure+split 验收（P_N 投影证书 / CSP-QSSA 快慢剥离）
+==============================================================================
+
+==============================================================================
+CASE 1  closure：diffusion 线性对角 + 带宽外 forcing（η vs N）
+==============================================================================
+   N     eta_meas eta_analytic       defect       ref  verdict
+   8 1.710289e-04 1.710289e-04 3.193876e-01 1867.4480 unjudged
+  16 1.137005e-04 1.137005e-04 2.123299e-01 1867.4480 unjudged
+  32 6.615685e-05 6.615685e-05 1.235445e-01 1867.4480 unjudged
+  48 3.829507e-05 3.829507e-05 7.151406e-02 1867.4480 unjudged
+  64 0.000000e+00 0.000000e+00 0.000000e+00 1867.4480 unjudged
+
+==============================================================================
+CASE 2  closure：burgers 二次项——defect 落在 (N,2N] alias 带
+==============================================================================
+  N          eta alias_frac N_eff  verdict
+  2 8.164966e-01      1.000     2 unjudged
+  3 2.581989e-01      1.000     3 unjudged
+  4 1.113631e-15      0.104     4 unjudged
+
+==============================================================================
+CASE 3  split：λ=-1,-1e4 stiff 对——Schur 精确复现 + slaving 残差 ∝ gap⁻¹
+==============================================================================
+      case verdict gap_ratio n_s n_f eig_match   slaving flags
+  A_fs=1.0   split     1e+04   1   1  0.00e+00 9.704e-09     -
+  A_fs=0.1   split     1e+04   1   1  0.00e+00 9.739e-10     -
+
+==============================================================================
+CASE 4  split：反馈耦合 A_sf≠0——QSSA 精度受 Schur 修正项支配
+==============================================================================
+  A_eff=[[-0.9999999999]]
+  |eig_match|=4.441e-14 <= ‖A_sf‖‖A_ff⁻¹‖‖A_fs‖/|λ_s| = 1.000e-10
+
+==============================================================================
+CASE 5  split 负对照：不硬剥、不静默求逆
+==============================================================================
+    qssa_reduce: fast 块含非衰减模态（Re λ ≥ 0）——QSS
+
+==============================================================================
+VERDICT
+==============================================================================
+                                                               check                                                       got                     expected pass
+                eta(N=full) is exactly 0 (linear diagonal is closed)                                                  0.00e+00                            0  yes
+                eta(N) matches ||f_{k>N}|| / ||F(u_ref)|| (4 points)                                            max|dev|<1e-12                          yes  yes
+                eta grows monotonically as N shrinks (8>16>32>48>64) 1.710e-04 > 1.137e-04 > 6.616e-05 > 3.830e-05 > 0.000e+00     strictly decreasing in N  yes
+                   defect confined to (I-P_N): coords 0..15 are zero                                                  0.00e+00                            0  yes
+            forcing at k=33 with N=16: defect = full forcing (clean)                                        ‖r‖=1.000000 @k=33                  ‖r‖=1 @k=33  yes
+                        eta = 1 exactly for out-of-band unit forcing                                            1.000000000000                            1  yes
+              verdict: eta>eps asks reduce-N (not silently feasible)                                                  reduce-N                     reduce-N  yes
+                                       verdict: eps > eta ⇒ feasible                                                  feasible                     feasible  yes
+                        verdict: no eps ⇒ unjudged (no silent claim)                                                  unjudged                     unjudged  yes
+                      projected descriptor keeps slow block A[:N,:N]                                     shape=16, A[0,0]=-1.0              n=16, A[0,0]=-1  yes
+         quadratic closure defect > 0 at N=2 (content up to |k|<=2N)                                                 8.165e-01                           >0  yes
+                                    eta decreases with N (2 > 3 > 4)                         8.165e-01 > 2.582e-01 > 1.114e-15                     monotone  yes
+   eta(N=4) at numerical floor: products of |k|<=2 modes stay |k|<=4                                                  1.11e-15                       <1e-12  yes
+                  defect energy entirely in (N,2N] alias band at N=2                                                     1.000                          1.0  yes
+                 verdict: alias-band-dominated defect ⇒ change-basis                                              change-basis                 change-basis  yes
+                N at resolvable max with exact rhs: eta=0 ⇒ feasible                                         feasible/1.59e-17                  feasible/~0  yes
+                               stiff pair auto-splits at the 1e4 gap                                                     split                        split  yes
+                                           gap ratio >= 1e3 reported                                                     1e+04                        >=1e3  yes
+        Schur A_eff reproduces slow eigenvalue to algebraic accuracy                                                  0.00e+00                       <1e-12  yes
+                      reduced slow eigenvalue equals design value -1                                                -1.000e+00                           -1  yes
+              slaving residual small because gap is large (measured)                                                 9.704e-09                        <1e-6  yes
+  slaving residual scales ~ A_fs (10x smaller coupling ⇒ ~10x error)                                                      9.96                          ~10  yes
+                                 reduced descriptor is n_slow square                                                         1                            1  yes
+                         feedback split: verdict split with flag set                                                     split                        split  yes
+                 eig_match within Schur-correction bound (×2 margin)                                      4.44e-14 <= 2.00e-10                          yes  yes
+                        feedback slaving residual reported and small                                                 1.584e-11                        <1e-5  yes
+               weak gap (-1,-2): auto ⇒ no-split, no fabricated QSSA                                             no-split/True                no-split/None  yes
+                                    weak gap ratio reported honestly                                                       2.0                            2  yes
+      forced tau_fast across weak gap: split honored + weak-gap flag                                                split/True               split/weak-gap  yes
+                  defective Jordan block ⇒ no-split (defective flag)                                             no-split/True           no-split/defective  yes
+            unstable fast candidate ⇒ no-split (fast-block-unstable)                                             no-split/True no-split/fast-block-unstable  yes
+           singular E ⇒ NotImplementedError (already a split output)                                                    raised          NotImplementedError  yes
+              singular fast block ⇒ ValueError (no silent inversion)                                                    raised                   ValueError  yes
+                     unstable fast block ⇒ ValueError in qssa_reduce                                                    raised                   ValueError  yes
+
+  34/34 checks passed
+  eta_closure(N) diffusion: N=8:1.710e-04 N=16:1.137e-04 N=32:6.616e-05 N=48:3.830e-05 N=64:0.000e+00
+  slaving residual @gap 1e4: 9.704e-09 (A_fs=1) / 9.739e-10 (A_fs=0.1)

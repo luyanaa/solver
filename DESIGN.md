@@ -690,6 +690,14 @@ P0 之前先做这套规范化，顺序不能反：
       → analog primitive graph
 
 对应关系：P0 做 jet/DAE 与无量纲化；P2 做增广/消元和投影；P3 做 S/T₀；P4 做 NL/MVM 预算。
+P2 的投影与剥离已落地：`lowering.closure`（P_N 投影 + η_closure 证书，
+`bench/run_closure_split.py` 34/34，`results/closure_split.json`）与
+`lowering.split`（CSP/QSSA 快慢剥离，谱间隙 auto/τ_fast，物理坐标 Schur +
+slaving 残差实测）。P2 的换基判定与接口合约也已落地：`lowering.basis`
+（候选集 {identity/schur/gramian/pod/eigenvector} 按失配总预算
+Γ·amplification 选基，`bench/run_basis_interface.py` 31/31，
+`results/basis_interface.json`）与 `lowering.interface`（单通量源合约 +
+§6.5 fitting/capturing selector）。
 
 **scaling 是预条件，不是单位换算。** V=Sx 不改变特征值/κ，但改变 Γ、瞬态增长和硬件扰动范数；S 要同时满足 |V_i|≤V_max 和 Γ(T₀SAS⁻¹) 尽量小。逐项 O(1) 是目标，不是教条——把 J_ij 强行压到 O(1) 可能把物理刚度藏进 C_i 的失配里。
 
@@ -1723,9 +1731,19 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                           # 实测：Lorenz/Duffing polynomial；HH rational；Gamma 拒绝
         ✅ normalize.py    # 坐标中心化 + 无量纲化（x_i=X_i x̂_i+x0_i, t=T₀τ，
                           # Expr 重写；pipeline_normalize 出 Normalization 记录）
-        closure.py        # P_N 投影、η_closure、基选择
-        split.py          # F = L + N，CSP/QSSA
-        basis.py          # T 的候选集 + 条件数税
+        ✅ closure.py      # P_N 投影 + η_closure 证书（实测：η(N) 对照 ‖f_{k>N}‖/ref
+                           # 逐点一致；k>N forcing 全额 defect；二次项 defect 落
+                           # (N,2N] alias 带 ⇒ change-basis——2/3 规则消 aliasing
+                           # 不消 closure；34 项验收 in run_closure_split）
+        ✅ split.py        # CSP/QSSA 快慢模态剥离：谱间隙 auto/τ_fast 分类、物理坐标
+                           # Schur A_eff=A_ss−A_sf·A_ff⁻¹·A_fs、slaving 残差实测
+                           # （gap 1e4 ⇒ ~1e-8 且 ∝ A_fs）；弱间隙/亏损 Jordan/
+                           # 不稳定 fast/奇异 fast 块 ⇒ flag 拒绝，不静默求逆
+        ✅ basis.py        # 选基：稀疏度 vs κ(Φ) 税——budget=Γ·amp
+                          # （worst-case amp=cond(T)；给定 Δ 则 ‖T⁻¹ΔT‖/‖Δ‖），
+                          # 不变式 ‖R_x‖≤cond(T)‖R_z‖ ⇒ 纯相似变换预算 ≥ 恒等基；
+                          # shear 实测：eigvec Γ=1 但 κ(Φ)=20.05 总预算 20.05>5.12
+                          # 被淘汰；Δ=ε·A 时 eigvec 翻身赢（amp=‖Λ‖/‖A‖<1）
         ✅ scaling.py      # 可控/可观 Gramian 对角平衡 → S_x (rms3σ / Moore d_i)
                           # + α=max|λ|/(2πB_hw·margin)；自动构造 PhysicalScaling；
                           # 频窗检查（eig 不变性断言）
@@ -1733,7 +1751,12 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
         ✅ budget.py       # P6 证书聚合：slack + Γ_M + σ_y² + manifold-γ 窗
                           # + loop ‖S‖∞ + multirate k_max + sde_cert →
                           # Certificate（rejected/infeasible/no-violation/feasible）
-        interface.py      # §6.4 单通量源+镜像；§6.5 fitting/capturing selector
+        ✅ interface.py    # §6.4 单通量源+镜像合约（dM/dt=(F_A_fv−F_A_spec)−
+                          # (F_B_fv−F_B_spec)，单源 ⇒ 拓扑零泄漏，coupling.py
+                          # 实跑对账 drift 2.2e-16 vs mismatch 泄漏 8.5e-3）；
+                          # §6.5 fitting/capturing selector：光滑 ⇒ capture 免费，
+                          # 奇异 ⇒ ν_num=½·α_loc·dx·σ vs remesh 单价×M_int，
+                          # ν_num 越阈值判定翻转（31 项验收 in run_basis_interface）
         ✅ p7.py          # P7 配置+校准计划：Certificate+ScalingResult+
                           # CalibratedTwin → per-element {primitive,
                           # target_gm_over_c=max|λ|/alpha, S_x, alpha,
@@ -1785,6 +1808,11 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                                     # Lorentzian 粘弹性（n=2+m 有限嵌入）+
                                     # 数字回退率 tally（6/11=54.5%，剔探针
                                     # 2/7=28.6%）+ 假设账本（26/26）
+        ✅ run_closure_split.py     # B1 closure+split：η_closure 证书（η(N) 解析
+                                    # 对照 / k>N forcing 全额 defect / alias 带
+                                    # change-basis）+ QSSA 快慢剥离（Schur 精确
+                                    # 复现慢特征值、slaving ∝ gap⁻¹、负对照
+                                    # 弱间隙/亏损/不稳定/奇异全 flag）（34/34）
         ✅ run_calib.py             # B1 校准验收：前台标定修回噪声底 /
                                     # 后台残差 = rate·interval/(1+T) + 底
                                     # （间隔↑残差↑，A7 同语义）/
@@ -1792,6 +1820,14 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                                     # （gm/C=max|λ|/alpha、S_x、残差预算
                                     # = floor/noise轴、不可行 ⇒ flagged）
                                     # （43/43）
+        ✅ run_basis_interface.py   # B1 选基+接口：shear 最坏情况 eigvec 被淘汰
+                                    # （Γ=1×κ(Φ)=20.05=20.05 > 恒等基 5.12，
+                                    # 对账 stagea/skew）、不变式预算≥Γ_id、
+                                    # Δ=ε·A 时 eigvec 翻身（chooser 不退化）、
+                                    # 近正规 cond(V)=1.43 小优势赢；接口：
+                                    # 光滑 capture 免费 / 单源合约 dM/dt=0
+                                    # （coupling.py 实跑 drift 2.2e-16 vs
+                                    # mismatch 泄漏 8.5e-3）/ ν_num 翻转（31/31）
         ✅ ledger.py                # 七项假设敏感度账本 → results/ledger.json
                                     # （κ_hw 4.86% 翻判 / B_hw margin 0.8 /
                                     # 噪声 0.63%/unit / 失配线性 / 2.86°/级 /
@@ -1808,6 +1844,8 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                                   # sde.json / sde_report.txt（Phase 6）/
                                   # substrate.json / substrate_report.txt（A7 异构介质）/
                                   # stagea.json / stagea_report.txt（A4/A8/A9 收尾）/
+                                  # closure_split.json / closure_split_report.txt
+                                  # （B1 closure+split）/
                                   # calib.json / calib_report.txt（B1 校准+P7）/
                                   # ledger.json（七项假设账本）
 

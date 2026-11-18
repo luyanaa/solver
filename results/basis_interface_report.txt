@@ -1,0 +1,93 @@
+
+==============================================================================
+B1 验收：basis（稀疏度 vs κ(Φ) 税）+ interface（单源合约 + fitting/capturing）
+==============================================================================
+
+==============================================================================
+CASE 1  非正规 shear（worst-case delta_pert=None）：特征向量基被淘汰
+==============================================================================
+    candidate   Gamma cond(Phi) nnz     amp  budget win
+     identity 5.12255         1   2       1 5.12255   *
+        schur 5.12255         1   2       1 5.12255    
+      gramian 5.12255         1   2       1 5.12255    
+          pod 5.12255         1   2       1 5.12255    
+  eigenvector       1   20.0499   3 20.0499 20.0499    
+  winner=identity: budget=5.12255 (Γ=5.12255 × amp=1, nnz=2) vs identity Γ=5.12255
+
+==============================================================================
+CASE 2  shear + Δ=ε·A（系数成比例漂移）：特征向量基翻身赢
+==============================================================================
+    candidate   Gamma cond(Phi) nnz      amp   budget win
+     identity 5.12255         1   2        1  5.12255    
+        schur 5.12255         1   2        1  5.12255    
+      gramian 5.12255         1   2        1  5.12255    
+          pod 5.12255         1   2        1  5.12255    
+  eigenvector       1   20.0499   3 0.218218 0.218218   *
+  winner=eigenvector: budget=0.218218 (Γ=1 × amp=0.218218, nnz=3) vs identity Γ=5.12255
+
+==============================================================================
+CASE 3  近正规系统（cond(V)≪20）：特征向量基小优势赢 / worst-case 不赢
+==============================================================================
+    candidate   Gamma cond(Phi) nnz     amp  budget win
+     identity 1.07506         1   2       1 1.07506   *
+        schur 1.07506         1   4       1 1.07506    
+      gramian 1.06277   1.23056   2 1.23056 1.30781    
+          pod 1.05933   1.33453   2 1.33453  1.4137    
+  eigenvector 1.05011   1.42973   4 1.42973 1.50138    
+    candidate   Gamma cond(Phi) nnz      amp  budget win
+     identity 1.07506         1   2        1 1.07506    
+        schur 1.07506         1   4        1 1.07506    
+      gramian 1.06277   1.23056   2 0.992389 1.05469    
+          pod 1.05933   1.33453   2 0.990274 1.04902    
+  eigenvector 1.05011   1.42973   4 0.984673 1.03402   *
+
+==============================================================================
+CASE 4  接口 selector：光滑免费 / 单源合约 / ν_num 阈值翻转 / 守恒
+==============================================================================
+  smooth sin: mode=capture, index=None, nu_num=0, reason: smooth: no special interface (capture is free; single-source contract still attached for cross-representation use)
+  tanh front ±1: mode=fit, M_int=1, face=63, F=-0.2500, nu_num=0.499, remesh=0.25
+  reason: shock: remesh cost 0.25 < nu_num 0.499 -> move x_s onto an explicit singular state (T_int check is the supervisor's job)
+  weak step ±0.2: mode=capture, nu_num=0.0997 (vs 0.25)
+  strong step + remesh_cost=10: mode=capture
+  coupled single-source: drift=2.221e-16, leak_max=0.000e+00
+  coupled mismatch=1e-2: drift=6.867e-04, leak_max=8.457e-03
+
+==============================================================================
+VERDICT
+==============================================================================
+                                                                                  check                                     got                                  expected pass
+                                      identity Gamma matches run_skew gamma_ideal (±2%)                        5.1225 vs 5.1225                                       ±2%  yes
+                                          identity Gamma matches run_stagea gamma (±2%)                        5.1225 vs 5.1225                                       ±2%  yes
+                                          eigenvector Gamma drops to diagonal value 1.0                                1.000000                 1.0 (stagea gamma_eigvec)  yes
+                                   eigenvector tax κ(Φ)=cond(V)=20.05 (stagea-measured)                      20.0499 vs 20.0499                                       ±2%  yes
+                                 eigenvector NOT selected on shear (budget 20.05 loses)                         winner=identity                           not eigenvector  yes
+                                             winner budget < eigenvector budget (20.05)                        5.1225 < 20.0499                        lower total budget  yes
+                             schur keeps honest Γ (= identity Γ, orthogonal invariance)                        5.1225 vs 5.1225                       = Γ_identity (1e-9)  yes
+                     invariant: every similarity budget ≥ Γ_identity (‖R_x‖≤cond·‖R_z‖)      min budget 5.12255 vs Γ_id 5.12255                            ≥ Γ_id(1−1e-6)  yes
+                                            sparsity reported: identity nnz ≤ schur nnz                                   2 ≤ 2                                  monotone  yes
+  gramian candidate honest on shear (degenerate state floored, no free Γ in model time)                                  5.1225                                    ≈ Γ_id  yes
+                                            structured delta_pert: eigenvector selected                      winner=eigenvector                               eigenvector  yes
+                                 eigenvector amplification ‖Λ‖/‖A‖ < 1 (Δ diagonalized)                                  0.2182                                       < 1  yes
+                                             eigenvector total budget < identity budget                         0.2182 < 5.1225                                     lower  yes
+                         chooser verdict depends on the mismatch model (not degenerate)    worst: identity / eps*A: eigenvector different winner for different delta_pert  yes
+                                 near-normal worst-case: eigenvector still NOT selected                         winner=identity                           not eigenvector  yes
+                                           near-normal structured: eigenvector selected                      winner=eigenvector                               eigenvector  yes
+                                           near-normal: cond(V) small (≪ shear's 20.05)                                   1.430                                     < 1.5  yes
+                           near-normal structured: eigenvector budget < identity budget                         1.0340 < 1.0751                                     lower  yes
+                           Γ drop covers the tax: Γ_id/Γ_eig > cond(V)·(amp correction)          Γ_eig·amp=1.0340 < Γ_id=1.0751                          budget decreases  yes
+                                     smooth state: no special interface (capture, free) mode=capture, idx=None, nu_num=0.00e+00                       capture / None / ~0  yes
+                                    smooth state: single-source contract still attached                                    True                                      True  yes
+                                                shock front: singular detected, M_int=1                  singular=True, M_int=1                                  True / 1  yes
+                            shock front: single-source face at the jump (Rusanov value)                      face=63, F=-0.2500       index set, F = Rusanov(uL,uR) ±1e-9  yes
+                                        shock ±1: nu_num=0.5·α·dx·σ > remesh unit ⇒ fit     mode=fit, nu_num=0.499, remesh=0.25                       fit (nu_num > 0.25)  yes
+                                       flip: weak shock (nu_num < threshold) -> capture             mode=capture, nu_num=0.0997                                   capture  yes
+                          flip: raising the threshold flips fit -> capture (same state)                            mode=capture                                   capture  yes
+                               contract: single-source dM/dt exactly zero (topological)                                 0.0e+00                                       0.0  yes
+                                 contract: mass_budget identity matches coupling.py rhs                                    -1.0                          (3−1)−(5−2) = −1  yes
+                            coupled twin: single-source mass drift at machine precision                               2.221e-16                                   < 1e-12  yes
+                                 coupled twin: independent mirrors leak (mismatch=1e-2)                               8.457e-03                                    > 1e-3  yes
+                               coupled twin: single-source leak_max ≈ 0 (vs mismatched)                   0.000e+00 ≪ 8.457e-03                              ratio < 1e-6  yes
+
+  31/31 checks passed
+  shear (worst-case): winner=identity, budget=5.1225 (eigvec Γ=1.000×κ(Φ)=20.05=20.05 — selected-against)
+  shear (Δ=ε·A): winner=eigenvector, budget=0.2182 (chooser not degenerate)

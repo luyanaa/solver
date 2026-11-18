@@ -5,7 +5,11 @@ normalize：无量纲化 + 坐标中心化（P0）。
 scaling：状态/时间缩放，A_t 公式 + 频窗检查（P3）。
 """
 
+from .basis import (BasisCandidate, BasisResult, DEFAULT_CANDIDATES,
+                    select_basis)
 from .discretize import Discretized, PDESpec, discretize, linearize_rhs
+from .interface import (InterfaceContract, InterfaceResult,
+                        choose_interface, mass_budget)
 from .normalize import (Normalization, center_system, fold,
                         nondimensionalize, pipeline_normalize)
 from .reduce import (Canonical, Expr, Reduced, System, add, besselj, C,
@@ -14,6 +18,8 @@ from .reduce import (Canonical, Expr, Reduced, System, add, besselj, C,
                      tanh, V)
 from .scaling import (ScalingResult, alpha_for_bandwidth, gramian_scaling,
                       state_scale_from_ranges)
+from .closure import ClosureResult, fourier_project_field, project_spectral
+from .split import GAP_MIN, SplitResult, cvsplit, qssa_reduce
 from .p7 import CalibPlan, Config, ElementConfig, generate_config
 
 __all__ = [
@@ -27,4 +33,8 @@ __all__ = [
     "ScalingResult", "gramian_scaling", "alpha_for_bandwidth",
     "state_scale_from_ranges",
     "ElementConfig", "CalibPlan", "Config", "generate_config",
+    "ClosureResult", "project_spectral", "fourier_project_field",
+    "SplitResult", "cvsplit", "qssa_reduce", "GAP_MIN",
+    "BasisCandidate", "BasisResult", "select_basis", "DEFAULT_CANDIDATES",
+    "InterfaceContract", "InterfaceResult", "choose_interface", "mass_budget",
 ]
