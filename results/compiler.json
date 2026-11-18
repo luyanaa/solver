@@ -1,0 +1,1252 @@
+{
+  "cases": {
+    "feasible": {
+      "feasible": true,
+      "status": "feasible",
+      "slack": {
+        "values": {
+          "noise": 0.223606797749979,
+          "bandwidth": 6.518986469044034e-08,
+          "stiffness": 0.004096,
+          "robustness_A": 0.1,
+          "robustness_io": 0.10000009536742326,
+          "routing": 0.05,
+          "representation": 0.25
+        },
+        "violated": [],
+        "unknown": [],
+        "reasons": {},
+        "status": "feasible"
+      },
+      "items": {
+        "slack": {
+          "value": {
+            "noise": 0.223606797749979,
+            "bandwidth": 6.518986469044034e-08,
+            "stiffness": 0.004096,
+            "robustness_A": 0.1,
+            "robustness_io": 0.10000009536742326,
+            "routing": 0.05,
+            "representation": 0.25
+          },
+          "verdict": "feasible",
+          "detail": "violated=-, unknown=-"
+        },
+        "resolvent": {
+          "value": {
+            "Gamma": 1000.0,
+            "Gamma_proj": 1000.0,
+            "method": "diag",
+            "projected": false
+          },
+          "verdict": "pass",
+          "detail": "\u0393_proj=1000"
+        },
+        "hinf": {
+          "value": 1000.0009536742325,
+          "verdict": "pass",
+          "detail": "\u2016H\u2016\u221e"
+        },
+        "lyapunov": {
+          "value": {
+            "sigma_y": 22.360679774997898,
+            "sigma_y2": 500.0,
+            "h2_finite": true,
+            "method": "direct"
+          },
+          "verdict": "pass",
+          "detail": "\u03c3_y=22.36 (direct)"
+        }
+      },
+      "binding_axis": "representation",
+      "rejection_reasons": [],
+      "assumptions": [
+        "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+        "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
+      ]
+    },
+    "infeasible_kappa": {
+      "feasible": false,
+      "status": "infeasible",
+      "slack": {
+        "values": {
+          "noise": NaN,
+          "bandwidth": 6.518986469044034e-08,
+          "stiffness": 4.096,
+          "robustness_A": NaN,
+          "robustness_io": NaN,
+          "routing": NaN,
+          "representation": NaN
+        },
+        "violated": [
+          "stiffness"
+        ],
+        "unknown": [
+          "noise",
+          "robustness_A",
+          "robustness_io",
+          "routing",
+          "representation"
+        ],
+        "reasons": {
+          "stiffness": "delete modes (QSSA/CSP) or use multirate"
+        },
+        "status": "infeasible"
+      },
+      "items": {
+        "slack": {
+          "value": {
+            "noise": NaN,
+            "bandwidth": 6.518986469044034e-08,
+            "stiffness": 4.096,
+            "robustness_A": NaN,
+            "robustness_io": NaN,
+            "routing": NaN,
+            "representation": NaN
+          },
+          "verdict": "infeasible",
+          "detail": "violated=['stiffness'], unknown=['noise', 'robustness_A', 'robustness_io', 'routing', 'representation']"
+        },
+        "resolvent": {
+          "value": {
+            "Gamma": 1000.0,
+            "Gamma_proj": 1000.0,
+            "method": "diag",
+            "projected": false
+          },
+          "verdict": "pass",
+          "detail": "\u0393_proj=1000"
+        },
+        "hinf": {
+          "value": 1000.0009536742325,
+          "verdict": "pass",
+          "detail": "\u2016H\u2016\u221e"
+        },
+        "lyapunov": {
+          "value": {
+            "sigma_y": 22.360679774997898,
+            "sigma_y2": 500.0,
+            "h2_finite": true,
+            "method": "direct"
+          },
+          "verdict": "pass",
+          "detail": "\u03c3_y=22.36 (direct)"
+        }
+      },
+      "binding_axis": "stiffness",
+      "rejection_reasons": [],
+      "assumptions": [
+        "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+        "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
+      ]
+    },
+    "nan_not_feasible": {
+      "feasible": false,
+      "status": "no violation on evaluated axes",
+      "slack": {
+        "values": {
+          "noise": NaN,
+          "bandwidth": 6.518986469044034e-08,
+          "stiffness": 0.004096,
+          "robustness_A": NaN,
+          "robustness_io": NaN,
+          "routing": NaN,
+          "representation": NaN
+        },
+        "violated": [],
+        "unknown": [
+          "noise",
+          "robustness_A",
+          "robustness_io",
+          "routing",
+          "representation"
+        ],
+        "reasons": {},
+        "status": "no violation on evaluated axes"
+      },
+      "items": {
+        "slack": {
+          "value": {
+            "noise": NaN,
+            "bandwidth": 6.518986469044034e-08,
+            "stiffness": 0.004096,
+            "robustness_A": NaN,
+            "robustness_io": NaN,
+            "routing": NaN,
+            "representation": NaN
+          },
+          "verdict": "no violation on evaluated axes",
+          "detail": "violated=-, unknown=['noise', 'robustness_A', 'robustness_io', 'routing', 'representation']"
+        },
+        "resolvent": {
+          "value": {
+            "Gamma": 1000.0,
+            "Gamma_proj": 1000.0,
+            "method": "diag",
+            "projected": false
+          },
+          "verdict": "pass",
+          "detail": "\u0393_proj=1000"
+        },
+        "hinf": {
+          "value": 1000.0009536742325,
+          "verdict": "pass",
+          "detail": "\u2016H\u2016\u221e"
+        },
+        "lyapunov": {
+          "value": {
+            "sigma_y": 22.360679774997898,
+            "sigma_y2": 500.0,
+            "h2_finite": true,
+            "method": "direct"
+          },
+          "verdict": "pass",
+          "detail": "\u03c3_y=22.36 (direct)"
+        }
+      },
+      "binding_axis": "stiffness",
+      "rejection_reasons": [],
+      "assumptions": [
+        "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+        "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
+      ]
+    },
+    "manifold_empty": {
+      "feasible": false,
+      "status": "rejected",
+      "slack": {
+        "values": {
+          "noise": NaN,
+          "bandwidth": 4.074366543152521e-09,
+          "stiffness": 0.000256,
+          "robustness_A": NaN,
+          "robustness_io": NaN,
+          "routing": NaN,
+          "representation": NaN
+        },
+        "violated": [],
+        "unknown": [
+          "noise",
+          "robustness_A",
+          "robustness_io",
+          "routing",
+          "representation"
+        ],
+        "reasons": {},
+        "status": "no violation on evaluated axes"
+      },
+      "items": {
+        "slack": {
+          "value": {
+            "noise": NaN,
+            "bandwidth": 4.074366543152521e-09,
+            "stiffness": 0.000256,
+            "robustness_A": NaN,
+            "robustness_io": NaN,
+            "routing": NaN,
+            "representation": NaN
+          },
+          "verdict": "no violation on evaluated axes",
+          "detail": "violated=-, unknown=['noise', 'robustness_A', 'robustness_io', 'routing', 'representation']"
+        },
+        "resolvent": {
+          "value": {
+            "Gamma": 1000.0,
+            "Gamma_proj": 1000.0,
+            "method": "diag",
+            "projected": false
+          },
+          "verdict": "pass",
+          "detail": "\u0393_proj=1000"
+        },
+        "hinf": {
+          "value": 1000.0009536743114,
+          "verdict": "pass",
+          "detail": "\u2016H\u2016\u221e"
+        },
+        "lyapunov": {
+          "value": {
+            "sigma_y": 22.360679774997898,
+            "sigma_y2": 500.0,
+            "h2_finite": true,
+            "method": "direct"
+          },
+          "verdict": "pass",
+          "detail": "\u03c3_y=22.36 (direct)"
+        },
+        "manifold": {
+          "value": NaN,
+          "verdict": "rejected",
+          "detail": "manifold stabilization infeasible: no \u03b3 in [\u03b3_min,\u03b3_max]"
+        }
+      },
+      "binding_axis": "stiffness",
+      "rejection_reasons": [
+        "manifold stabilization infeasible: no \u03b3 in [\u03b3_min,\u03b3_max]"
+      ],
+      "assumptions": [
+        "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+        "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
+      ]
+    },
+    "manifold_outside": {
+      "feasible": false,
+      "status": "rejected",
+      "slack": {
+        "values": {
+          "noise": NaN,
+          "bandwidth": 4.074366543152521e-09,
+          "stiffness": 0.000256,
+          "robustness_A": NaN,
+          "robustness_io": NaN,
+          "routing": NaN,
+          "representation": NaN
+        },
+        "violated": [],
+        "unknown": [
+          "noise",
+          "robustness_A",
+          "robustness_io",
+          "routing",
+          "representation"
+        ],
+        "reasons": {},
+        "status": "no violation on evaluated axes"
+      },
+      "items": {
+        "slack": {
+          "value": {
+            "noise": NaN,
+            "bandwidth": 4.074366543152521e-09,
+            "stiffness": 0.000256,
+            "robustness_A": NaN,
+            "robustness_io": NaN,
+            "routing": NaN,
+            "representation": NaN
+          },
+          "verdict": "no violation on evaluated axes",
+          "detail": "violated=-, unknown=['noise', 'robustness_A', 'robustness_io', 'routing', 'representation']"
+        },
+        "resolvent": {
+          "value": {
+            "Gamma": 1000.0,
+            "Gamma_proj": 1000.0,
+            "method": "diag",
+            "projected": false
+          },
+          "verdict": "pass",
+          "detail": "\u0393_proj=1000"
+        },
+        "hinf": {
+          "value": 1000.0009536743114,
+          "verdict": "pass",
+          "detail": "\u2016H\u2016\u221e"
+        },
+        "lyapunov": {
+          "value": {
+            "sigma_y": 22.360679774997898,
+            "sigma_y2": 500.0,
+            "h2_finite": true,
+            "method": "direct"
+          },
+          "verdict": "pass",
+          "detail": "\u03c3_y=22.36 (direct)"
+        },
+        "manifold": {
+          "value": 10.0,
+          "verdict": "rejected",
+          "detail": "manifold stabilization infeasible: chosen \u03b3=10 outside (\u03b3_min=100, \u03b3_max=1e+04)"
+        }
+      },
+      "binding_axis": "stiffness",
+      "rejection_reasons": [
+        "manifold stabilization infeasible: chosen \u03b3=10 outside (\u03b3_min=100, \u03b3_max=1e+04)"
+      ],
+      "assumptions": [
+        "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+        "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
+      ]
+    },
+    "loop": {
+      "tau_ex": 3.1568069722056075e-10,
+      "S_base": 10.044350488973066,
+      "S_small": 14.696628367147568,
+      "S_big": 500.6050822917349,
+      "cert_small": {
+        "feasible": false,
+        "status": "no violation on evaluated axes",
+        "slack": {
+          "values": {
+            "noise": NaN,
+            "bandwidth": 0.05024937810560444,
+            "stiffness": 1e-06,
+            "robustness_A": NaN,
+            "robustness_io": NaN,
+            "routing": NaN,
+            "representation": NaN
+          },
+          "violated": [],
+          "unknown": [
+            "noise",
+            "robustness_A",
+            "robustness_io",
+            "routing",
+            "representation"
+          ],
+          "reasons": {},
+          "status": "no violation on evaluated axes"
+        },
+        "items": {
+          "slack": {
+            "value": {
+              "noise": NaN,
+              "bandwidth": 0.05024937810560444,
+              "stiffness": 1e-06,
+              "robustness_A": NaN,
+              "robustness_io": NaN,
+              "routing": NaN,
+              "representation": NaN
+            },
+            "verdict": "no violation on evaluated axes",
+            "detail": "violated=-, unknown=['noise', 'robustness_A', 'robustness_io', 'routing', 'representation']"
+          },
+          "resolvent": {
+            "value": {
+              "Gamma": 3.1830946345886485e-08,
+              "Gamma_proj": 3.1830946345886485e-08,
+              "method": "sweep",
+              "projected": false
+            },
+            "verdict": "pass",
+            "detail": "\u0393_proj=3.183e-08"
+          },
+          "hinf": {
+            "value": 2.2535976784950246e-08,
+            "verdict": "pass",
+            "detail": "\u2016H\u2016\u221e"
+          },
+          "lyapunov": {
+            "value": {
+              "sigma_y": 0.000126156626101008,
+              "sigma_y2": 1.591549430918953e-08,
+              "h2_finite": true,
+              "method": "direct"
+            },
+            "verdict": "pass",
+            "detail": "\u03c3_y=0.0001262 (direct)"
+          },
+          "loop": {
+            "value": 14.696628367147568,
+            "verdict": "pass",
+            "detail": "S_peak=14.7 < threshold 50"
+          }
+        },
+        "binding_axis": "bandwidth",
+        "rejection_reasons": [],
+        "assumptions": [
+          "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+          "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)",
+          "loop_margins is a necessary-condition probe, not exact DDE roots (\u00a76.15: \u03c3_min dip on a finite \u03c9 grid; scalar_dde_root is the exact 1-DOF analog)"
+        ]
+      },
+      "cert_big": {
+        "feasible": false,
+        "status": "rejected",
+        "slack": {
+          "values": {
+            "noise": NaN,
+            "bandwidth": 0.05024937810560444,
+            "stiffness": 1e-06,
+            "robustness_A": NaN,
+            "robustness_io": NaN,
+            "routing": NaN,
+            "representation": NaN
+          },
+          "violated": [],
+          "unknown": [
+            "noise",
+            "robustness_A",
+            "robustness_io",
+            "routing",
+            "representation"
+          ],
+          "reasons": {},
+          "status": "no violation on evaluated axes"
+        },
+        "items": {
+          "slack": {
+            "value": {
+              "noise": NaN,
+              "bandwidth": 0.05024937810560444,
+              "stiffness": 1e-06,
+              "robustness_A": NaN,
+              "robustness_io": NaN,
+              "routing": NaN,
+              "representation": NaN
+            },
+            "verdict": "no violation on evaluated axes",
+            "detail": "violated=-, unknown=['noise', 'robustness_A', 'robustness_io', 'routing', 'representation']"
+          },
+          "resolvent": {
+            "value": {
+              "Gamma": 3.1830946345886485e-08,
+              "Gamma_proj": 3.1830946345886485e-08,
+              "method": "sweep",
+              "projected": false
+            },
+            "verdict": "pass",
+            "detail": "\u0393_proj=3.183e-08"
+          },
+          "hinf": {
+            "value": 2.2535976784950246e-08,
+            "verdict": "pass",
+            "detail": "\u2016H\u2016\u221e"
+          },
+          "lyapunov": {
+            "value": {
+              "sigma_y": 0.000126156626101008,
+              "sigma_y2": 1.591549430918953e-08,
+              "h2_finite": true,
+              "method": "direct"
+            },
+            "verdict": "pass",
+            "detail": "\u03c3_y=0.0001262 (direct)"
+          },
+          "loop": {
+            "value": 500.6050822917349,
+            "verdict": "rejected",
+            "detail": "loop sensitivity S_peak=500.6 exceeds threshold 50"
+          }
+        },
+        "binding_axis": "bandwidth",
+        "rejection_reasons": [
+          "loop sensitivity S_peak=500.6 exceeds threshold 50"
+        ],
+        "assumptions": [
+          "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+          "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)",
+          "loop_margins is a necessary-condition probe, not exact DDE roots (\u00a76.15: \u03c3_min dip on a finite \u03c9 grid; scalar_dde_root is the exact 1-DOF analog)"
+        ]
+      }
+    },
+    "multirate": {
+      "convergent": {
+        "multirate": {
+          "rho_sup": 0.7378709732240775,
+          "omega_peak": 5.036412054367681,
+          "eps_replay": 0.001,
+          "k_max": 20
+        },
+        "rho_eig_sup": 0.737870973224079,
+        "cert": {
+          "feasible": false,
+          "status": "no violation on evaluated axes",
+          "slack": {
+            "values": {
+              "noise": NaN,
+              "bandwidth": 4.074366543152521e-09,
+              "stiffness": 0.000256,
+              "robustness_A": NaN,
+              "robustness_io": NaN,
+              "routing": NaN,
+              "representation": NaN
+            },
+            "violated": [],
+            "unknown": [
+              "noise",
+              "robustness_A",
+              "robustness_io",
+              "routing",
+              "representation"
+            ],
+            "reasons": {},
+            "status": "no violation on evaluated axes"
+          },
+          "items": {
+            "slack": {
+              "value": {
+                "noise": NaN,
+                "bandwidth": 4.074366543152521e-09,
+                "stiffness": 0.000256,
+                "robustness_A": NaN,
+                "robustness_io": NaN,
+                "routing": NaN,
+                "representation": NaN
+              },
+              "verdict": "no violation on evaluated axes",
+              "detail": "violated=-, unknown=['noise', 'robustness_A', 'robustness_io', 'routing', 'representation']"
+            },
+            "resolvent": {
+              "value": {
+                "Gamma": 1000.0,
+                "Gamma_proj": 1000.0,
+                "method": "diag",
+                "projected": false
+              },
+              "verdict": "pass",
+              "detail": "\u0393_proj=1000"
+            },
+            "hinf": {
+              "value": 1000.0009536743114,
+              "verdict": "pass",
+              "detail": "\u2016H\u2016\u221e"
+            },
+            "lyapunov": {
+              "value": {
+                "sigma_y": 22.360679774997898,
+                "sigma_y2": 500.0,
+                "h2_finite": true,
+                "method": "direct"
+              },
+              "verdict": "pass",
+              "detail": "\u03c3_y=22.36 (direct)"
+            },
+            "multirate": {
+              "value": {
+                "rho_sup": 0.7378709732240775,
+                "k_max": 20
+              },
+              "verdict": "pass",
+              "detail": "rho_sup=0.7379 < 1, k_max=20"
+            }
+          },
+          "binding_axis": "stiffness",
+          "rejection_reasons": [],
+          "assumptions": [
+            "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+            "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)",
+            "\u03c3_max WR bound sufficient-not-necessary (\u00a74.3: non-normal splits can converge below the \u03c3_max certificate; contract rejects only on \u03c1_sup\u22651)"
+          ]
+        }
+      },
+      "divergent": {
+        "multirate": {
+          "rho_sup": 1.475741946448155,
+          "omega_peak": 5.036412054367681,
+          "eps_replay": 0.001,
+          "k_max": Infinity
+        },
+        "rho_eig_sup": 1.475741946448159,
+        "cert": {
+          "feasible": false,
+          "status": "rejected",
+          "slack": {
+            "values": {
+              "noise": NaN,
+              "bandwidth": 4.074366543152521e-09,
+              "stiffness": 0.000256,
+              "robustness_A": NaN,
+              "robustness_io": NaN,
+              "routing": NaN,
+              "representation": NaN
+            },
+            "violated": [],
+            "unknown": [
+              "noise",
+              "robustness_A",
+              "robustness_io",
+              "routing",
+              "representation"
+            ],
+            "reasons": {},
+            "status": "no violation on evaluated axes"
+          },
+          "items": {
+            "slack": {
+              "value": {
+                "noise": NaN,
+                "bandwidth": 4.074366543152521e-09,
+                "stiffness": 0.000256,
+                "robustness_A": NaN,
+                "robustness_io": NaN,
+                "routing": NaN,
+                "representation": NaN
+              },
+              "verdict": "no violation on evaluated axes",
+              "detail": "violated=-, unknown=['noise', 'robustness_A', 'robustness_io', 'routing', 'representation']"
+            },
+            "resolvent": {
+              "value": {
+                "Gamma": 1000.0,
+                "Gamma_proj": 1000.0,
+                "method": "diag",
+                "projected": false
+              },
+              "verdict": "pass",
+              "detail": "\u0393_proj=1000"
+            },
+            "hinf": {
+              "value": 1000.0009536743114,
+              "verdict": "pass",
+              "detail": "\u2016H\u2016\u221e"
+            },
+            "lyapunov": {
+              "value": {
+                "sigma_y": 22.360679774997898,
+                "sigma_y2": 500.0,
+                "h2_finite": true,
+                "method": "direct"
+              },
+              "verdict": "pass",
+              "detail": "\u03c3_y=22.36 (direct)"
+            },
+            "multirate": {
+              "value": {
+                "rho_sup": 1.475741946448155,
+                "k_max": Infinity
+              },
+              "verdict": "rejected",
+              "detail": "multirate split divergent: rho_sup=1.476 \u2265 1; multirate split illegal: k_max=inf < 1"
+            }
+          },
+          "binding_axis": "stiffness",
+          "rejection_reasons": [
+            "multirate split divergent: rho_sup=1.476 \u2265 1",
+            "multirate split illegal: k_max=inf < 1"
+          ],
+          "assumptions": [
+            "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+            "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)",
+            "\u03c3_max WR bound sufficient-not-necessary (\u00a74.3: non-normal splits can converge below the \u03c3_max certificate; contract rejects only on \u03c1_sup\u22651)"
+          ]
+        }
+      }
+    },
+    "feedthrough": {
+      "feasible": false,
+      "status": "infeasible",
+      "slack": {
+        "values": {
+          "noise": Infinity,
+          "bandwidth": 3.183098861837907e-08,
+          "stiffness": 2e-06,
+          "robustness_A": NaN,
+          "robustness_io": NaN,
+          "routing": NaN,
+          "representation": NaN
+        },
+        "violated": [
+          "noise"
+        ],
+        "unknown": [
+          "robustness_A",
+          "robustness_io",
+          "routing",
+          "representation"
+        ],
+        "reasons": {
+          "noise": "add C only on nodes with large ||H_i||\u2082 (\u03c3\u00b2 = \u03b1kT/C)"
+        },
+        "status": "infeasible"
+      },
+      "items": {
+        "slack": {
+          "value": {
+            "noise": Infinity,
+            "bandwidth": 3.183098861837907e-08,
+            "stiffness": 2e-06,
+            "robustness_A": NaN,
+            "robustness_io": NaN,
+            "routing": NaN,
+            "representation": NaN
+          },
+          "verdict": "infeasible",
+          "detail": "violated=['noise'], unknown=['robustness_A', 'robustness_io', 'routing', 'representation']"
+        },
+        "resolvent": {
+          "value": {
+            "Gamma": 1.0,
+            "Gamma_proj": 1.0,
+            "method": "diag",
+            "projected": false
+          },
+          "verdict": "pass",
+          "detail": "\u0393_proj=1"
+        },
+        "hinf": {
+          "value": 0.0,
+          "verdict": "pass",
+          "detail": "\u2016H\u2016\u221e"
+        },
+        "lyapunov": {
+          "value": {
+            "sigma_y": Infinity,
+            "sigma_y2": Infinity,
+            "h2_finite": false,
+            "method": "direct-feedthrough (sys.D\u22600, \u2016D\u2016=1.00e+00)"
+          },
+          "verdict": "violation",
+          "detail": "\u03c3_y=inf (direct-feedthrough (sys.D\u22600, \u2016D\u2016=1.00e+00))"
+        }
+      },
+      "binding_axis": "noise",
+      "rejection_reasons": [],
+      "assumptions": [
+        "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
+      ]
+    },
+    "metric": {
+      "has_imaginary": true,
+      "gamma_M": 1.9999999999959588,
+      "gamma_bare": 2.077491900228284,
+      "cert": {
+        "feasible": false,
+        "status": "no violation on evaluated axes",
+        "slack": {
+          "values": {
+            "noise": NaN,
+            "bandwidth": 1.599547166757792e-06,
+            "stiffness": 0.00020100502512626587,
+            "robustness_A": NaN,
+            "robustness_io": NaN,
+            "routing": NaN,
+            "representation": NaN
+          },
+          "violated": [],
+          "unknown": [
+            "noise",
+            "robustness_A",
+            "robustness_io",
+            "routing",
+            "representation"
+          ],
+          "reasons": {},
+          "status": "no violation on evaluated axes"
+        },
+        "items": {
+          "slack": {
+            "value": {
+              "noise": NaN,
+              "bandwidth": 1.599547166757792e-06,
+              "stiffness": 0.00020100502512626587,
+              "robustness_A": NaN,
+              "robustness_io": NaN,
+              "routing": NaN,
+              "representation": NaN
+            },
+            "verdict": "no violation on evaluated axes",
+            "detail": "violated=-, unknown=['noise', 'robustness_A', 'robustness_io', 'routing', 'representation']"
+          },
+          "resolvent": {
+            "value": {
+              "Gamma": 4555109.981771143,
+              "Gamma_proj": 1.9999999999959588,
+              "method": "sweep-M",
+              "projected": true
+            },
+            "verdict": "pass",
+            "detail": "\u0393_proj=2"
+          },
+          "hinf": {
+            "value": 0.0,
+            "verdict": "pass",
+            "detail": "\u2016H\u2016\u221e"
+          },
+          "lyapunov": {
+            "value": {
+              "sigma_y": 0.0,
+              "sigma_y2": 0.0,
+              "h2_finite": true,
+              "method": "qz"
+            },
+            "verdict": "pass",
+            "detail": "\u03c3_y=0 (qz)"
+          }
+        },
+        "binding_axis": "stiffness",
+        "rejection_reasons": [],
+        "assumptions": [
+          "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+          "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
+        ]
+      }
+    },
+    "sde": {
+      "good": {
+        "feasible": false,
+        "status": "no violation on evaluated axes",
+        "slack": {
+          "values": {
+            "noise": NaN,
+            "bandwidth": 4.074366543152521e-09,
+            "stiffness": 0.000256,
+            "robustness_A": NaN,
+            "robustness_io": NaN,
+            "routing": NaN,
+            "representation": NaN
+          },
+          "violated": [],
+          "unknown": [
+            "noise",
+            "robustness_A",
+            "robustness_io",
+            "routing",
+            "representation"
+          ],
+          "reasons": {},
+          "status": "no violation on evaluated axes"
+        },
+        "items": {
+          "slack": {
+            "value": {
+              "noise": NaN,
+              "bandwidth": 4.074366543152521e-09,
+              "stiffness": 0.000256,
+              "robustness_A": NaN,
+              "robustness_io": NaN,
+              "routing": NaN,
+              "representation": NaN
+            },
+            "verdict": "no violation on evaluated axes",
+            "detail": "violated=-, unknown=['noise', 'robustness_A', 'robustness_io', 'routing', 'representation']"
+          },
+          "resolvent": {
+            "value": {
+              "Gamma": 1000.0,
+              "Gamma_proj": 1000.0,
+              "method": "diag",
+              "projected": false
+            },
+            "verdict": "pass",
+            "detail": "\u0393_proj=1000"
+          },
+          "hinf": {
+            "value": 1000.0009536743114,
+            "verdict": "pass",
+            "detail": "\u2016H\u2016\u221e"
+          },
+          "lyapunov": {
+            "value": {
+              "sigma_y": 22.360679774997898,
+              "sigma_y2": 500.0,
+              "h2_finite": true,
+              "method": "direct"
+            },
+            "verdict": "pass",
+            "detail": "\u03c3_y=22.36 (direct)"
+          },
+          "sde_cert": {
+            "value": {
+              "ratio": 100.0,
+              "warnings": []
+            },
+            "verdict": "pass",
+            "detail": "B_noise/B_req=100, passes_10x=True, passes_100x=True"
+          }
+        },
+        "binding_axis": "stiffness",
+        "rejection_reasons": [],
+        "assumptions": [
+          "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+          "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
+        ]
+      },
+      "bad": {
+        "feasible": false,
+        "status": "rejected",
+        "slack": {
+          "values": {
+            "noise": NaN,
+            "bandwidth": 4.074366543152521e-09,
+            "stiffness": 0.000256,
+            "robustness_A": NaN,
+            "robustness_io": NaN,
+            "routing": NaN,
+            "representation": NaN
+          },
+          "violated": [],
+          "unknown": [
+            "noise",
+            "robustness_A",
+            "robustness_io",
+            "routing",
+            "representation"
+          ],
+          "reasons": {},
+          "status": "no violation on evaluated axes"
+        },
+        "items": {
+          "slack": {
+            "value": {
+              "noise": NaN,
+              "bandwidth": 4.074366543152521e-09,
+              "stiffness": 0.000256,
+              "robustness_A": NaN,
+              "robustness_io": NaN,
+              "routing": NaN,
+              "representation": NaN
+            },
+            "verdict": "no violation on evaluated axes",
+            "detail": "violated=-, unknown=['noise', 'robustness_A', 'robustness_io', 'routing', 'representation']"
+          },
+          "resolvent": {
+            "value": {
+              "Gamma": 1000.0,
+              "Gamma_proj": 1000.0,
+              "method": "diag",
+              "projected": false
+            },
+            "verdict": "pass",
+            "detail": "\u0393_proj=1000"
+          },
+          "hinf": {
+            "value": 1000.0009536743114,
+            "verdict": "pass",
+            "detail": "\u2016H\u2016\u221e"
+          },
+          "lyapunov": {
+            "value": {
+              "sigma_y": 22.360679774997898,
+              "sigma_y2": 500.0,
+              "h2_finite": true,
+              "method": "direct"
+            },
+            "verdict": "pass",
+            "detail": "\u03c3_y=22.36 (direct)"
+          },
+          "sde_cert": {
+            "value": {
+              "ratio": 0.5,
+              "warnings": [
+                "B_noise/B_req = 0.5 < 10\uff1a\u65b9\u5dee\u4e8f\u635f 70.5%\uff0c\u767d\u566a\u58f0\u8fd1\u4f3c\u5931\u6548"
+              ]
+            },
+            "verdict": "rejected",
+            "detail": "sde_cert noise contract violated: B_noise/B_req=0.5 < 10 (white-noise approximation fails)"
+          }
+        },
+        "binding_axis": "stiffness",
+        "rejection_reasons": [
+          "sde_cert noise contract violated: B_noise/B_req=0.5 < 10 (white-noise approximation fails)"
+        ],
+        "assumptions": [
+          "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+          "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
+        ]
+      }
+    },
+    "assumptions": {
+      "feasible": true,
+      "status": "feasible",
+      "slack": {
+        "values": {
+          "noise": 0.223606797749979,
+          "bandwidth": 4.074366543152521e-09,
+          "stiffness": 0.000256,
+          "robustness_A": 0.1,
+          "robustness_io": 0.10000009536743115,
+          "routing": 0.05,
+          "representation": 0.25
+        },
+        "violated": [],
+        "unknown": [],
+        "reasons": {},
+        "status": "feasible"
+      },
+      "items": {
+        "slack": {
+          "value": {
+            "noise": 0.223606797749979,
+            "bandwidth": 4.074366543152521e-09,
+            "stiffness": 0.000256,
+            "robustness_A": 0.1,
+            "robustness_io": 0.10000009536743115,
+            "routing": 0.05,
+            "representation": 0.25
+          },
+          "verdict": "feasible",
+          "detail": "violated=-, unknown=-"
+        },
+        "resolvent": {
+          "value": {
+            "Gamma": 1000.0,
+            "Gamma_proj": 1000.0,
+            "method": "diag",
+            "projected": false
+          },
+          "verdict": "pass",
+          "detail": "\u0393_proj=1000"
+        },
+        "hinf": {
+          "value": 1000.0009536743114,
+          "verdict": "pass",
+          "detail": "\u2016H\u2016\u221e"
+        },
+        "lyapunov": {
+          "value": {
+            "sigma_y": 22.360679774997898,
+            "sigma_y2": 500.0,
+            "h2_finite": true,
+            "method": "direct"
+          },
+          "verdict": "pass",
+          "detail": "\u03c3_y=22.36 (direct)"
+        },
+        "manifold": {
+          "value": 10.0,
+          "verdict": "pass",
+          "detail": "chosen \u03b3=10 \u2208 (1, 1e+04)"
+        },
+        "loop": {
+          "value": 10.0,
+          "verdict": "pass",
+          "detail": "S_peak=10 < threshold 50"
+        },
+        "multirate": {
+          "value": {
+            "rho_sup": 0.5,
+            "k_max": 3
+          },
+          "verdict": "pass",
+          "detail": "rho_sup=0.5 < 1, k_max=3"
+        }
+      },
+      "binding_axis": "representation",
+      "rejection_reasons": [],
+      "assumptions": [
+        "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+        "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)",
+        "loop_margins is a necessary-condition probe, not exact DDE roots (\u00a76.15: \u03c3_min dip on a finite \u03c9 grid; scalar_dde_root is the exact 1-DOF analog)",
+        "\u03c3_max WR bound sufficient-not-necessary (\u00a74.3: non-normal splits can converge below the \u03c3_max certificate; contract rejects only on \u03c1_sup\u22651)"
+      ]
+    }
+  },
+  "checks": [
+    {
+      "name": "feasible: status verbatim 'feasible'",
+      "got": "feasible",
+      "expected": "feasible",
+      "passed": true
+    },
+    {
+      "name": "feasible: no structural rejection",
+      "got": "-",
+      "expected": "-",
+      "passed": true
+    },
+    {
+      "name": "feasible: slack block with 7 axes",
+      "got": "bandwidth,noise,representation,robustness_A,robustness_io,routing,stiffness",
+      "expected": "bandwidth,noise,representation,robustness_A,robustness_io,routing,stiffness",
+      "passed": true
+    },
+    {
+      "name": "feasible: binding_axis reported (max finite axis)",
+      "got": "representation",
+      "expected": "representation",
+      "passed": true
+    },
+    {
+      "name": "kappa infeasible: status",
+      "got": "infeasible",
+      "expected": "infeasible",
+      "passed": true
+    },
+    {
+      "name": "kappa infeasible: binding_axis",
+      "got": "stiffness",
+      "expected": "stiffness",
+      "passed": true
+    },
+    {
+      "name": "manifold empty window \u2192 rejected",
+      "got": "rejected",
+      "expected": "rejected",
+      "passed": true
+    },
+    {
+      "name": "manifold chosen outside window \u2192 rejected",
+      "got": "rejected",
+      "expected": "rejected",
+      "passed": true
+    },
+    {
+      "name": "loop baseline S_peak finite (H=1 edges)",
+      "got": "10.04",
+      "expected": "< 50",
+      "passed": true
+    },
+    {
+      "name": "loop small delay: S_peak finite, no rejection",
+      "got": "14.7",
+      "expected": "< 50, pass",
+      "passed": true
+    },
+    {
+      "name": "loop delayed past \u03c4_ex: S_peak blows up \u2192 rejected",
+      "got": "500.6",
+      "expected": "\u2265 50, rejected",
+      "passed": true
+    },
+    {
+      "name": "loop: S_peak(delayed) \u226b S_peak(baseline)",
+      "got": "500.6 vs 10.04",
+      "expected": "\u2265 10\u00d7",
+      "passed": true
+    },
+    {
+      "name": "multirate convergent: \u03c1_sup<1, k_max\u22651, no rejection",
+      "got": "\u03c1=0.7379 k=20",
+      "expected": "<1, \u22651, pass",
+      "passed": true
+    },
+    {
+      "name": "multirate divergent: \u03c1_sup\u22651 \u2192 rejected",
+      "got": "\u03c1=1.4757",
+      "expected": "rejected",
+      "passed": true
+    },
+    {
+      "name": "multirate k_max recorded on both branches",
+      "got": "20/inf",
+      "expected": "both recorded",
+      "passed": true
+    },
+    {
+      "name": "D feedthrough: H2=\u221e \u2192 noise axis inf \u2192 infeasible",
+      "got": "infeasible (noise=inf)",
+      "expected": "infeasible, binding=noise",
+      "passed": true
+    },
+    {
+      "name": "metric path: projected \u0393_M finite on conservation system",
+      "got": "2 (projected=True)",
+      "expected": "finite",
+      "passed": true
+    },
+    {
+      "name": "metric matters: \u0393_M \u2260 bare \u0393_proj",
+      "got": "2 vs 2.077",
+      "expected": "ratio \u2260 1",
+      "passed": true
+    },
+    {
+      "name": "sde_cert good: pass (B_noise/B_req\u2265100)",
+      "got": "no violation on evaluated axes",
+      "expected": "no violation on evaluated axes",
+      "passed": true
+    },
+    {
+      "name": "sde_cert bad (B_noise/B_req<10) \u2192 rejected",
+      "got": "rejected",
+      "expected": "rejected",
+      "passed": true
+    },
+    {
+      "name": "assumptions non-empty and cover evaluated contracts",
+      "got": "4 items",
+      "expected": "contains: \u0394A declared conserva; \u03c4_c/\u03c4_min\u226a1; loop_margins; \u03c3_max WR bound",
+      "passed": true
+    },
+    {
+      "name": "NaN axis \u21d2 NOT verbatim 'feasible'",
+      "got": "no violation on evaluated axes",
+      "expected": "no violation on evaluated axes",
+      "passed": true
+    }
+  ],
+  "summary": {
+    "n_checks": 22,
+    "n_passed": 22
+  }
+}

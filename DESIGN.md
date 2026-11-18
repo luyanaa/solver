@@ -1668,12 +1668,17 @@ Gamma 与 Bessel 的边界也按 §1.5 执行：Gamma 直接拒绝（native-only
       lowering/
         ✅ reduce.py      # jet/一阶化、状态增广、rational 化、canonical form
                           # 实测：Lorenz/Duffing polynomial；HH rational；Gamma 拒绝
-        normalize.py      # 无量纲化 + V=Sx 预条件（J_V=T₀SJ_xS⁻¹）
+        ✅ normalize.py    # 坐标中心化 + 无量纲化（x_i=X_i x̂_i+x0_i, t=T₀τ，
+                          # Expr 重写；pipeline_normalize 出 Normalization 记录）
         closure.py        # P_N 投影、η_closure、基选择
         split.py          # F = L + N，CSP/QSSA
         basis.py          # T 的候选集 + 条件数税
-        scaling.py        # A_t 公式 + 频窗检查
-        budget.py         # 按 ‖H_i‖₂ 分配 C_i
+        ✅ scaling.py      # 可控/可观 Gramian 对角平衡 → S_x (rms3σ / Moore d_i)
+                          # + α=max|λ|/(2πB_hw·margin)；自动构造 PhysicalScaling；
+                          # 频窗检查（eig 不变性断言）
+        ✅ budget.py       # P6 证书聚合：slack + Γ_M + σ_y² + manifold-γ 窗
+                          # + loop ‖S‖∞ + multirate k_max + sde_cert →
+                          # Certificate（rejected/infeasible/no-violation/feasible）
         interface.py      # §6.4 单通量源+镜像；§6.5 fitting/capturing selector
       twin/
         ✅ spice/extract.py  # 真实 PDK 提取：ngspice 电流镜 → λ, g_m/I_D, r_o, ratio
@@ -1700,6 +1705,7 @@ Gamma 与 Bessel 的边界也按 §1.5 执行：Gamma 直接拒绝（native-only
         run_substrate.py            # Phase 8：MEMS 模态/Duffing、fluidic diffusion、photonic MVM
         ✅ run_sde.py               # OU/GBM/双势阱 + CRN/moment 参数恢复（27/27）
         ✅ run_multirate.py         # §4.3 WR/S&H 合法性验收（16/16）
+        ✅ run_compiler.py          # P6 证书聚合层验收（22/22）
         diffusion.py biharmonic.py burgers.py robertson.py shear.py hh.py
         airfoil.py bore.py front.py   # 20 个 benchmark 待补；当前模型在 run_phase0.py 内
       results/                    # report.txt / twin_experiments.json /

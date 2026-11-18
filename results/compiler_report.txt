@@ -1,0 +1,66 @@
+
+==============================================================================
+P6 验收：可行性证书聚合层（budget.py，DESIGN.md §4）
+==============================================================================
+
+==============================================================================
+A. 状态矩阵
+==============================================================================
+              case                         status   binding_axis                                                                      rejections feasible
+          feasible                       feasible representation                                                                               -     True
+  infeasible_kappa                     infeasible      stiffness                                                                               -    False
+    manifold_empty                       rejected      stiffness                        manifold stabilization infeasible: no γ in [γ_min,γ_max]    False
+  manifold_outside                       rejected      stiffness manifold stabilization infeasible: chosen γ=10 outside (γ_min=100, γ_max=1e+04)    False
+       feedthrough                     infeasible          noise                                                                               -    False
+  nan_not_feasible no violation on evaluated axes      stiffness                                                                               -    False
+
+==============================================================================
+B. loop ‖S‖∞（τ_ex=3.1568e-10 s，阈值 50）
+==============================================================================
+      edge_map S_peak             certificate status
+  H=1 baseline  10.04                              -
+     τ=1e-10 s   14.7 no violation on evaluated axes
+   τ=1.02·τ_ex  500.6                       rejected
+  τ_ex=(π/2−φ)/|λ| 是标量 DDE 精确边界；刚过界时 S_peak 沿网格冲到 ~10²——聚合层按阈值拒绝，且不把 loop_margins 当精确根（assumptions 里留痕）。
+
+==============================================================================
+C. multirate 双岛分裂
+==============================================================================
+                split  ρ_sup ρ_eig_sup k_max             certificate status
+  convergent (c=0.15) 0.7379    0.7379    20 no violation on evaluated axes
+   divergent (c=0.30) 1.4757    1.4757   inf                       rejected
+  收敛分支进证书不产生拒绝；发散分支按 §4.3 合同拒绝（ρ_sup≥1）。
+
+==============================================================================
+D. 度量 Γ 投影路径（守恒系统，has_imaginary=True）
+==============================================================================
+  Γ_M(energy)=2 vs bare Γ_proj=2.07749 —— 投影+度量组合路径（resolvent.py 修复）在聚合层可用。
+
+==============================================================================
+E. 验收
+==============================================================================
+                                                     check                                                                         got                                                                    expected PASS
+                      feasible: status verbatim 'feasible'                                                                    feasible                                                                    feasible  yes
+                         feasible: no structural rejection                                                                           -                                                                           -  yes
+                         feasible: slack block with 7 axes bandwidth,noise,representation,robustness_A,robustness_io,routing,stiffness bandwidth,noise,representation,robustness_A,robustness_io,routing,stiffness  yes
+         feasible: binding_axis reported (max finite axis)                                                              representation                                                              representation  yes
+                                  kappa infeasible: status                                                                  infeasible                                                                  infeasible  yes
+                            kappa infeasible: binding_axis                                                                   stiffness                                                                   stiffness  yes
+                          manifold empty window → rejected                                                                    rejected                                                                    rejected  yes
+                 manifold chosen outside window → rejected                                                                    rejected                                                                    rejected  yes
+                   loop baseline S_peak finite (H=1 edges)                                                                       10.04                                                                        < 50  yes
+             loop small delay: S_peak finite, no rejection                                                                        14.7                                                                  < 50, pass  yes
+        loop delayed past τ_ex: S_peak blows up → rejected                                                                       500.6                                                              ≥ 50, rejected  yes
+                  loop: S_peak(delayed) ≫ S_peak(baseline)                                                              500.6 vs 10.04                                                                       ≥ 10×  yes
+      multirate convergent: ρ_sup<1, k_max≥1, no rejection                                                               ρ=0.7379 k=20                                                                <1, ≥1, pass  yes
+                   multirate divergent: ρ_sup≥1 → rejected                                                                    ρ=1.4757                                                                    rejected  yes
+                 multirate k_max recorded on both branches                                                                      20/inf                                                               both recorded  yes
+         D feedthrough: H2=∞ → noise axis inf → infeasible                                                      infeasible (noise=inf)                                                   infeasible, binding=noise  yes
+  metric path: projected Γ_M finite on conservation system                                                          2 (projected=True)                                                                      finite  yes
+                         metric matters: Γ_M ≠ bare Γ_proj                                                                  2 vs 2.077                                                                   ratio ≠ 1  yes
+                   sde_cert good: pass (B_noise/B_req≥100)                                              no violation on evaluated axes                                              no violation on evaluated axes  yes
+                sde_cert bad (B_noise/B_req<10) → rejected                                                                    rejected                                                                    rejected  yes
+       assumptions non-empty and cover evaluated contracts                                                                     4 items   contains: ΔA declared conserva; τ_c/τ_min≪1; loop_margins; σ_max WR bound  yes
+                        NaN axis ⇒ NOT verbatim 'feasible'                                              no violation on evaluated axes                                              no violation on evaluated axes  yes
+
+  22/22 checks passed

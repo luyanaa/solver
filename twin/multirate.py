@@ -49,7 +49,7 @@ import numpy as np
 from .route import PureDelay
 
 __all__ = ["wr_iteration_matrix", "wr_spectral_radius", "wr_error_bound",
-           "k_max", "zoh_edge"]
+           "resolvent_norm_inf", "k_max", "zoh_edge"]
 
 
 def wr_iteration_matrix(E, A_diag, A_off, omega):
@@ -104,6 +104,26 @@ def wr_spectral_radius(E, A_diag, A_off, omega_grid):
         normal_gap=float(smax[i] / rho_eig) if rho_eig > 0 else float("inf"),
         lambda_grid=lam,
         sigma_max_grid=smax, omega_grid=np.asarray(omega_grid, dtype=float))
+
+
+def resolvent_norm_inf(E, A_diag, omega_grid):
+    """R∞ = sup_ω σ_max((jωE − A_diag)⁻¹)：重放误差 → 状态误差的最坏增益。
+
+    §4.3 合同的保守侧（任意端口扰动方向都成立）；replay 噪声只从 A_off
+    交换口进入时紧值就是 ρ_sup 本身（run_multirate.py 的 R_tight）。
+    """
+    E = np.asarray(E, dtype=complex)
+    A_diag = np.asarray(A_diag, dtype=complex)
+    w = np.atleast_1d(np.asarray(omega_grid, dtype=float))
+    eye = np.eye(A_diag.shape[0])
+    peak = 0.0
+    peak_w = float(w[0])
+    for wi in w:
+        s = np.linalg.svd(np.linalg.solve(1j * wi * E - A_diag, eye),
+                          compute_uv=False)[0]
+        if s > peak:
+            peak, peak_w = float(s), float(wi)
+    return dict(resolvent_norm_inf=peak, omega_peak=peak_w)
 
 
 def wr_error_bound(rho_sup, resolvent_norm_inf, eps_replay, k, e0_norm=1.0):

@@ -3860,7 +3860,7 @@
       "closure_zoh": {
         "name": "zoh_island_swap",
         "latency": 5e-07,
-        "phase_delay_omega_c": 4.999999999999999e-07,
+        "phase_delay_omega_c": 4.999999999995066e-07,
         "latency_class": "L4",
         "noise_rms": 0.0,
         "tau_max_abs": 1.3888888888888887e-06,
@@ -3881,7 +3881,7 @@
       "closure_manual": {
         "name": "zoh_island_swap",
         "latency": 5e-07,
-        "phase_delay_omega_c": 4.999999999999999e-07,
+        "phase_delay_omega_c": 4.999999999995066e-07,
         "latency_class": "L4",
         "noise_rms": 0.0,
         "tau_max_abs": 1.3888888888888887e-06,
