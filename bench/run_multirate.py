@@ -13,8 +13,11 @@
        强耦合 NN(c=1.1)：特征值率本身 >1 → 实测发散（负控制）。
     B  replay floor    每次迭代注入带内重放噪声；平台高度 vs 预测界，
                        观测拐点 k vs 公式 k_max。
-    C  ZOH→route       zoh_edge(T_s) 过 route_closure 的 feedback 判定，
-                       与手工 PureDelay(T_s/2) 完全同一套机器。
+    C  ZOH→route       zoh_edge(T_s) 返回真 ZOH 块 H(s)=(1−e^{−sTs})/(sTs)
+                       = e^{−sTs/2}·sinc(sTs/2)：相位=PureDelay(Ts/2)，幅度带
+                       sinc droop（Nyquist 处 2/π≈0.637，−3.92 dB）。droop 进
+                       gain 轴；混叠与重构滤波是独立预算。仅当 droop<ε
+                       (ωT_s≲0.155) 才允许显式记录地退化成 PureDelay(T_s/2)。
 
 WR 实现：精确 ZOH 离散（expm 步进，交换波形分段常值），**周期域**
 求解（每迭代解周期边界条件 x(0)=(I−Φ^P)⁻¹s）。合同 ρ_sup 公式描述
@@ -43,9 +46,10 @@ os.environ.setdefault("MKL_NUM_THREADS", "1")
 import numpy as np
 from scipy.linalg import block_diag, expm
 
-from twin.multirate import (k_max, wr_error_bound, wr_iteration_matrix,
-                            wr_spectral_radius, zoh_edge)
-from twin.route import PureDelay, RouteEdge, RouteSpec, route_closure
+from twin.multirate import (DROOP_EPS_DEFAULT, droop_omega_ts, k_max,
+                            wr_error_bound, wr_iteration_matrix,
+                            wr_spectral_radius, zoh_contract, zoh_edge)
+from twin.route import PureDelay, RouteEdge, RouteSpec, ZOH, route_closure
 
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results")
 _LINES: list[str] = []
@@ -300,15 +304,64 @@ def case_replay():
 
 def case_zoh():
     T_s = 1e-6
-    ez = RouteEdge((zoh_edge(T_s),), "zoh_island_swap")
+    w_nyq = np.pi / T_s
+    # 真 ZOH 边缘（不退化）vs 手工 PureDelay：相位同、幅度差 sinc
+    ez = RouteEdge((ZOH(T_s),), "zoh_island_swap")
     em = RouteEdge((PureDelay(T_s / 2.0),), "zoh_island_swap")
     spec = RouteSpec(omega_max=2 * np.pi * 10e3, omega_c=2 * np.pi * 10e3,
                      eps_phase_deg=10.0, feedback_critical=True,
                      phi_reserve_deg=5.0)
     rz = route_closure(ez, spec)
     rm = route_closure(em, spec)
-    CASES["zoh"] = dict(T_s=T_s, latency=zoh_edge(T_s).latency,
-                        closure_zoh=rz, closure_manual=rm)
+    out = dict(T_s=T_s, w_nyq=w_nyq, latency=ZOH(T_s).latency,
+               closure_zoh=rz, closure_manual=rm)
+
+    # 幅度可查：Nyquist 处 ZOH=2/π vs PureDelay=1（低带宽 spec 下才同判）
+    out["mag_zoh_nyq"] = float(abs(ZOH(T_s).H(1j * w_nyq)))
+    out["mag_pd_nyq"] = float(abs(PureDelay(T_s / 2.0).H(1j * w_nyq)))
+    out["phase_zoh_nyq"] = float(np.angle(ZOH(T_s).H(1j * w_nyq)))
+    out["phase_pd_nyq"] = float(np.angle(PureDelay(T_s / 2.0).H(1j * w_nyq)))
+    out["dc_zoh"] = float(np.real(ZOH(T_s).H(0.0)))
+
+    # 高带宽负载：信号 ω 逼近 Nyquist ⇒ droop 惩罚可见（gain 判据翻 NO）
+    spec_hi = RouteSpec(omega_max=w_nyq, omega_c=w_nyq, eps_gain=0.02,
+                        eps_phase_deg=10.0, feedback_critical=True,
+                        phi_reserve_deg=5.0)
+    rz_hi = route_closure(ez, spec_hi)
+    rm_hi = route_closure(em, spec_hi)
+    out["closure_zoh_hi"] = rz_hi
+    out["closure_pd_hi"] = rm_hi
+
+    # 低带宽负载：ωT_s≪1 ⇒ droop 可忽略，允许退化（记录在案）
+    w_lo = 0.01 * w_nyq                       # ωT_s≈0.031 ⇒ droop≈8e-6
+    ez_lo = RouteEdge((ZOH(T_s),), "zoh_lo")
+    spec_lo = RouteSpec(omega_max=w_lo, omega_c=w_lo, eps_gain=0.02,
+                        eps_phase_deg=10.0, feedback_critical=True,
+                        phi_reserve_deg=5.0)
+    out["closure_zoh_lo"] = route_closure(ez_lo, spec_lo)
+    out["droop_lo"] = 1.0 - float(abs(ZOH(T_s).H(1j * w_lo)))
+    dec_lo = zoh_edge(T_s, omega_max=w_lo)
+    out["degrade_lo"] = dict(degraded=dec_lo["degraded"],
+                             block=str(type(dec_lo["block"]).__name__),
+                             droop=dec_lo["droop"])
+    # 高带宽下必须**不**退化（拒绝静默延迟近似）
+    dec_hi = zoh_edge(T_s, omega_max=w_nyq)
+    out["degrade_hi"] = dict(degraded=dec_hi["degraded"],
+                             block=str(type(dec_hi["block"]).__name__),
+                             droop=dec_hi["droop"])
+    # 退化阈值解析值 vs 直接求 droop(wTs)
+    out["wts_threshold"] = droop_omega_ts(DROOP_EPS_DEFAULT)
+    out["droop_at_threshold"] = 1.0 - float(
+        abs(ZOH(1.0).H(1j * out["wts_threshold"])))
+
+    # 三项独立预算：droop / aliasing / reconstruction
+    out["contract_hi"] = zoh_contract(T_s, 0.95 * w_nyq)
+    out["contract_mid"] = zoh_contract(T_s, 0.7 * w_nyq)
+    out["contract_lo"] = zoh_contract(T_s, 0.1 * w_nyq)
+    out["contract_recon"] = zoh_contract(T_s, 0.95 * w_nyq,
+                                         recon_filter_db=-40.0)
+
+    CASES["zoh"] = out
 
 
 # ---------------------------------------------------------------------------
@@ -378,18 +431,103 @@ def acceptance():
     z = CASES["zoh"]
     add("zoh_edge latency = T_s/2", "%.3e s" % z["latency"],
         "%.3e s" % (z["T_s"] / 2), abs(z["latency"] - z["T_s"] / 2) < 1e-15)
-    same = all(z["closure_zoh"][key] == z["closure_manual"][key]
-               for key in ("latency", "phase_delay_omega_c", "verdict",
-                           "pass_gain", "pass_phase", "pass_noise",
-                           "pass_absolute", "noise_rms"))
-    add("zoh closure ≡ manual PureDelay closure",
-        "verdict=%s, abs=%s" % (z["closure_zoh"]["verdict"],
-                                z["closure_zoh"]["pass_absolute"]),
-        "identical dicts", same)
+    cz_, cm_ = z["closure_zoh"], z["closure_manual"]
+    same = all(
+        (abs(cz_[k] - cm_[k]) <= 1e-8 * max(abs(cm_[k]), 1e-300))
+        if isinstance(cm_[k], float) else cz_[k] == cm_[k]
+        for k in ("latency", "phase_delay_omega_c",
+                  "max_phase_err_deg", "noise_rms", "verdict",
+                  "pass_gain", "pass_phase", "pass_noise", "pass_absolute"))
+    add("zoh closure ≡ manual PureDelay closure (low-ω spec, tol 1e-8)",
+        "verdict=%s, gain_err=%.2e vs %.2e"
+        % (cz_["verdict"], cz_["max_gain_err"], cm_["max_gain_err"]),
+        "identical within numerical tol", same)
     add("zoh passes feedback absolute-delay budget",
         "τ=%.2e ≤ τ_max=%.2e" % (z["closure_zoh"]["phase_delay_omega_c"],
                                  z["closure_zoh"]["tau_max_abs"]),
         "pass_absolute", z["closure_zoh"]["pass_absolute"])
+
+    # --- ZOH sinc droop（新增：幅度项） ---
+    mag_2pi = 2.0 / np.pi
+    add("ZOH magnitude @ Nyquist = 2/π (droop)",
+        "%.6f" % z["mag_zoh_nyq"], "%.6f" % mag_2pi,
+        abs(z["mag_zoh_nyq"] - mag_2pi) < 1e-9)
+    add("PureDelay magnitude @ Nyquist = 1.0 (the wrong old model)",
+        "%.6f" % z["mag_pd_nyq"], "1.000000",
+        abs(z["mag_pd_nyq"] - 1.0) < 1e-12)
+    add("ZOH phase @ Nyquist = −π/2 (≡ PureDelay phase)",
+        "%.6f vs %.6f rad" % (z["phase_zoh_nyq"], z["phase_pd_nyq"]),
+        "both = −π/2", abs(z["phase_zoh_nyq"] + np.pi / 2) < 1e-9
+        and abs(z["phase_pd_nyq"] + np.pi / 2) < 1e-9)
+    add("ZOH dc gain = 1", "%.12f" % z["dc_zoh"], "1.0",
+        abs(z["dc_zoh"] - 1.0) < 1e-12)
+    add("droop negligible well below Nyquist (ωT_s≈0.031, ≈x²/6)",
+        "%.2e" % z["droop_lo"], "< 1e-4", z["droop_lo"] < 1e-4)
+
+    # --- route 判据看到 droop 惩罚（高带宽）与不惩罚（低带宽） ---
+    rz_hi, rm_hi = z["closure_zoh_hi"], z["closure_pd_hi"]
+    add("high-ω workload: ZOH gain verdict NO (droop penalty)",
+        "gain_err=%.3f (≈1−2/π)" % rz_hi["max_gain_err"], "pass_gain=NO",
+        not rz_hi["pass_gain"])
+    add("high-ω workload: PureDelay wrongly passes gain (old bug)",
+        "gain_err=%.2e" % rm_hi["max_gain_err"], "pass_gain=YES",
+        rm_hi["pass_gain"])
+    add("high-ω workload: ZOH phase err ≡ PureDelay phase err (droop doesn't touch phase)",
+        "%.6f° vs %.6f°" % (rz_hi["max_phase_err_deg"],
+                            rm_hi["max_phase_err_deg"]),
+        "equal (τ_ideal=0 ⇒ both measure absolute phase)",
+        abs(rz_hi["max_phase_err_deg"] - rm_hi["max_phase_err_deg"]) < 1e-6)
+    add("low-ω workload: ZOH passes full closure (droop < ε)",
+        "gain_err=%.2e droop=%.2e"
+        % (z["closure_zoh_lo"]["max_gain_err"], z["droop_lo"]),
+        "pass_gain=YES", z["closure_zoh_lo"]["pass_gain"])
+
+    # --- 显式退化（记录，不静默） ---
+    dlo, dhi = z["degrade_lo"], z["degrade_hi"]
+    add("auto-degrade at low ω → PureDelay(T_s/2), recorded",
+        "%s (droop %.2e < ε)" % (dlo["block"], dlo["droop"]),
+        "degraded=True, block=PureDelay",
+        dlo["degraded"] and dlo["block"] == "PureDelay")
+    add("no degradation at Nyquist-scale ω (ZOH kept)",
+        "%s (droop %.3f)" % (dhi["block"], dhi["droop"]),
+        "degraded=False, block=ZOH",
+        (not dhi["degraded"]) and dhi["block"] == "ZOH")
+    thr, dthr = z["wts_threshold"], z["droop_at_threshold"]
+    add("degradation threshold ωT_s* from droop=ε (ε=0.01 ⇒ √(24ε)≈0.49)",
+        "ωT_s*=%.5f, droop there=%.5f" % (thr, dthr),
+        "droop(ωT_s*) = ε within 5%",
+        abs(dthr - DROOP_EPS_DEFAULT) < 0.05 * DROOP_EPS_DEFAULT
+        and abs(thr - np.sqrt(24 * DROOP_EPS_DEFAULT)) < 0.05)
+
+    # --- 三项独立预算 ---
+    chi, cmid, clo = z["contract_hi"], z["contract_mid"], z["contract_lo"]
+    add("aliasing flagged near Nyquist (violation)",
+        "ω_sig/ω_N=%.2f → %s" % (chi["bandwidth_fraction"], chi["aliasing"]),
+        "violation", chi["aliasing"] == "violation")
+    add("aliasing warning at 0.7 Nyquist",
+        "ω_sig/ω_N=%.2f → %s" % (cmid["bandwidth_fraction"], cmid["aliasing"]),
+        "warning", cmid["aliasing"] == "warning")
+    add("aliasing clean well below Nyquist",
+        "ω_sig/ω_N=%.2f → %s" % (clo["bandwidth_fraction"], clo["aliasing"]),
+        "none", clo["aliasing"] == "none")
+    cr = z["contract_recon"]
+    # 镜像位置 ω_s−ω_sig = 1.05·ω_N 处 sinc 自身的衰减（独立重算）：
+    x_img = 1.05 * np.pi / 2.0
+    atten_expected = 20.0 * np.log10(abs(np.sin(x_img) / x_img))
+    add("reconstruction filter is a separate line (not folded into droop)",
+        "declared=%s budget=%.0f dB | sinc-only image atten=%.2f dB (exp %.2f)"
+        % (cr["reconstruction"]["filter_declared"],
+           cr["reconstruction"]["recon_budget_db"],
+           cr["reconstruction"]["sinc_image_atten_db"], atten_expected),
+        "separate keys; sinc-only atten matches |sinc(1.05π/2)|",
+        cr["reconstruction"]["filter_declared"]
+        and cr["reconstruction"]["recon_budget_db"] == -40.0
+        and abs(cr["reconstruction"]["sinc_image_atten_db"]
+                - atten_expected) < 0.05)
+    add("droop term stays in route gain axis (not in alias/recon)",
+        "droop=%.4f, droop_ok=%s" % (chi["droop"], chi["droop_ok"]),
+        "droop ≈ 1−|sinc(0.475π)|=0.323, droop_ok=False",
+        abs(chi["droop"] - 0.323) < 0.01 and not chi["droop_ok"])
     return checks
 
 
@@ -454,9 +592,10 @@ def main():
            ("late 迭代速率 (≈1 ⇒ 平台)", "%.4f" % r["late_rate"])])
     emit("  超过 k_max 后误差进 ε_replay 平台——更多迭代不再降低误差。")
 
-    hr("C. ZOH → route：同一套判定机器，不建新机制")
+    hr("C. ZOH → route：真 ZOH（sinc droop）+ 三项独立预算")
     z = CASES["zoh"]
     cz, cm = z["closure_zoh"], z["closure_manual"]
+    rz_hi, rm_hi = z["closure_zoh_hi"], z["closure_pd_hi"]
     table(["field", "zoh_edge", "manual PureDelay"],
           [("latency", "%.3e" % cz["latency"], "%.3e" % cm["latency"]),
            ("phase_delay@ωc", "%.3e" % cz["phase_delay_omega_c"],
@@ -464,8 +603,37 @@ def main():
            ("noise_rms", "%.1e" % cz["noise_rms"], "%.1e" % cm["noise_rms"]),
            ("verdict", cz["verdict"], cm["verdict"]),
            ("pass_absolute", cz["pass_absolute"], cm["pass_absolute"])])
-    emit("  H_ZOH=(1−e^{−sTs})/(sTs)≈e^{−sTs/2}：跨岛 S&H = PureDelay(T_s/2)；"
-         "混叠是单独的 B_p noise 端口，不进 route 轴。")
+    table(["magnitude @ Nyquist", "ZOH (true)", "PureDelay (old)"],
+          [("|H(jω_N)|", "%.6f (2/π, −3.92 dB)" % z["mag_zoh_nyq"],
+            "%.6f (0 dB, wrong)" % z["mag_pd_nyq"]),
+           ("phase", "%.6f rad" % z["phase_zoh_nyq"],
+            "%.6f rad" % z["phase_pd_nyq"])])
+    table(["high-ω workload (ω_max=ω_N)", "ZOH", "PureDelay"],
+          [("max_gain_err", "%.4f" % rz_hi["max_gain_err"],
+            "%.2e" % rm_hi["max_gain_err"]),
+           ("pass_gain", rz_hi["pass_gain"], rm_hi["pass_gain"]),
+           ("max_phase_err_deg", "%.4f" % rz_hi["max_phase_err_deg"],
+            "%.4f" % rm_hi["max_phase_err_deg"])])
+    dlo, dhi = z["degrade_lo"], z["degrade_hi"]
+    table(["degrade decision", "block", "droop@ω_max", "degraded"],
+          [("low ω (0.01·ω_N)", dlo["block"], "%.2e" % dlo["droop"],
+            str(dlo["degraded"])),
+           ("ω_max=ω_N", dhi["block"], "%.4f" % dhi["droop"],
+            str(dhi["degraded"]))])
+    emit("  退化阈值：droop=ε(%.2f) ⇒ ωT_s*=%.5f（小 u 展开 droop≈(ωT_s)²/24，"
+         "√(24ε)=%.5f；此处 droop(ωT_s*)=%.5f）。"
+         % (DROOP_EPS_DEFAULT, z["wts_threshold"],
+            np.sqrt(24 * DROOP_EPS_DEFAULT), z["droop_at_threshold"]))
+    for tag in ("contract_hi", "contract_mid", "contract_lo"):
+        c = z[tag]
+        emit("  预算[%s] ω_sig/ω_N=%.2f：droop=%.4f (route gain 轴) | "
+             "aliasing=%s (noise 轴) | 重构滤波 declared=%s"
+             % (tag, c["bandwidth_fraction"], c["droop"], c["aliasing"],
+                c["reconstruction"]["filter_declared"]))
+    emit("  H_ZOH=(1−e^{−sTs})/(sTs)=e^{−sTs/2}·sinc(sTs/2)：相位=PureDelay(T_s/2)，"
+         "幅度带 sinc droop（Nyquist 处 2/π≈0.637）。低 ωT_s 才允许退化成"
+         " PureDelay 且记录 degraded=True；混叠与重构滤波是独立预算，"
+         "不折进 droop。")
 
     hr("D. 验收")
     checks = acceptance()

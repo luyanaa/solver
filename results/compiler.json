@@ -59,6 +59,7 @@
         }
       },
       "binding_axis": "representation",
+      "constraint": null,
       "rejection_reasons": [],
       "assumptions": [
         "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
@@ -134,6 +135,7 @@
         }
       },
       "binding_axis": "stiffness",
+      "constraint": null,
       "rejection_reasons": [],
       "assumptions": [
         "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
@@ -205,6 +207,7 @@
         }
       },
       "binding_axis": "stiffness",
+      "constraint": null,
       "rejection_reasons": [],
       "assumptions": [
         "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
@@ -281,6 +284,7 @@
         }
       },
       "binding_axis": "stiffness",
+      "constraint": null,
       "rejection_reasons": [
         "manifold stabilization infeasible: no \u03b3 in [\u03b3_min,\u03b3_max]"
       ],
@@ -359,6 +363,7 @@
         }
       },
       "binding_axis": "stiffness",
+      "constraint": null,
       "rejection_reasons": [
         "manifold stabilization infeasible: chosen \u03b3=10 outside (\u03b3_min=100, \u03b3_max=1e+04)"
       ],
@@ -442,6 +447,7 @@
           }
         },
         "binding_axis": "bandwidth",
+        "constraint": null,
         "rejection_reasons": [],
         "assumptions": [
           "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
@@ -519,6 +525,7 @@
           }
         },
         "binding_axis": "bandwidth",
+        "constraint": null,
         "rejection_reasons": [
           "loop sensitivity S_peak=500.6 exceeds threshold 50"
         ],
@@ -611,6 +618,7 @@
             }
           },
           "binding_axis": "stiffness",
+          "constraint": null,
           "rejection_reasons": [],
           "assumptions": [
             "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
@@ -700,6 +708,7 @@
             }
           },
           "binding_axis": "stiffness",
+          "constraint": null,
           "rejection_reasons": [
             "multirate split divergent: rho_sup=1.476 \u2265 1",
             "multirate split illegal: k_max=inf < 1"
@@ -780,6 +789,7 @@
         }
       },
       "binding_axis": "noise",
+      "constraint": null,
       "rejection_reasons": [],
       "assumptions": [
         "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
@@ -854,6 +864,7 @@
           }
         },
         "binding_axis": "stiffness",
+        "constraint": null,
         "rejection_reasons": [],
         "assumptions": [
           "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
@@ -935,6 +946,7 @@
           }
         },
         "binding_axis": "stiffness",
+        "constraint": null,
         "rejection_reasons": [],
         "assumptions": [
           "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
@@ -1016,6 +1028,7 @@
           }
         },
         "binding_axis": "stiffness",
+        "constraint": null,
         "rejection_reasons": [
           "sde_cert noise contract violated: B_noise/B_req=0.5 < 10 (white-noise approximation fails)"
         ],
@@ -1102,6 +1115,7 @@
         }
       },
       "binding_axis": "representation",
+      "constraint": null,
       "rejection_reasons": [],
       "assumptions": [
         "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",

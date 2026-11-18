@@ -15,7 +15,8 @@ P0–P7 流水线里，前面各阶段分别产出**已算好的证据对象**�
 本模块只做**聚合**：把各证据拼成结构化 Certificate 或 Rejection，不改任何
 一项的判定语义。规则与 §1.2 的"不把未评估当可行"一致：
 
-  * 结构化拒绝（manifold 空窗 / ‖S‖∞ 超阈 / ρ_sup≥1 / k_max<1 / sde 违规）
+  * 结构化拒绝（manifold 空窗 / ‖S‖∞ 超阈 / ρ_sup≥1 / k_max<1 / sde 违规 /
+    constraint fabric ε_c 违约或 deadline 未收敛）
     ⇒ status="rejected"，拒绝原因逐条进 rejection_reasons；
   * 只有 slack 轴违规 ⇒ status="infeasible"，binding_axis 取被违反的轴；
   * 有 NaN 轴（未评估）⇒ status="no violation on evaluated axes"，
@@ -59,6 +60,10 @@ class BudgetInput:
     multirate: dict | None = None          # {"rho_sup","k_max","eps_replay",...} 来自 twin.multirate
     sde_cert: dict | None = None           # noise_realizability 输出（随机证书，§4.4）
     metric: object | None = None           # Γ 的度量矩阵 / "energy"（§5.8）
+    constraint: dict | None = None         # twin.constraint.ConstraintResult.as_dict()
+                                           # T10 约束 fabric 时序证据：eps_c（对
+                                           # 显式声明的 external_state_timescale）
+                                           # 或纯稳态 deadline/residual 事实
     scaling: object | None = None          # ScalingResult：给定时 slack/Γ/σ_y/‖H‖∞
                                            # 在其 .scaled（物理时间）descriptor 上评；
                                            # delta_A_norm 按相对失配自动缩放
@@ -77,6 +82,7 @@ class Certificate:
     slack: dict | None           # Slack.as_dict()
     items: dict                  # 每项证据的 {name: {value, verdict, detail}}
     binding_axis: str | None     # slack 里 >1 或最接近 1 的轴名
+    constraint: dict | None = None   # T10 约束时序 verdict（constraint 证据）
     rejection_reasons: list[str] = field(default_factory=list)
     assumptions: list[str] = field(default_factory=list)
 
@@ -85,6 +91,7 @@ class Certificate:
             feasible=bool(self.feasible), status=self.status,
             slack=self.slack, items=self.items,
             binding_axis=self.binding_axis,
+            constraint=(dict(self.constraint) if self.constraint is not None else None),
             rejection_reasons=list(self.rejection_reasons),
             assumptions=list(self.assumptions),
         )
@@ -193,6 +200,37 @@ def _sde_verdict(cert: dict):
     return "pass", {"ratio": ratio, "warnings": warnings}, detail
 
 
+def _constraint_verdict(cons: dict):
+    """T10 约束 fabric 时序检查（twin.constraint.ConstraintResult 字段）。
+
+    语义（ε_c 修复后的合同）：
+      * FAIL / SINGULAR            → rejected（ε_c 违约或网格奇异）；
+      * STEADY（纯稳态事实，无 ε_c）→ pass，但 detail 明确"这不是可行性判决，
+        是 deadline/residual 事实"——纯 Poisson 不被伪装成 infeasible；
+      * PASS                       → pass（ε_c 已对声明的 external_state_
+        timescale 判定 < 0.01，或 deadline 内收敛）。
+    聚合层不重算 ε_c，只读前级字段；eps_c ≥ 0.01 的 FAIL 必须让证书不再
+    "no violation"（约束失败不许埋在 side-record 里）。
+    """
+    verdict = cons.get("verdict")
+    eps = cons.get("eps_c")
+    detail = ("verdict=%s, eps_c=%s, steady_state=%s, converged=%s, "
+              "residual_at_deadline=%s"
+              % (verdict, _fmt(eps), cons.get("steady_state"),
+                 cons.get("converged"), _fmt(cons.get("residual_at_deadline"))))
+    if verdict in ("FAIL", "SINGULAR"):
+        return "rejected", dict(cons), ("constraint fabric %s: %s"
+                                        % (verdict, detail))
+    if verdict == "STEADY":
+        return "pass", dict(cons), (
+            "constraint steady-state fact (no ε_c defined, no external "
+            "dynamic state declared): tau_relax=%s; not a feasibility verdict"
+            % _fmt(cons.get("tau_relax")))
+    if verdict == "PASS":
+        return "pass", dict(cons), detail
+    return "rejected", dict(cons), "constraint evidence malformed (no verdict)"
+
+
 def compile_budget(inp: BudgetInput, s_max_threshold: float = S_PEAK_THRESHOLD) -> Certificate:
     """聚合 P0–P5 的证据 → P6 证书。只判聚合语义，不重算前级验收。"""
     items: dict[str, dict] = {}
@@ -200,6 +238,7 @@ def compile_budget(inp: BudgetInput, s_max_threshold: float = S_PEAK_THRESHOLD) 
     assumptions: list[str] = []
     slack_block: dict | None = None
     binding_axis: str | None = None
+    constraint_val: dict | None = None
 
     sys = inp.sys
     spec = inp.spec
@@ -305,6 +344,18 @@ def compile_budget(inp: BudgetInput, s_max_threshold: float = S_PEAK_THRESHOLD) 
         if verdict == "rejected":
             reasons.append(detail)
 
+    if inp.constraint is not None:
+        verdict, val, detail = _constraint_verdict(inp.constraint)
+        items["constraint"] = dict(value=val, verdict=verdict, detail=detail)
+        constraint_val = val
+        if verdict == "rejected":
+            reasons.append(detail)
+        assumptions.append(
+            "constraint ε_c judged against a caller-declared external_state_"
+            "timescale (§3.4); pure-steady-state problems report τ_relax/"
+            "deadline+residual facts instead of an ε_c verdict — they are "
+            "not silently marked infeasible or feasible on timing")
+
     # 状态聚合：结构化拒绝优先于 slack 违规（rejected > infeasible）。
     if reasons:
         status = "rejected"
@@ -318,20 +369,25 @@ def compile_budget(inp: BudgetInput, s_max_threshold: float = S_PEAK_THRESHOLD) 
 
     return Certificate(feasible=feasible, status=status, slack=slack_block,
                        items=items, binding_axis=binding_axis,
+                       constraint=constraint_val,
                        rejection_reasons=reasons, assumptions=assumptions)
 
 
 def evaluate_sys(sys: Descriptor, spec: HardwareSpec, metric=None, loop=None,
                  multirate=None, manifold=None, sde_cert=None, reg=None,
-                 scaling=None, gamma_M=None, hinf=None, lyap=None) -> Certificate:
+                 scaling=None, gamma_M=None, hinf=None, lyap=None,
+                 constraint=None) -> Certificate:
     """便捷入口：由 (sys, spec) + 可选证据直接建 BudgetInput 聚合。
 
     scaling: ScalingResult（lowering.scaling）—— 给定时证书评在物理时间
     descriptor 上；不传则评 model-time 原始 sys。
+    constraint: twin.constraint.ConstraintResult.as_dict() —— T10 约束时序
+    证据（ε_c 或纯稳态 deadline/residual 事实），FAIL ⇒ 证书 rejected。
     gamma_M/hinf/lyap: 直接供给（跳过 resolvent sweep / hinf bisect / lyap
     求解）—— delta_A_norm=None 或调用方已有证据时避免无谓的昂贵重算。"""
     return compile_budget(BudgetInput(sys=sys, spec=spec, metric=metric,
                                       loop=loop, multirate=multirate,
                                       manifold=manifold, sde_cert=sde_cert,
                                       reg=reg, scaling=scaling,
-                                      gamma_M=gamma_M, hinf=hinf, lyap=lyap))
+                                      gamma_M=gamma_M, hinf=hinf, lyap=lyap,
+                                      constraint=constraint))

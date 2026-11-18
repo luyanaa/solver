@@ -163,12 +163,14 @@ def drive(name, bundle, spec, checks, ctrl):
         sc.alpha > 0 and (sc.method == "rms3sigma" or bool(sc.notes)))
 
     # -- 4/5. P4/P5 + P6 --------------------------------------------------------
-    tau_state_min = None
-    lam = dsc.finite_eigs()
-    if lam.size and np.max(np.abs(lam)) > 0:
-        tau_state_min = 1.0 / float(np.max(np.abs(lam)))
-    if ctrl.get("tau_state_min") is None and tau_state_min is not None:
-        ctrl["tau_state_min"] = tau_state_min
+    # ε_c 语义修复（P0 finding）：ε_c 的分母必须是**外部受约束动力学**的时标
+    # （NS 的 τ_fluid,min、MD 的粒子时标……），由 workload 显式声明；不能从
+    # 约束子系统自己的极点推导（`1/max|λ|` 是约束网络的松弛速度，和它自己
+    # 比没有意义）。纯 Poisson 稳态没有外部动态 ⇒ None ⇒ 纯稳态路径
+    # （deadline+residual 事实，不伪造 ε_c）。
+    tau_ext = _find(meta, "external_state_timescale", "tau_external")
+    if ctrl.get("external_state_timescale") is None and tau_ext is not None:
+        ctrl["external_state_timescale"] = tau_ext
 
     from lowering.budget import evaluate_sys
     # reg/reg_w 证据在两个位置都可能出现：bundle.reference 或 bundle.spec_meta
@@ -205,7 +207,7 @@ def drive(name, bundle, spec, checks, ctrl):
     twin = bundle.run_twin() or {}
     rec["twin"] = _jsonable(twin)
     return rec, twin, cert, dict(scaling=sc, reg=reg, reg_w=reg_w,
-                                 tau_state_min=tau_state_min)
+                                 external_state_timescale=tau_ext)
 
 
 def reconcile_diffusion(rec, twin, cert, extra, bundle, checks, sigma_y):
@@ -239,8 +241,9 @@ def reconcile_diffusion(rec, twin, cert, extra, bundle, checks, sigma_y):
 
 
 def reconcile_poisson(rec, twin, cert, extra, bundle, checks):
-    """poisson-2d 对账：松弛孪生收敛到直接解；ε_c 违约 ↔ 截断视界不收敛。"""
-    from twin.constraint import (ConstraintMesh, eps_c, residual, relax_time,
+    """poisson-2d 对账：松弛孪生收敛到直接解；ε_c（对显式外部时标）违约
+    → 证书 rejected；纯稳态走 deadline+residual 事实路径。"""
+    from twin.constraint import (ConstraintMesh, residual, relax_time,
                                  settle_with_c, solve_constraint)
     def add(cname, got, expected, passed):
         checks.append(dict(problem="poisson-2d",
@@ -295,47 +298,94 @@ def reconcile_poisson(rec, twin, cert, extra, bundle, checks):
         add("tau_fit vs C/lambda_min", "tau_fit=%s pred=%s" % (tau_fit, tau_pred),
             "within 5%", False)
 
-    # -- 负对照：c_node=1e-6 → ε_c FAIL ↔ 实测不收敛 --------------------------
-    if mesh is not None and extra["tau_state_min"] is not None:
-        tau_s = extra["tau_state_min"]
+    # -- ε_c / 稳态语义（P0 finding 修复）--------------------------------------
+    # poisson-2d 是纯稳态约束（bundle 不携带外部动态时标 ⇒ honest None）：
+    # 不再从约束自身极点伪造 ε_c（旧代码 τ_state_min=1/max|λ| 已删）。三条
+    # 记录：(a) 纯稳态 deadline+residual 事实；(b) 合成耦合负控制——显式
+    # 声明一个快的外部时标 ⇒ ε_c FAIL，且 FAIL 必须进 Certificate（不再埋
+    # side-record）；(c) 慢外部时标的耦合 PASS 对照。
+    if mesh is not None:
+        from lowering.budget import evaluate_sys
+        sc = extra["scaling"]
         i_rhs = np.sin(2.0 * np.pi * np.arange(mesh.n) / mesh.n)
-        big = solve_constraint(mesh, i_rhs, c_node=1e-6, tau_state_min=tau_s)
-        rec["constraint_big_c"] = dict(verdict=big.verdict,
-                                       eps_c=float(big.eps_c) if big.eps_c else None,
-                                       tau_relax=float(big.tau_relax))
-        add("second cert @c_node=1e-6 flags FAIL (eps_c = tau_c/tau_state)",
-            "verdict=%s eps_c=%.3g" % (big.verdict, big.eps_c),
+        # (a) 纯稳态：真实 c_node（spec_meta），deadline 内必须收敛
+        steady = solve_constraint(mesh, i_rhs, c_node=c_node,
+                                  solve_deadline=1e-9, residual_tol=1e-6)
+        rec["constraint_steady"] = dict(
+            verdict=steady.verdict, eps_c=steady.eps_c,
+            tau_relax=float(steady.tau_relax),
+            solve_deadline=steady.solve_deadline,
+            residual_at_deadline=steady.residual_at_deadline,
+            residual_tol=steady.residual_tol, converged=steady.converged)
+        add("pure steady-state: no ε_c fabricated from own poles",
+            str(steady.eps_c), "None (deadline+residual path)", steady.eps_c is None)
+        add("pure steady-state: converged within deadline",
+            "verdict=%s res(T)=%.3e (tol %.3e)" % (
+                steady.verdict, steady.residual_at_deadline, steady.residual_tol),
+            "PASS, res < tol",
+            steady.verdict == "PASS" and steady.converged is True)
+        # (b) 耦合负控制：显式声明快外部时标（如 NS 流体 τ）→ ε_c FAIL → 证书
+        tau_ext_fast = 1e-8
+        big = solve_constraint(mesh, i_rhs, c_node=1e-6,
+                               external_state_timescale=tau_ext_fast)
+        tau_relax_big = float(big.tau_relax)
+        rec["constraint_big_c"] = dict(
+            verdict=big.verdict, eps_c=float(big.eps_c) if big.eps_c else None,
+            tau_relax=tau_relax_big, external_state_timescale=tau_ext_fast)
+        add("coupled negative control: eps_c = tau_c/tau_external FAILs",
+            "verdict=%s eps_c=%.3g (tau_ext=%g declared)" % (
+                big.verdict, big.eps_c, tau_ext_fast),
             "FAIL with eps_c >= 0.01",
             big.verdict == "FAIL" and big.eps_c is not None and big.eps_c >= 0.01)
-        # 实测："椭圆变抛物"的对比要在**同一 C、不同视界**上做：在
-        # t=τ_state,min 处大 C 的残差 ≈ ‖I‖（没收敛），在 t=τ_relax 处
-        # ≈ ‖I‖/e（按 τ_relax 自己的时钟收敛）。同 t 跨 C 的比较没意义
-        # —— res(t)=‖I‖e^{−t/τ}，τ≫t 时两侧都 ≈‖I‖（实测 11.31/11.31）。
-        v_big_tau_s = settle_with_c(mesh, 1e-6, i_rhs, t=tau_s)
-        res_big = residual(mesh, v_big_tau_s, i_rhs)
-        tau_relax_big = float(big.tau_relax)
-        v_big_tau_r = settle_with_c(mesh, 1e-6, i_rhs, t=tau_relax_big)
-        res_conv = residual(mesh, v_big_tau_r, i_rhs)
-        rec["constraint_big_c"]["res_at_tau_state"] = float(res_big)
-        rec["constraint_big_c"]["res_at_own_tau_relax"] = float(res_conv)
-        rec["constraint_big_c"]["tau_relax"] = tau_relax_big
-        add("large-C nonconvergence at t=tau_state vs own tau_relax",
-            "res(τ_state)=%.3e  res(τ_relax)=%.3e" % (res_big, res_conv),
-            "res(τ_state) > 0.5‖I‖, res(τ_relax) < 0.5‖I‖",
-            res_big > 0.5 * float(np.linalg.norm(i_rhs))
-            and res_conv < 0.5 * float(np.linalg.norm(i_rhs)))
+        # FAIL 必须到达证书：constraint 证据进 evaluate_sys → rejected，不再
+        # "no violation on evaluated axes" 而 FAIL 埋在 side-record 里。
+        cert_neg = evaluate_sys(bundle_p.descriptor, spec_p, scaling=sc,
+                                gamma_M=float("inf"), constraint=big.as_dict())
+        rec["constraint_big_c"]["cert_status"] = cert_neg.status
+        rec["constraint_big_c"]["cert_feasible"] = bool(cert_neg.feasible)
+        add("constraint FAIL reaches certificate (not buried)",
+            cert_neg.status,
+            "rejected, feasible=False, reason names constraint",
+            cert_neg.status == "rejected" and not cert_neg.feasible
+            and any("constraint" in r for r in cert_neg.rejection_reasons))
+        # 物理表现：在声明的外部时标处，大 C 网格残差 ≈ ‖I‖（没收敛）
+        v_at = settle_with_c(mesh, 1e-6, i_rhs, t=tau_ext_fast)
+        res_at = residual(mesh, v_at, i_rhs)
+        rec["constraint_big_c"]["res_at_tau_external"] = float(res_at)
+        add("coupled FAIL manifests physically: res(tau_external) ~ ||I||",
+            "%.3e vs %.3e" % (res_at, float(np.linalg.norm(i_rhs))),
+            "res > 0.5||I|| (unconverged when the state needs it)",
+            res_at > 0.5 * float(np.linalg.norm(i_rhs)))
+        # (c) 耦合 PASS 对照：声明的外部时标足够慢 → ε_c < 0.01，证书仍干净
+        tau_ext_slow = tau_relax_big / 1e-3
+        okc = solve_constraint(mesh, i_rhs, c_node=1e-6,
+                               external_state_timescale=tau_ext_slow)
+        cert_ok = evaluate_sys(bundle_p.descriptor, spec_p, scaling=sc,
+                               gamma_M=float("inf"), constraint=okc.as_dict())
+        rec["constraint_coupled_pass"] = dict(
+            eps_c=float(okc.eps_c), external_state_timescale=tau_ext_slow,
+            verdict=okc.verdict, cert_status=cert_ok.status)
+        add("coupled PASS control: eps_c<0.01 keeps certificate clean",
+            "eps_c=%.3g cert=%s" % (okc.eps_c, cert_ok.status),
+            "PASS, cert still 'no violation on evaluated axes'",
+            okc.verdict == "PASS" and float(okc.eps_c) < 0.01
+            and cert_ok.status == "no violation on evaluated axes")
         rec["reconciliation"] = dict(
-            predicted="eps_c=%.3g >= 0.01 ⇒ FAIL (elliptic becomes parabolic)"
-                      % (big.eps_c if big.eps_c is not None else float("nan")),
-            measured="res(t=τ_state)=%.3e vs res(t=τ_relax)=%.3e"
-                     % (res_big, res_conv),
-            verdict="bound-holds: nonconverged at τ_state, converged at τ_relax"
-                    if res_big > 0.5 * float(np.linalg.norm(i_rhs))
-                    and res_conv < 0.5 * float(np.linalg.norm(i_rhs))
-                    else "out-of-band")
+            predicted="eps_c=%.3g >= 0.01 against declared external τ=%g ⇒ "
+                      "FAIL (elliptic becomes parabolic for the coupled state)"
+                      % (big.eps_c if big.eps_c is not None else float("nan"),
+                         tau_ext_fast),
+            measured="res(τ_external)=%.3e (τ_relax(1e-6)=%.3e, "
+                     "pure-steady converged at T=1e-9: res=%.3e)"
+                     % (res_at, tau_relax_big, steady.residual_at_deadline),
+            verdict="bound-holds: coupled FAIL surfaced in certificate; "
+                    "pure-steady judged on deadline+residual, no bogus ε_c"
+            if (res_at > 0.5 * float(np.linalg.norm(i_rhs))
+                and cert_neg.status == "rejected" and steady.eps_c is None)
+            else "out-of-band")
     else:
         rec["reconciliation"] = dict(predicted="n/a", measured="n/a",
-                                     verdict="skipped (no mesh / no tau_state)")
+                                     verdict="skipped (no mesh)")
 
 
 def reconcile_burgers(rec, twin, cert, extra, bundle, checks):
@@ -535,7 +585,12 @@ def main():
         "cert on P3 physical-time descriptor (eig=lambda/alpha): bandwidth "
         "= B_hw*margin within window; robustness_A unevaluated (delta_A_norm "
         "=None — mismatch is a leakage/drift perturbation judged by "
-        "floor_bound, not Gamma_proj); feasible on evaluated axes")
+        "floor_bound, not Gamma_proj); feasible on evaluated axes. "
+        "Constraint timing: poisson-2d is pure steady-state (no external "
+        "dynamic timescale declared) — no eps_c is fabricated from the "
+        "constraint's own poles; the steady verdict is a deadline+residual "
+        "fact, and a coupled negative control (declared fast external tau) "
+        "surfaces as a rejected certificate via the constraint field")
 
     # ---- burgers-1d -----------------------------------------------------------
     hr("3. burgers-1d")

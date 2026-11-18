@@ -36,7 +36,7 @@ B. replay 底噪：平台与 k_max
   超过 k_max 后误差进 ε_replay 平台——更多迭代不再降低误差。
 
 ==============================================================================
-C. ZOH → route：同一套判定机器，不建新机制
+C. ZOH → route：真 ZOH（sinc droop）+ 三项独立预算
 ==============================================================================
            field  zoh_edge manual PureDelay
          latency 5.000e-07        5.000e-07
@@ -44,27 +44,58 @@ C. ZOH → route：同一套判定机器，不建新机制
        noise_rms   0.0e+00          0.0e+00
          verdict      True             True
    pass_absolute      True             True
-  H_ZOH=(1−e^{−sTs})/(sTs)≈e^{−sTs/2}：跨岛 S&H = PureDelay(T_s/2)；混叠是单独的 B_p noise 端口，不进 route 轴。
+  magnitude @ Nyquist               ZOH (true)        PureDelay (old)
+            |H(jω_N)| 0.636620 (2/π, −3.92 dB) 1.000000 (0 dB, wrong)
+                phase            -1.570796 rad          -1.570796 rad
+  high-ω workload (ω_max=ω_N)     ZOH PureDelay
+                 max_gain_err  0.3634  2.22e-16
+                    pass_gain   False      True
+            max_phase_err_deg 90.0000   90.0000
+  degrade decision     block droop@ω_max degraded
+  low ω (0.01·ω_N) PureDelay    4.11e-05     True
+         ω_max=ω_N       ZOH      0.3634    False
+  退化阈值：droop=ε(0.01) ⇒ ωT_s*=0.49064（小 u 展开 droop≈(ωT_s)²/24，√(24ε)=0.48990；此处 droop(ωT_s*)=0.01000）。
+  预算[contract_hi] ω_sig/ω_N=0.95：droop=0.3319 (route gain 轴) | aliasing=violation (noise 轴) | 重构滤波 declared=False
+  预算[contract_mid] ω_sig/ω_N=0.70：droop=0.1897 (route gain 轴) | aliasing=warning (noise 轴) | 重构滤波 declared=False
+  预算[contract_lo] ω_sig/ω_N=0.10：droop=0.0041 (route gain 轴) | aliasing=none (noise 轴) | 重构滤波 declared=False
+  H_ZOH=(1−e^{−sTs})/(sTs)=e^{−sTs/2}·sinc(sTs/2)：相位=PureDelay(T_s/2)，幅度带 sinc droop（Nyquist 处 2/π≈0.637）。低 ωT_s 才允许退化成 PureDelay 且记录 degraded=True；混叠与重构滤波是独立预算，不折进 droop。
 
 ==============================================================================
 D. 验收
 ==============================================================================
-                                                   check                                 got                 expected PASS
-                                            N weak ρ_sup                     0.7379 @ ω=5.04                      < 1  yes
-                       N strong ρ_sup (negative control)                     1.4757 @ ω=5.04                 > 1 (NO)  yes
-                                   interior peak, not DC          σ_dc=0.030 ρ=0.738 @ω=5.04 interior & σ_dc<0.9ρ_sup  yes
-               N measured rate vs ρ_sup (normal ⇒ exact)            0.7500 vs 0.7379 (Δ1.6%)              within ±25%  yes
-                            N rate bracket [σ_dc, ρ_sup]                              0.7500 σ_dc ≤ rate ≤ 1.05·ρ_sup  yes
-                                       N strong diverges         ×57.65 per-iter diff growth                      > 1  yes
-         NN measured rate vs ρ_eig_sup (honest relation)            0.1482 vs 0.1465 (Δ1.2%)              within ±25%  yes
-                   NN σ_max bound conservative but valid rate=0.148 ≤ ρ_sup=0.738 (gap 5.0×)             rate ≤ ρ_sup  yes
-                              NN strong diverges (c=1.1)          ×2.29 per-iter diff growth                      > 1  yes
-  IVP window rate ≤ ρ_sup (Volterra faster, bound holds)              0.1636 vs ρ_sup=0.7379             ≤ 1.05·ρ_sup  yes
-                                 replay plateau vs bound      1.328e-03 vs 2.061e-03 (×0.64)                within ×3  yes
-                                   k_max formula vs knee                     pred 8 vs obs 8              within ±20%  yes
-              plateau stationary (more iters don't help)                     late rate 0.998                ≈1 (>0.9)  yes
-                                zoh_edge latency = T_s/2                         5.000e-07 s              5.000e-07 s  yes
-                  zoh closure ≡ manual PureDelay closure              verdict=True, abs=True          identical dicts  yes
-               zoh passes feedback absolute-delay budget         τ=5.00e-07 ≤ τ_max=1.39e-06            pass_absolute  yes
+                                                                             check                                                                      got                                               expected PASS
+                                                                      N weak ρ_sup                                                          0.7379 @ ω=5.04                                                    < 1  yes
+                                                 N strong ρ_sup (negative control)                                                          1.4757 @ ω=5.04                                               > 1 (NO)  yes
+                                                             interior peak, not DC                                               σ_dc=0.030 ρ=0.738 @ω=5.04                               interior & σ_dc<0.9ρ_sup  yes
+                                         N measured rate vs ρ_sup (normal ⇒ exact)                                                 0.7500 vs 0.7379 (Δ1.6%)                                            within ±25%  yes
+                                                      N rate bracket [σ_dc, ρ_sup]                                                                   0.7500                               σ_dc ≤ rate ≤ 1.05·ρ_sup  yes
+                                                                 N strong diverges                                              ×57.65 per-iter diff growth                                                    > 1  yes
+                                   NN measured rate vs ρ_eig_sup (honest relation)                                                 0.1482 vs 0.1465 (Δ1.2%)                                            within ±25%  yes
+                                             NN σ_max bound conservative but valid                                      rate=0.148 ≤ ρ_sup=0.738 (gap 5.0×)                                           rate ≤ ρ_sup  yes
+                                                        NN strong diverges (c=1.1)                                               ×2.29 per-iter diff growth                                                    > 1  yes
+                            IVP window rate ≤ ρ_sup (Volterra faster, bound holds)                                                   0.1636 vs ρ_sup=0.7379                                           ≤ 1.05·ρ_sup  yes
+                                                           replay plateau vs bound                                           1.328e-03 vs 2.061e-03 (×0.64)                                              within ×3  yes
+                                                             k_max formula vs knee                                                          pred 8 vs obs 8                                            within ±20%  yes
+                                        plateau stationary (more iters don't help)                                                          late rate 0.998                                              ≈1 (>0.9)  yes
+                                                          zoh_edge latency = T_s/2                                                              5.000e-07 s                                            5.000e-07 s  yes
+                     zoh closure ≡ manual PureDelay closure (low-ω spec, tol 1e-8)                              verdict=True, gain_err=1.64e-04 vs 2.22e-16                         identical within numerical tol  yes
+                                         zoh passes feedback absolute-delay budget                                              τ=5.00e-07 ≤ τ_max=1.39e-06                                          pass_absolute  yes
+                                             ZOH magnitude @ Nyquist = 2/π (droop)                                                                 0.636620                                               0.636620  yes
+                         PureDelay magnitude @ Nyquist = 1.0 (the wrong old model)                                                                 1.000000                                               1.000000  yes
+                                    ZOH phase @ Nyquist = −π/2 (≡ PureDelay phase)                                               -1.570796 vs -1.570796 rad                                            both = −π/2  yes
+                                                                   ZOH dc gain = 1                                                           1.000000000000                                                    1.0  yes
+                           droop negligible well below Nyquist (ωT_s≈0.031, ≈x²/6)                                                                 4.11e-05                                                 < 1e-4  yes
+                              high-ω workload: ZOH gain verdict NO (droop penalty)                                                  gain_err=0.363 (≈1−2/π)                                           pass_gain=NO  yes
+                          high-ω workload: PureDelay wrongly passes gain (old bug)                                                        gain_err=2.22e-16                                          pass_gain=YES  yes
+  high-ω workload: ZOH phase err ≡ PureDelay phase err (droop doesn't touch phase)                                                 90.000000° vs 90.000000°        equal (τ_ideal=0 ⇒ both measure absolute phase)  yes
+                               low-ω workload: ZOH passes full closure (droop < ε)                                         gain_err=4.11e-05 droop=4.11e-05                                          pass_gain=YES  yes
+                                auto-degrade at low ω → PureDelay(T_s/2), recorded                                           PureDelay (droop 4.11e-05 < ε)                         degraded=True, block=PureDelay  yes
+                                      no degradation at Nyquist-scale ω (ZOH kept)                                                        ZOH (droop 0.363)                              degraded=False, block=ZOH  yes
+                   degradation threshold ωT_s* from droop=ε (ε=0.01 ⇒ √(24ε)≈0.49)                                       ωT_s*=0.49064, droop there=0.01000                             droop(ωT_s*) = ε within 5%  yes
+                                         aliasing flagged near Nyquist (violation)                                               ω_sig/ω_N=0.95 → violation                                              violation  yes
+                                                   aliasing warning at 0.7 Nyquist                                                 ω_sig/ω_N=0.70 → warning                                                warning  yes
+                                                 aliasing clean well below Nyquist                                                    ω_sig/ω_N=0.10 → none                                                   none  yes
+                  reconstruction filter is a separate line (not folded into droop) declared=True budget=-40 dB | sinc-only image atten=-4.37 dB (exp -4.37) separate keys; sinc-only atten matches |sinc(1.05π/2)|  yes
+                          droop term stays in route gain axis (not in alias/recon)                                             droop=0.3319, droop_ok=False         droop ≈ 1−|sinc(0.475π)|=0.323, droop_ok=False  yes
 
-  16/16 checks passed
+  33/33 checks passed

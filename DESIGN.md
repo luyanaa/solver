@@ -473,6 +473,8 @@ T9 是反问题的关键：没有它，N 条轨迹的原始波形会把 ADC/链�
 
 否则 MD 出现假 retardation，NS 的 pressure projection 传播不动，SPICE 的 KCL 没收敛。τ_constraint 由 λ_min((A+Aᵀ)/2) 和 C_y 决定；这是 §2.8 的第三条，也是 T10 与 T1 之间唯一的硬时序契约。
 
+**ε_c 的分母是外部时标，不是约束自己的极点（P0 finding 修复，`results/constraint_timing.json`）。** τ_state,min 是**外部受约束动力学**的最快时标（NS 的 τ_fluid,min、MD 的粒子时标），必须由 workload 显式声明（`eps_c(mesh, c_node, external_state_timescale)` / `solve_constraint(..., external_state_timescale=)`）。从约束子系统自身的极点推 `τ_state_min = 1/max|λ|` 是无意义的——约束网络对自身最快模态的比值不回答"约束是否在状态需要它之前收敛"（poisson-2d 上该比值实测 1.17e8，是一个假 FAIL）。纯 Poisson 稳态没有外部动态 ⇒ **无 ε_c 可算**：判决改为 (solve_deadline 达到? residual < tol?) 的事实（verdict PASS/FAIL on convergence，或无 deadline 时 verdict="STEADY" 只报 τ_relax+残差），不伪造比值、也不标 infeasible。ε_c FAIL 必须进 P6 证书（`Certificate.constraint` 字段，`evaluate_sys(..., constraint=)`）：FAIL ⇒ status="rejected"，纯稳态事实 ⇒ 证书保持"no violation on evaluated axes"并把 deadline/residual 事实记进 constraint 项。
+
 | workload | 最大困难 | 主要 fabric |
 |---|---|---|
 | MD | moving particles + long-range force | 局部 particle T1/T2 + T10 Poisson |
@@ -737,9 +739,9 @@ slaving 残差实测）。P2 的换基判定与接口合约也已落地：`lower
    合同（review 第三支柱，待 `twin/multirate.py` 实现）：
    - 线性化分裂 Eẋ−A_diag x = A_off x_prev + Bu 的频域迭代算子 G_WR(jω)=(jωE−A_diag)⁻¹A_off；收敛条件是 sup_ω σ_max(G_WR(jω)) = ρ_sup < 1，不是只看 DC 值。
    - 硬件波形重放每次叠加 DAC 量化 + 重构滤波误差 ε_replay，k 次迭代后的误差界是 ‖e^(k)‖ ≤ ρ_sup^k·‖e^(0)‖ + (1−ρ_sup^k)/(1−ρ_sup)·‖(jωE−A_diag)⁻¹‖∞·ε_replay。第二项给出**有效迭代次数上限 k_max**：超过后重放底噪主导，继续迭代不再降误差。k_max 是编译器必须输出的数，不是仿真里试出来的。
-   - 验收（`bench/run_multirate.py`，16/16）：正规分裂实测每迭代衰减率 = ρ_sup ±1.6%；非正规分裂 σ_max 证书保守（×5 gap，实测率 = sup|λ(G_WR)|——σ_max 充分不必要），IVP 因果窗口比界更快（Volterra 结构）；replay 平台实测 1.33e-3 vs 界 2.06e-3（×0.64，界有效），k_max 公式 8 vs 观测拐点 8；强耦合负控制实测发散。k_max 是编译器必须输出的数，不是仿真里试出来的。注意平台落在界之下（0.64×）的原因：`wr_error_bound` 的 (1−ρ) 求和是确定性最坏情形的范数叠加，而独立零均值 replay 噪声按方差以 1/√(1−ρ²) 叠加——界作为最坏情形是正确的，√ 解释了这个 gap。
+   - 验收（`bench/run_multirate.py`，33/33）：正规分裂实测每迭代衰减率 = ρ_sup ±1.6%；非正规分裂 σ_max 证书保守（×5 gap，实测率 = sup|λ(G_WR)|——σ_max 充分不必要），IVP 因果窗口比界更快（Volterra 结构）；replay 平台实测 1.33e-3 vs 界 2.06e-3（×0.64，界有效），k_max 公式 8 vs 观测拐点 8；强耦合负控制实测发散。ZOH 三项独立预算已验收：Nyquist 处 |H|=2/π=0.6366（PureDelay 错报 1.0）、相位仍 =−π/2（=T_s/2 group delay）、高带宽负载下 ZOH 的 gain 判据实测 NO（gain_err=0.363≈1−2/π）而 PureDelay 错误地 PASS；droop<ε(0.01) 的退化阈值 ωT_s*=0.4906（≈√(24ε)，droop≈(ωT_s)²/24），退化显式记录 `degraded=True`；混叠 flag 0.5/0.9 Nyquist 两档（warning/violation）、重构滤波是独立行（sinc-only 镜像衰减 20log₁₀|sinc(1.05π/2)|=−4.37 dB 单独报告，不折进 droop）。k_max 是编译器必须输出的数，不是仿真里试出来的。注意平台落在界之下（0.64×）的原因：`wr_error_bound` 的 (1−ρ) 求和是确定性最坏情形的范数叠加，而独立零均值 replay 噪声按方差以 1/√(1−ρ²) 叠加——界作为最坏情形是正确的，√ 解释了这个 gap。
 2. **S&H 同步**：每次交换付 kT/C + 孔径抖动，误差进 B_p；必须验证 ‖G_loop·Δ_sync‖∞ < 1。
-   ZOH 的等效传递 H_ZOH(s)=(1−e^{−sTs})/(sTs)≈e^{−sTs/2}：把跨岛 S&H 直接并入 `twin/route.py` 的 `PureDelay(T_s/2)` + 折叠噪声端口，复用同一套 slack 判定，不建新机制。
+   ZOH 的等效传递 H_ZOH(s)=(1−e^{−sTs})/(sTs)=e^{−sTs/2}·sinc(sTs/2)：`twin/route.py` 的 `ZOH` 块携带真实幅度——相位=PureDelay(T_s/2)，但幅度带 sinc droop（Nyquist 处 2/π≈0.637，−3.92 dB；PureDelay 会错报 0 dB）。`zoh_edge(T_s, omega_max=)` 只在 droop<ε（ε=0.01，ωT_s≲√(24ε)=0.49）时显式记录地退化成 `PureDelay(T_s/2)`；droop 进 route gain 轴，**混叠**（信号带宽逼近 Nyquist 的折叠）与**重构滤波**是两项独立预算，不许折进 droop。
 
 否则不严格。写进 compiler 合法性检查，不接受"差不多"。
 
@@ -1253,6 +1255,7 @@ compiler 的 selector 用两个数决定 fitting 还是 capturing：
 3. **σ_y 与解析值一致（±3 dB）**：diffusion √(1/2ν)=22.36、biharmonic 7.07e3；广义 Lyapunov 的相对残差 0（direct 路径）与 6.4e-14（Burgers 的 QZ 路径，127 个稳定模态 + 1 个守恒零模态）。
 4. **判定落在正确的轴**：diffusion N=64 无违规；N=1024 在 κ_hw=1e6 下 1.049×（5% 越界，§2.4 的"贴边"）；biharmonic → stiffness；Burgers → representation；Robertson → stiffness，且 robustness_A 同量级。38/38 全过（原 23 条 + 8 条 DAE/P0-G 验收 + 3 条能量度量 Γ + 1 条 freqresp-integral 独立路径 + 3 条相似变换回归）。
 5. **奇异 E 的 H2 判定先做代数块消去（`qz-dae-eliminated`）**：index-1 DAE（E=diag(1,0)、A 非对称）在代数约束 z₂=−A₂₂⁻¹(A₂₁z₁+B₂u) 消去后 σ_y²=0.5，与直接计算一致；naive 判据（B 在代数子空间有分量 ⇒ ∞）会错判。两个负对照成立：直接 feedthrough 与 index-2 nilpotent 块仍判 ∞。QZ 左投影必须用 `Q1ᵀ`（ordqz 的 `QᵀAZ` 只有 Q 在左侧才三角化）；五系统 σ_y 在修正前后逐位一致（它们都是 E=I 或对称 pencil，Q=Z 的旧代码碰巧等价）。
+6. **边缘模态的 driven≠observable（H2 是输入→输出性质）**：旧判据"边缘（零/虚轴）块被驱动 ⇒ σ_y=∞"对 E=I、A=diag(−1,0)、B=[1;1]、C=[1,0] 错报 ∞——第二个状态是噪声驱动的积分器，但 C 不观测它，H(s)=1/(s+1)、σ_y²=0.5。修正（`_drop_unobservable_marginal`，`bench/run_lyapunov.py` 26/26）：对每个边缘特征值做 PBH 检验（rank[λE−A; C]<n ⇒ 不可观），收集 PBH 零空间方向（不可观子空间，pencil 不变），正交剔除后得最小实现，在 ω∈[1e-4,1e4] 网格上运行时核对剔除前后 H(s) 逐点一致（对消是恒等式；失败——如 Jordan 链部分可观——回落到诚实 ∞），再递归求解。剔除是精确的：稳定极点残差由双正交关系逐项相等，不可观边缘模态经耦合进入稳定行的通道（数值上会翻转结果的路径，例如 A=[[−1,1],[0,0]]、B=[1;1]、C=[1,−1] 的 H≡0 vs 稳定块直算给 1/(s+1)）随剔除消失。诚实负对照不变：驱动且可观（C=[0,1] 控制组、虚轴振荡器）⇒ ∞；index-1 馈通与 index-2 ⇒ ∞；σ_y 经 (1/π)∫|H(jω)|²dω 数值积分独立对拍。
 
 **鲁棒轴探针**（1% 失配/接口预算，只加在 Burgers/Robertson 上）：Burgers 的
 robustness_A = 36.8×1% = 0.37、robustness_io = 6.13×1% = 0.061，两轴都有限——鲁棒轴不是它的失败轴。
@@ -1437,7 +1440,7 @@ Gamma 与 Bessel 的边界也按 §1.5 执行：Gamma 直接拒绝（native-only
 
 ### 6.17 编译器证书链：P3→P6 物理时间衔接与 ΔA 量纲一致性（`results/compiler.json`、`pipeline.json`、`constraint.json`）
 
-P0–P6 全链在三锚上跑通（`python3 -m bench.run_pipeline`，30/30，记录 `results/pipeline.json`）。**P3→P6 的衔接有一个必须钉死的方向与一个量纲陷阱**，两者都已修复并写入验收：
+P0–P6 全链在三锚上跑通（`python3 -m bench.run_pipeline`，见 §6.17 末尾的验收数，记录 `results/pipeline.json`）。**P3→P6 的衔接有一个必须钉死的方向与一个量纲陷阱**，两者都已修复并写入验收：
 
 | 项目 | 错误写法 | 修复后 | 实测 |
 |---|---|---|---|
@@ -1447,7 +1450,7 @@ P0–P6 全链在三锚上跑通（`python3 -m bench.run_pipeline`，30/30，记
 
 关键语义：`sc.scaled` 是 slack/Γ/σ_y/‖H‖∞ 的唯一一致物理时间入口（`evaluate_sys(sys, spec, scaling=sc)`）；不给 scaling 就退化为 model-time 原始系统。poisson 的 `delta_A_norm=None` 是**正确声明**——KCL 松弛网格的失配是泄漏/漂移型扰动（slack.py：判 drift budget 不用 Γ_proj），`robustness_A` 轴对它"不适用/未评估"，其误差进 `floor_bound`（`results/constraint.json`：floor_meas=1.38e-4 ≤ bound 3.63e-3）。
 
-`results/compiler.json`（22/22）覆盖证书聚合的独立验收：结构化拒绝优先于 slack 违规、NaN 轴不记"feasible"、manifold/loop/multirate/sde_cert 各证据的 verdict 聚合。`results/constraint.json`（44/44）是 T10 KCL 松弛孪生：`τ_relax=C/λ_min` 解析命中（Δ0.00%）、大 C 在 `τ_state` 视界残差 11.31≈‖I‖（椭圆变抛物）vs 在自身 `τ_relax` 收敛到 0.87、`mismatch_floor` 失配地板 ∝1/λ_min。
+`results/compiler.json`（22/22）覆盖证书聚合的独立验收：结构化拒绝优先于 slack 违规、NaN 轴不记"feasible"、manifold/loop/multirate/sde_cert/constraint 各证据的 verdict 聚合。`results/constraint.json`（44/44）是 T10 KCL 松弛孪生：`τ_relax=C/λ_min` 解析命中（Δ0.00%）、大 C 在 `τ_state` 视界残差 11.31≈‖I‖（椭圆变抛物）vs 在自身 `τ_relax` 收敛到 0.87、`mismatch_floor` 失配地板 ∝1/λ_min。`results/constraint_timing.json`（36/36）钉死 ε_c 语义：外部时标必须显式声明（None ⇒ raise）、纯稳态走 deadline+residual 事实（verdict STEADY/PASS/FAIL，eps_c=None）、耦合 FAIL 进证书（evaluate_sys(constraint=) ⇒ rejected）、纯稳态事实不标 infeasible、畸形证据 ⇒ rejected。
 
 ### 6.18 Stage A 收口：回退率口径与"加速器不是求解器"定位（`results/stagea.json`、`ledger.json`、`substrate.json`）
 
@@ -1570,7 +1573,7 @@ B0 把 §3 的 10-tile 表收敛成一颗可流片的 characterization vehicle�
 | T7 Route | 可编程长度/扇出阵 | `H_ij(s)=H_wire·∏H_buf·e^{−sτ}`；wire 分布式 1/cosh√(sRC)；buffer 单极+噪声；AllPass pad；**per-edge contract 由 `route_contract.py` 提供四判据**（B1 落地） | routing η_route、phase、feedback ωc |
 | T8 Noise | 1 bank（m 独立源） | 物理热噪声 + replay PRNG+DAC；PSD/τ_c/ρ 可编程；`B_noise≥100·B_req`（§3 T8） | noise realizability（账本 0.63%/unit） |
 | T9 Statistics | 1 累加器组 | 片上均值/协方差/直方图；只读 O(p²) | readout budget |
-| T10 Constraint | 1 稀疏 gm mesh（~16×16） | `C_y ẏ=−Ay+b` 松弛解 Poisson/KCL；`ε_c=τ_constraint/τ_state,min`（§2.8 #3）；λ_min 判收敛 | relaxation ε_c、mismatch floor ∝1/λ_min |
+| T10 Constraint | 1 稀疏 gm mesh（~16×16） | `C_y ẏ=−Ay+b` 松弛解 Poisson/KCL；`ε_c=τ_constraint/τ_external`（外部时标显式声明，§2.8 #3）；λ_min 判收敛；纯稳态 ⇒ deadline+residual 事实 | relaxation ε_c、mismatch floor ∝1/λ_min |
 | Supervisor | 1 | CMOS FSM + DAC + ADC + replica/reference；校准 FSM 见 `twin/calib.py` | 全轴校准残差（账本 17/unit） |
 
 **(c) 冻结规格书抽象。** 每个 tile 在 compiler 里暴露 `(E,A,B,C)` descriptor 片段 + `‖H‖₂`/`‖H‖∞`（由 `analysis/` 在其 (E,A,B,C) 上算）+ 功耗 + 面积。功率/面积为 TARGET（§2.1：1000 节点 @10µV@10MHz ⇒ ~0.1 W、~3 mm² C——本 chip 只有几十节点，功率/面积**不是瓶颈**，瓶颈是 κ_hw、route 寄生、校准漂移）。**B0 退出 = 这张表 + 每 tile 的 (E,A,B,C)/‖H‖₂/‖H‖∞/power/area 五行规格冻结**；具体数值待 §7 Phase 7 的 primitive SPICE/PEX 填入，B0 只冻结结构与口径。
@@ -1741,7 +1744,7 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
 - **differential-algebraic complexity 的可计算度量**：minimal augmentation dimension + degree + invariant cost，而不是“这个函数常不常见”
 - **统一约束求解器**：把 MD electrostatics、NS pressure projection、SPICE KCL 都写成 A(x)y=b(x)，同一块 T10 要覆盖多大的条件数/规模范围？
 - **自适应多分辨率**：quadtree/octree tile 的物理重配置如何在 charge injection 与 τ_lead 约束下做到不破坏守恒？
-- **multirate DAE**：waveform relaxation 的收敛率与 S&H 误差如何进 P6 的可行性证书？（§4.3 合同已实现并验收：`twin/multirate.py` + `bench/run_multirate.py` 16/16——ρ_sup=sup_ω σ_max(G_WR) 作为 small-gain 充分证书、k_max 由 replay 底噪决定、σ_max>1 但 |λ|<1 的分裂实测仍收敛即充分不必要，ZOH 直接复用 `PureDelay(T_s/2)`）
+- **multirate DAE**：waveform relaxation 的收敛率与 S&H 误差如何进 P6 的可行性证书？（§4.3 合同已实现并验收：`twin/multirate.py` + `bench/run_multirate.py` 33/33——ρ_sup=sup_ω σ_max(G_WR) 作为 small-gain 充分证书、k_max 由 replay 底噪决定、σ_max>1 但 |λ|<1 的分裂实测仍收敛即充分不必要；ZOH 是真 ZOH 块 `H=(1−e^{−sTs})/(sTs)`，Nyquist 处幅度 2/π=0.637（PureDelay 错报 1.0），droop 进 route gain 轴，ε=0.01/ωT_s≲0.49 以下才允许显式记录地退化成 PureDelay，混叠/重构滤波是独立预算）
 - **异构 operator placement**：给定 (K,T,Ω,O,ε)，如何在 {CMOS, MEMS, fluidic, photonic} 上分配算子，使 slack/energy 最优？每次跨域的 transducer 成本如何进 P6，而不是事后加总？
 - **adaptive representation 的闭环稳定性**：`sensor → σ → weights → flux → state` 是一个新的反馈回路，它会不会产生原系统没有的振荡/分岔？如何用 §1.2 的 Γ 和 small-gain 判定，而不是靠调参？（§6.16 已给出部分答案：`tracker_rate_bounds` 的 r_attack≫|s|/Δx、r_release≤π²ν_num·Δσ_hyst/Δx² 把 attack/release 从调参变成可推导的不等式；实测 release 界约束强、attack 界在当前滞环宽度下不 bind）
 - **可转置性的边界**：哪些 primitive 天然可转置（gm/current edge、lifting predict/update），哪些不可（比较器、事件、reset）？跨事件段的 adjoint 怎么定义？
@@ -1821,7 +1824,7 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
       twin/
         ✅ spice/extract.py  # 真实 PDK 提取：ngspice 电流镜 → λ, g_m/I_D, r_o, ratio
         ✅ noise.py        # OU 滤波色噪声 + replay + ρ_ij 相关矩阵；色噪声/白噪声极限
-        ✅ multirate.py    # WR 谱半径 + replay 底噪 k_max + ZOH→PureDelay(T_s/2)
+        ✅ multirate.py    # WR 谱半径 + replay 底噪 k_max + 真 ZOH（sinc droop，Nyquist 2/π）
         ✅ constraint.py   # T10：A(x)y=b(x) → C_node·V̇+G·V=I_rhs KCL 松弛
                           # τ_relax=C/λ_min(G_sym)、非对称时全谱横坐标守卫、
                           # mirror 失配静差下界 ‖G⁻¹‖·‖δI‖（∝1/λ_min，κ trade-off）、
@@ -1857,10 +1860,11 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
         ✅ run_substrate.py         # A7 异构介质验收：MEMS/光子（40/40）；
                                     # fluidic diffusion 算例仍是 Phase 8 TODO
         ✅ run_sde.py               # OU/GBM/双势阱 + CRN/moment 参数恢复（27/27）
-        ✅ run_multirate.py         # §4.3 WR/S&H 合法性验收（16/16）
+        ✅ run_multirate.py         # §4.3 WR/S&H 合法性验收（33/33）
         ✅ run_compiler.py          # P6 证书聚合层验收（22/22）
         ✅ run_constraint.py        # T10 KCL 松弛孪生验收（44/44）
-        ✅ run_pipeline.py          # 3 锚定基准 e2e（符号→证书→孪生核对）（30/30）
+        ✅ run_constraint_timing.py # T10 ε_c 语义：外部时标显式声明 + 纯稳态 deadline 事实 + 证书可见性（36/36）
+        ✅ run_pipeline.py          # 3 锚定基准 e2e（符号→证书→孪生核对）（35/35）
         ✅ run_stagea.py            # A4/A8/A9 收尾：shear 换基判定（Γ 5.12 /
                                     # scaled / eigvec=1+κ(Φ)=20 税）/ VdP
                                     # （不稳定工点 ⇒ 回退，reduce=poly）/

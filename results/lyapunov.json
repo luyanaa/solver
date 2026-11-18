@@ -1,0 +1,240 @@
+{
+  "checks": [
+    {
+      "name": "repro sigma_y2 = 1/2 (was inf)",
+      "got": "0.5",
+      "expected": "0.5",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "repro h2_finite",
+      "got": "qz-marginal-unobservable (PBH: dropped 1 unobservable marginal dim(s); inner: direct)",
+      "expected": "True",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "repro method reports PBH drop",
+      "got": "qz-marginal-unobservable (PBH: dropped 1 unobservable marginal dim(s); inner: direct)",
+      "expected": "PBH drop",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "repro n_marginal_dropped = 1",
+      "got": 1,
+      "expected": "1",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "repro |H(j 1e-3)| ~ 1 (no pole at 0)",
+      "got": "1",
+      "expected": "1",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "repro |H(j 1e3)| decays",
+      "got": "0.001",
+      "expected": "<2e-3",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "repro freq-integral sigma_y2 = 1/2",
+      "got": "0.499994",
+      "expected": "0.5",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "control C=[0,1] is inf",
+      "got": "qz-marginal-driven (zero/imaginary mode integrates noise, observable at output)",
+      "expected": "inf",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "control |H(j 1e-2)| ~ 100 (real pole at 0)",
+      "got": "100",
+      "expected": "100",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "driven+observable marginal is inf",
+      "got": "qz-marginal-driven (zero/imaginary mode integrates noise, observable at output)",
+      "expected": "inf",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "full-cancellation sigma_y ~ 0 (analytic H=0)",
+      "got": "1.23e-32",
+      "expected": "0",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "full-cancellation h2_finite",
+      "got": "qz-marginal-unobservable (PBH: dropped 1 unobservable marginal dim(s); inner: direct)",
+      "expected": "True",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "coupled sigma_y2 = 1/2 (analytic H=-1/(s+1))",
+      "got": "0.5",
+      "expected": "0.5",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "coupled freq-integral agrees",
+      "got": "0.499994",
+      "expected": "0.5",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "conservation zero-mode sigma_y2 = 1/4",
+      "got": "0.25",
+      "expected": "0.25",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "conservation freq-integral agrees",
+      "got": "0.249996",
+      "expected": "0.25",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "3-state coupled finite (was inf)",
+      "got": "0.5",
+      "expected": "finite",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "3-state matches freq integral",
+      "got": "0.5 vs 0.49999374",
+      "expected": "equal (2e-3)",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "3-state method reports drop",
+      "got": "qz-marginal-unobservable (PBH: dropped 1 unobservable marginal dim(s); inner: direct)",
+      "expected": "PBH drop",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "stable driven-unobservable sigma_y2 = 1/2",
+      "got": "0.5",
+      "expected": "0.5",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "oscillator (imaginary marginal, observable) is inf",
+      "got": "qz-marginal-driven (zero/imaginary mode integrates noise, observable at output)",
+      "expected": "inf",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "index-1 eliminated sigma_y2 = 1/2 (unchanged)",
+      "got": "0.5 (qz-dae-eliminated)",
+      "expected": "0.5",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "index-1 feedthrough control is inf",
+      "got": "qz-direct-feedthrough (D_total\u22600)",
+      "expected": "inf",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "index-2 nilpotent is inf",
+      "got": "qz-index>1 (nilpotent infinite block, |BB_ii|=1.00e+00)",
+      "expected": "inf",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "sys.D=1 feedthrough is inf",
+      "got": "direct-feedthrough (sys.D\u22600, \u2016D\u2016=1.00e+00)",
+      "expected": "inf",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    },
+    {
+      "name": "undriven marginal still finite",
+      "got": "0.5",
+      "expected": "0.5",
+      "log10_err": 0.0,
+      "tol": "",
+      "passed": true,
+      "kind": "lyap"
+    }
+  ],
+  "n_pass": 26,
+  "n_total": 26
+}

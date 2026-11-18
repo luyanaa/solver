@@ -10,8 +10,21 @@ QZ 排序取出稳定有限谱的 deflating subspace，只在那个子空间上�
 
 QZ 排序把谱分成三块 Z = [Zs | Zm | Zi]：
   Zs  稳定有限谱（Re λ < 0）——真正的动力学；
-  Zm  边缘有限谱（含虚轴/零模态）——仍是状态，但被白噪声驱动即 σ_y=∞（随机游走）；
+  Zm  边缘有限谱（含虚轴/零模态）——被白噪声驱动**且在输出可观**才 σ_y=∞；
   Zi  无穷谱（β≈0）——代数/约束方程。
+
+边缘模态的 driven-vs-observable 细则（H2 是输入→输出性质，不是内部状态性质）：
+
+被驱动的边缘模态若在输出不可观（PBH：rank([λE−A; C]) < n，即存在右特征向量
+v 使 (λE−A)v=0 且 Cv=0），它在 H(s) 中的极点残差 C·v·ŵᵀB = 0，被零点对消——
+与耦合路径无关（v 取全 pencil 的右特征向量，自动带上它反馈进稳定子空间的
+分量）。做法（`_drop_unobservable_marginal`）：收集全部边缘模态的 PBH 零空间
+方向（不可观子空间，pencil 不变），正交化后剔除该子空间得到最小实现，在
+ω 网格上运行时核对剔除前后 H(s) 逐点一致（对消是恒等式；核对失败——例如
+Jordan 链部分可观——就回落到诚实的 ∞），再对降维系统递归。剔除是精确的：
+稳定极点处的残差由双正交关系逐项相等，不可观边缘模态的全部贡献（含它经
+耦合进入稳定行的通道）随剔除消失。驱动的可观边缘模态仍判 ∞（随机游走），
+Bbs_m·u 沿可观边缘模态的馈通也仍判 ∞（那是 D 项，核对会拒绝错误的剔除）。
 
 在 QZ 块上三角形式里（QᵀAZ = AA、QᵀEZ = BB，方程 BB·ż = AA·z + QᵀB·u），
 第 I 块行不含 z_s、z_m（下三角块结构为 0），所以代数方程
@@ -62,6 +75,91 @@ __all__ = ["LyapunovResult", "solve_generalized_lyapunov"]
 _TINY = 1e-300
 
 
+def _pbh_nullspace(sys: Descriptor, lam: complex, tol_rel: float = 1e-9) -> np.ndarray:
+    """PBH 不可观方向：[λE−A; C] 的零空间（复正交基，n×d 列）。
+
+    H2 是输入→输出性质：有限模态 λ 在输出不可观（存在 v 使 (λE−A)v=0 且
+    Cv=0）时，它在 H(s) 中的极点残差 C·v·ŵᵀB = 0，被零点对消。v 取自全
+    系统（不是边缘块）——右特征向量自动带上该模态反馈进稳定子空间的分量，
+    对消判据因此与耦合路径无关。
+    """
+    M = np.vstack([(lam * sys.E - sys.A).astype(complex),
+                   sys.C.astype(complex)])
+    _, s, Vh = linalg.svd(M)
+    smax = float(s[0]) if s.size else 0.0
+    r = int(np.sum(s > tol_rel * max(smax, 1e-300)))
+    return Vh[r:].conj().T
+
+
+def _drop_unobservable_marginal(
+    sys: Descriptor, lam_m, Q: np.ndarray, zero_tol: float, depth: int
+) -> LyapunovResult | None:
+    """被驱动边缘模态不可观 ⇒ 最小实现剔除 + 传递函数核对 + 递归。
+
+    步骤：
+      1. 对每个边缘特征值 λ 取 PBH 零空间方向（不可观子空间，pencil 不变）；
+         一个方向都找不到 ⇒ 所有边缘模态在输出可观 ⇒ 返回 None（诚实 ∞）。
+      2. 方向集实化（复共轭对取 Re/Im）并正交化，得 Vb；正交补 Wb 给出
+         [Wb | Vb] 正交基，剔除 Vb 块后得降维系统 (WbᵀEW, WbᵀAW, WbᵀB, CW)。
+      3. 运行时核对：在 ω ∈ [1e-4, 1e4] 网格上逐点比较 H_orig 与 H_red——
+         对消是恒等式，数值上不成立（如 Jordan 链部分可观）就拒绝剔除。
+      4. 对降维系统递归 solve_generalized_lyapunov；每层至少少一维，必终止。
+
+    注意：稳定模态的极点残差由双正交关系在剔除前后逐项相等，且被驱动但
+    不可观的边缘模态的全部贡献（含它经耦合进入稳定行的通道）都随剔除消失，
+    所以 σ_y 取递归结果并回升 P = Wb·P_r·Wbᵀ 是精确的，不是近似。
+    """
+    if depth > sys.n:
+        return None
+    cols = []
+    for lm in lam_m:
+        N = _pbh_nullspace(sys, lm)
+        if N.shape[1]:
+            cols.append(N)
+    if not cols:
+        return None
+    Vc = np.hstack(cols)
+    real_cols = []
+    for j in range(Vc.shape[1]):
+        v = Vc[:, j]
+        if np.max(np.abs(v.imag)) > 1e-8 * max(np.max(np.abs(v.real)), 1e-300):
+            real_cols.extend([v.real, v.imag])   # 复共轭对 ⇒ Re/Im 两个实方向
+        else:
+            real_cols.append(v.real)
+    Vr = np.column_stack(real_cols)
+    Ub, s2, _ = linalg.svd(Vr)
+    d = int(np.sum(s2 > 1e-9 * max(float(s2[0]) if s2.size else 0.0, 1e-300)))
+    if d == 0:
+        return None
+    Vb = Ub[:, :d]
+    Wb = linalg.null_space(Vb.T)                 # 实正交补，n×(n−d)
+    red = Descriptor(Wb.T @ sys.E @ Wb, Wb.T @ sys.A @ Wb,
+                     Wb.T @ sys.B, sys.C @ Wb, sys.D)
+    # 运行时核对：剔除必须不改变传递函数（极点对消是恒等式，不是近似）。
+    w_grid = np.logspace(-4, 4, 33)
+    H_o = sys.freqresp(w_grid)
+    H_r = red.freqresp(w_grid)
+    diff = float(np.max(np.abs(H_o - H_r)))
+    scale_h = max(1.0, float(np.max(np.abs(H_o))), float(np.max(np.abs(H_r))))
+    if not np.isfinite(diff) or diff > 1e-6 * scale_h:
+        return None
+    if red.n == 0:
+        # 全部状态都是不可观边缘模态：严格真、无极点 ⇒ H ≡ 0 ⇒ σ_y = 0。
+        return LyapunovResult(np.zeros((sys.n, sys.n)), 0.0, 0.0, 0.0, True,
+                              0, sys.n, 0.0,
+                              "qz-marginal-unobservable (PBH: dropped %d dim(s), H≡0)" % d,
+                              0, 0.0, d)
+    res = solve_generalized_lyapunov(red, Q, zero_tol, depth + 1)
+    P_full = Wb @ res.P @ Wb.T
+    P_full = 0.5 * (P_full + P_full.T)
+    method = ("qz-marginal-unobservable (PBH: dropped %d unobservable marginal "
+              "dim(s); inner: %s)" % (d, res.method))
+    return LyapunovResult(P_full, res.sigma_y2, res.residual, res.rel_residual,
+                          res.h2_finite, res.n_stable, sys.n, res.driven_other,
+                          method, res.n_infinite, res.d_eff_norm,
+                          d + res.n_marginal_dropped)
+
+
 @dataclass
 class LyapunovResult:
     P: np.ndarray
@@ -75,6 +173,7 @@ class LyapunovResult:
     method: str
     n_infinite: int = 0
     d_eff_norm: float = 0.0
+    n_marginal_dropped: int = 0
 
     @property
     def sigma_y(self) -> float:
@@ -82,7 +181,8 @@ class LyapunovResult:
 
 
 def solve_generalized_lyapunov(
-    sys: Descriptor, Q: np.ndarray | None = None, zero_tol: float = 1e-12
+    sys: Descriptor, Q: np.ndarray | None = None, zero_tol: float = 1e-12,
+    _depth: int = 0,
 ) -> LyapunovResult:
     """解 E P Aᵀ + A P Eᵀ + B Q Bᵀ = 0。"""
     if Q is None:
@@ -181,20 +281,28 @@ def solve_generalized_lyapunov(
         Bm = Qm.T @ sys.B
         return float(np.linalg.norm(Bm @ Q @ Bm.T))
 
-    # 无穷块不存在：全部有限谱。边缘块（零/虚轴模态）被驱动 ⇒ H2 = ∞。
+    # 无穷块不存在：全部有限谱。边缘块（零/虚轴模态）被驱动**且可观** ⇒ H2 = ∞；
+    # 被驱动但不可观 ⇒ 极点对消，剔除不可观子空间后 σ_y 仍有限（最小实现）。
     if ni == 0:
+        driven = _marginal_driven()
+        if driven > 1e-12 * max(1.0, float(np.linalg.norm(W))):
+            AA_mm = Qm.T @ sys.A @ Zm
+            BB_mm = Qm.T @ sys.E @ Zm
+            lam_m = linalg.eigvals(AA_mm, BB_mm)
+            res = _drop_unobservable_marginal(sys, lam_m, Q, zero_tol, _depth)
+            if res is not None:
+                return res
+            return LyapunovResult(np.zeros((n, n)), float("inf"), 0.0, 0.0, False,
+                                  k, n, driven,
+                                  "qz-marginal-driven (zero/imaginary mode integrates "
+                                  "noise, observable at output)", 0, 0.0)
         if k == 0:
-            driven = _marginal_driven()
-            return LyapunovResult(np.zeros((n, n)), 0.0 if driven <= 1e-12 else float("inf"),
-                                  0.0, 0.0, driven <= 1e-12, 0, n, driven, "qz-empty",
-                                  0, 0.0)
+            return LyapunovResult(np.zeros((n, n)), 0.0, 0.0, 0.0, True, 0, n, driven,
+                                  "qz-empty", 0, 0.0)
         Er, Ar, Br = _stable_blocks()
         P, num, rel = _solve_stable(Er, Ar, Br)
-        driven = _marginal_driven()
-        h2_finite = driven <= 1e-12 * max(1.0, float(np.linalg.norm(W)))
         sigma_y2 = float(np.real(np.trace(sys.C @ P @ sys.C.T)))
-        return LyapunovResult(P, sigma_y2 if h2_finite else float("inf"),
-                              num, rel, h2_finite, k, n, driven, "qz", 0, 0.0)
+        return LyapunovResult(P, sigma_y2, num, rel, True, k, n, driven, "qz", 0, 0.0)
 
     # ---- 无穷块存在：index-1 假设下做 Weierstrass 块消去 ----
     # 行空间用 Q：第 I 块行（Qiᵀ 方程）不含 z_s、z_m（AA/BB 下三角块为 0），
@@ -236,10 +344,14 @@ def solve_generalized_lyapunov(
     # 3) BB_ii = 0 且 AA_ii 非奇异 ⇒ z_i = g_u·u 纯代数（s 无关）。
     #    有限行的 BB_rI·ż_i 耦合不是脉冲：s·(sBB_rr−AA_rr)⁻¹ → BB_rr⁻¹ 是有界的
     #    （proper），它只贡献一条带直接馈通的有效通道，进 (5) 的 D_eff。
-    # 4) 边缘块被驱动（直接 QB_m 或经代数/导数通道）⇒ 随机游走/共振 ⇒ σ_y = ∞。
+    # 4) 边缘块被驱动（直接 QB_m 或经代数/导数通道）且可观 ⇒ 随机游走/共振
+    #    ⇒ σ_y = ∞；被驱动但不可观 ⇒ 极点对消：剔除不可观边缘子空间
+    #   （PBH 零空间 + 传递函数运行时核对），对降维系统递归求 σ_y。
+    #    代数偏置 Bbs_m·u 沿可观边缘模态的馈通不是极点对消——剔除核对会把
+    #    它当作 H(s) 的不匹配拒绝，回落到诚实的 ∞。
+    BB_mm = Qm.T @ sys.E @ Zm if km > 0 else None
+    AA_mm = Qm.T @ sys.A @ Zm if km > 0 else None
     if km > 0:
-        BB_mm = Qm.T @ sys.E @ Zm
-        AA_mm = Qm.T @ sys.A @ Zm
         BB_mI = Qm.T @ sys.E @ Zi
         AA_mI = Qm.T @ sys.A @ Zi
         Bbs_m = linalg.solve(BB_mm, BB_mI @ g_u)          # 边缘坐标的直接馈通
@@ -247,18 +359,27 @@ def solve_generalized_lyapunov(
         driven = float(max(np.linalg.norm(f_m @ Q @ f_m.T),
                            np.linalg.norm(Bbs_m @ Q @ Bbs_m.T)))
     else:
+        Bbs_m = None
         driven = 0.0
-    if driven > 1e-12 * max(1.0, float(np.linalg.norm(sys.B @ Q @ sys.B.T))):
+    tol_driven = 1e-12 * max(1.0, float(np.linalg.norm(sys.B @ Q @ sys.B.T)))
+    n_drop = 0
+    if driven > tol_driven and km > 0:
+        lam_m = linalg.eigvals(AA_mm, BB_mm)
+        res = _drop_unobservable_marginal(sys, lam_m, Q, zero_tol, _depth)
+        if res is not None:
+            return res
         Er, Ar, Br = _stable_blocks()
         P, _, _ = _solve_stable(Er, Ar, Br) if k > 0 else (np.zeros((n, n)), 0.0, 0.0)
         return LyapunovResult(P, float("inf"), 0.0, 0.0, False, k, n, driven,
-                              "qz-marginal-driven (zero/imaginary mode integrates noise)", ni, 0.0)
+                              "qz-marginal-driven (zero/imaginary mode integrates "
+                              "noise, observable at output)", ni, 0.0)
     # 5) 直接馈通与有效输入映射。恒等式
     #      s·(sBB−AA)⁻¹ = BB⁻¹ + (sBB−AA)⁻¹·AA·BB⁻¹
     #    把 s·BB_sI·g_u·u̇ 通道分解成 standard form：
     #      z_s = (s·BB_ss−AA_ss)⁻¹·B_eff − BB_ss⁻¹·BB_sI·g_u
     #      B_eff = QB_s + AA_sI·g_u − AA_ss·BB_ss⁻¹·BB_sI·g_u
     #    总馈通 D_total = CZs·(−BB_ss⁻¹·BB_sI·g_u) + CZi·g_u。
+    Cm_Bbs = sys.C @ Zm @ Bbs_m if km > 0 else np.zeros((sys.p, sys.m))
     if k > 0:
         BB_ss = Qs.T @ sys.E @ Zs
         AA_ss = Qs.T @ sys.A @ Zs
@@ -266,19 +387,24 @@ def solve_generalized_lyapunov(
         AA_sI = Qs.T @ sys.A @ Zi
         Bbs_s = linalg.solve(BB_ss, BB_sI @ g_u)
         B_eff = Qs.T @ sys.B + AA_sI @ g_u - AA_ss @ Bbs_s
-        D_total = sys.C @ Zs @ (-Bbs_s) + C_i @ g_u + sys.D
+        D_total = sys.C @ Zs @ (-Bbs_s) + C_i @ g_u + Cm_Bbs + sys.D
     else:
-        B_eff, D_total = None, C_i @ g_u + sys.D
+        B_eff, D_total = None, C_i @ g_u + Cm_Bbs + sys.D
     d_norm = float(np.linalg.norm(D_total))
     tol_d = 1e-9 * max(1.0, float(np.linalg.norm(sys.C)) * float(np.linalg.norm(g_u)))
     if k == 0:
         return LyapunovResult(np.zeros((n, n)), 0.0, 0.0, 0.0, d_norm <= tol_d,
-                              0, n, driven, "qz-dae-eliminated (no dynamics)", ni, d_norm)
+                              0, n, driven, "qz-dae-eliminated (no dynamics)", ni, d_norm,
+                              n_drop)
     Er, Ar, _ = _stable_blocks()
     P, num, rel = _solve_stable(Er, Ar, B_eff)
     h2_finite = d_norm <= tol_d
     sigma_y2 = float(np.real(np.trace(sys.C @ P @ sys.C.T)))
-    method = "qz-dae-eliminated" if h2_finite else "qz-direct-feedthrough (D_total≠0)"
+    if h2_finite and n_drop:
+        method = ("qz-dae-eliminated (PBH: dropped %d unobservable marginal dim(s))"
+                  % n_drop)
+    else:
+        method = "qz-dae-eliminated" if h2_finite else "qz-direct-feedthrough (D_total≠0)"
     return LyapunovResult(P, sigma_y2 if h2_finite else float("inf"),
                           num, rel,
-                          h2_finite, k, n, driven, method, ni, d_norm)
+                          h2_finite, k, n, driven, method, ni, d_norm, n_drop)

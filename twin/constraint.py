@@ -239,10 +239,30 @@ def relax_time(mesh: ConstraintMesh, c_node: float) -> float:
     return c_node / modes["lam_min_sym"]
 
 
-def eps_c(mesh: ConstraintMesh, c_node: float, tau_state_min: float) -> float:
-    """Timing ratio ε_c = τ_constraint / τ_state,min — the only hard timing
-    contract between T10 and T1 (§3.4). Must be ≪ 1."""
-    return relax_time(mesh, c_node) / tau_state_min
+def eps_c(mesh: ConstraintMesh, c_node: float,
+          external_state_timescale: float) -> float:
+    """Timing ratio ε_c = τ_constraint / τ_external — the only hard timing
+    contract between T10 and T1 (§3.4). Must be ≪ 1.
+
+    τ_external is the EXTERNAL constrained-dynamics timescale, declared by
+    the caller: the fastest time constant of the dynamic state the constraint
+    fabric serves (e.g. NS pressure-projection vs the fluid's τ_fluid,min,
+    MD field update vs the particle-dynamics τ). It is NOT derivable from the
+    constraint subsystem's own poles — comparing the relaxation to its own
+    fastest mode is meaningless (that ratio says nothing about whether the
+    constraint converges before the state needs it). A pure steady-state
+    problem (pure Poisson, no external dynamic state) has NO external
+    timescale: pass None / don't call this, and judge the solver on
+    solve-deadline + residual instead (see solve_constraint).
+    """
+    if external_state_timescale is None:
+        raise ValueError("external_state_timescale=None: pure steady-state "
+                         "problem has no ε_c to compute — use the "
+                         "solve-deadline+residual verdict path instead")
+    t_ext = float(external_state_timescale)
+    if not (np.isfinite(t_ext) and t_ext > 0):
+        raise ValueError("external_state_timescale must be finite and > 0")
+    return relax_time(mesh, c_node) / t_ext
 
 
 def settle(mesh: ConstraintMesh, i_rhs: np.ndarray, t: Sequence[float],
@@ -376,6 +396,12 @@ class ConstraintResult:
     singular: bool = False
     stable_full: bool = True
     eps_c: float | None = None
+    external_state_timescale: float | None = None
+    steady_state: bool = False
+    solve_deadline: float | None = None
+    residual_tol: float | None = None
+    residual_at_deadline: float | None = None
+    converged: bool | None = None
     v_star_norm: float = 0.0
     v_star: np.ndarray | None = field(default=None, repr=False)
     mismatch_floor_inf: float | None = None
@@ -391,6 +417,11 @@ class ConstraintResult:
             spectral_abscissa=self.spectral_abscissa,
             monotone_spd=self.monotone_spd, singular=self.singular,
             stable_full=self.stable_full, eps_c=self.eps_c,
+            external_state_timescale=self.external_state_timescale,
+            steady_state=self.steady_state,
+            solve_deadline=self.solve_deadline, residual_tol=self.residual_tol,
+            residual_at_deadline=self.residual_at_deadline,
+            converged=self.converged,
             v_star_norm=self.v_star_norm,
             mismatch_floor_inf=self.mismatch_floor_inf,
             mismatch_floor_rms=self.mismatch_floor_rms,
@@ -401,9 +432,28 @@ class ConstraintResult:
 
 
 def solve_constraint(mesh: ConstraintMesh, i_rhs: np.ndarray, c_node: float,
-                     tau_state_min: float | None = None,
-                     mismatch: dict | None = None) -> ConstraintResult:
-    """One-stop T10 evaluation: modes + τ_relax + ε_c + (optional) mismatch."""
+                     external_state_timescale: float | None = None,
+                     mismatch: dict | None = None,
+                     solve_deadline: float | None = None,
+                     residual_tol: float | None = None) -> ConstraintResult:
+    """One-stop T10 evaluation: modes + τ_relax + ε_c + (optional) mismatch.
+
+    ε_c semantics (P0-finding fix): the timing ratio is only defined against
+    an EXTERNAL constrained-dynamics timescale, declared explicitly by the
+    caller. When `external_state_timescale is None` the workload is treated
+    as pure steady-state (e.g. a standalone Poisson solve): ε_c is NOT
+    fabricated from the constraint's own poles — the verdict is instead a
+    fact about (solve_deadline met?, residual < tol?):
+
+      * `solve_deadline` given  → residual is evaluated at t=deadline via
+        the analytic relaxation; verdict PASS iff res < residual_tol
+        (default 1e-6·‖I‖₂), else FAIL ("constraint not converged at
+        deadline") — an honest convergence fact, not an infeasibility claim
+        about a dynamics the workload doesn't have.
+      * no deadline             → verdict "STEADY": reports τ_relax and the
+        steady residual as facts; ε_c stays None and no feasibility
+        judgement is made.
+    """
     modes = relaxation_modes(mesh)
     if modes["singular"]:
         return ConstraintResult(
@@ -412,31 +462,101 @@ def solve_constraint(mesh: ConstraintMesh, i_rhs: np.ndarray, c_node: float,
             spectral_abscissa=modes["spectral_abscissa"],
             monotone_spd=modes["monotone_spd"], singular=True,
             stable_full=modes["stable_full"], verdict="SINGULAR",
+            steady_state=external_state_timescale is None,
             notes=["zero mode: pure-Neumann mesh, G not invertible — flagged, "
                    "not silently inverted"])
     tau = c_node / modes["lam_min_sym"]
     v_star = np.linalg.solve(mesh.G, np.asarray(i_rhs, dtype=float))
-    eps = None if tau_state_min is None else tau / tau_state_min
+    eps = (None if external_state_timescale is None
+           else tau / float(external_state_timescale))
+    steady = external_state_timescale is None
+    res_deadline = None
+    converged = None
+    if steady:
+        if solve_deadline is not None:
+            if solve_deadline <= 0:
+                raise ValueError("solve_deadline must be positive")
+            t_dl = float(solve_deadline)
+            tol = (residual_tol if residual_tol is not None
+                   else 1e-6 * float(np.linalg.norm(np.asarray(i_rhs, dtype=float))))
+            v_dl = settle_with_c(mesh, c_node, i_rhs, t=t_dl)
+            res_deadline = residual(mesh, v_dl, i_rhs)
+            converged = bool(res_deadline < tol)
+            notes_dl = ["pure steady-state (no external dynamic state): ε_c "
+                        "undefined — judged on deadline T=%s vs residual "
+                        "%s (tol %s)" % (_g(t_dl), _g(res_deadline), _g(tol))]
+            ok = modes["monotone_spd"] and modes["stable_full"] and converged
+            res = ConstraintResult(
+                tau_relax=tau, kappa_G=modes["kappa_G"],
+                lambda_min_sym=modes["lam_min_sym"],
+                spectral_abscissa=modes["spectral_abscissa"],
+                monotone_spd=modes["monotone_spd"],
+                stable_full=modes["stable_full"], eps_c=None,
+                external_state_timescale=None, steady_state=True,
+                solve_deadline=t_dl, residual_tol=tol,
+                residual_at_deadline=res_deadline, converged=converged,
+                v_star_norm=float(np.linalg.norm(v_star)), v_star=v_star,
+                verdict="PASS" if ok else "FAIL", notes=notes_dl,
+            )
+            if not converged:
+                res.notes.append("constraint not converged at deadline: "
+                                 "res=%s ≥ tol=%s (τ_relax=%s ≫ T)"
+                                 % (_g(res_deadline), _g(tol), _g(tau)))
+            if mismatch is not None:
+                _attach_mismatch(res, mesh, i_rhs, mismatch)
+            return res
+        # no deadline: report facts only, no feasibility verdict
+        res = ConstraintResult(
+            tau_relax=tau, kappa_G=modes["kappa_G"],
+            lambda_min_sym=modes["lam_min_sym"],
+            spectral_abscissa=modes["spectral_abscissa"],
+            monotone_spd=modes["monotone_spd"], stable_full=modes["stable_full"],
+            eps_c=None, external_state_timescale=None, steady_state=True,
+            v_star_norm=float(np.linalg.norm(v_star)), v_star=v_star,
+            verdict="STEADY",
+            notes=["pure steady-state (no external dynamic state): no ε_c "
+                   "computed — τ_relax=%.3e and steady residual are reported "
+                   "as facts, not a feasibility verdict" % tau],
+        )
+        if mismatch is not None:
+            _attach_mismatch(res, mesh, i_rhs, mismatch)
+        return res
     res = ConstraintResult(
         tau_relax=tau, kappa_G=modes["kappa_G"],
         lambda_min_sym=modes["lam_min_sym"],
         spectral_abscissa=modes["spectral_abscissa"],
         monotone_spd=modes["monotone_spd"], stable_full=modes["stable_full"],
-        eps_c=eps, v_star_norm=float(np.linalg.norm(v_star)), v_star=v_star,
+        eps_c=eps, external_state_timescale=float(external_state_timescale),
+        steady_state=False, v_star_norm=float(np.linalg.norm(v_star)),
+        v_star=v_star,
     )
     if mismatch is not None:
-        mf = mismatch_floor(mesh, i_rhs, **mismatch)
-        res.mismatch_floor_inf = mf["floor_inf"]
-        res.mismatch_floor_rms = mf["floor_rms"]
-        res.dominant_mode = mf["dominant_mode"]
-        res.notes.append("mismatch model: lam·ΔV + eps_dev + optional eps_sys "
-                         "(coupling.py InterfaceModel error classes)")
+        _attach_mismatch(res, mesh, i_rhs, mismatch)
     ok = modes["monotone_spd"] and modes["stable_full"] and (eps is None or eps < 0.01)
     res.verdict = "PASS" if ok else "FAIL"
     if eps is not None and eps >= 0.01:
-        res.notes.append("ε_c = τ_constraint/τ_state,min ≥ 0.01: §3.4 timing "
-                         "contract violated (fake retardation / unconverged KCL)")
+        res.notes.append("ε_c = τ_constraint/τ_external ≥ 0.01: §3.4 timing "
+                         "contract violated (constraint too slow for the "
+                         "declared external dynamics — fake retardation / "
+                         "unconverged KCL)")
     return res
+
+
+def _g(v) -> str:
+    try:
+        return "%.3e" % float(v)
+    except (TypeError, ValueError):
+        return str(v)
+
+
+def _attach_mismatch(res: ConstraintResult, mesh: ConstraintMesh,
+                     i_rhs: np.ndarray, mismatch: dict) -> None:
+    mf = mismatch_floor(mesh, i_rhs, **mismatch)
+    res.mismatch_floor_inf = mf["floor_inf"]
+    res.mismatch_floor_rms = mf["floor_rms"]
+    res.dominant_mode = mf["dominant_mode"]
+    res.notes.append("mismatch model: lam·ΔV + eps_dev + optional eps_sys "
+                     "(coupling.py InterfaceModel error classes)")
 
 
 def kcl_relaxation_descriptor(mesh: ConstraintMesh, c_node: float):

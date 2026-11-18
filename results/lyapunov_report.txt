@@ -1,0 +1,39 @@
+
+==============================================================================
+Lyapunov 边缘模态验收：driven-but-unobservable 极点对消
+==============================================================================
+
+==============================================================================
+验收对照
+==============================================================================
+  repro sigma_y2 = 1/2 (was inf)                      got=0.5                                            exp=0.5        yes
+  repro h2_finite                                     got=qz-marginal-unobservable (PBH: dropped 1 unobservable marginal dim(s); inner: direct) exp=True       yes
+  repro method reports PBH drop                       got=qz-marginal-unobservable (PBH: dropped 1 unobservable marginal dim(s); inner: direct) exp=PBH drop   yes
+  repro n_marginal_dropped = 1                        got=1                                              exp=1          yes
+  repro |H(j 1e-3)| ~ 1 (no pole at 0)                got=1                                              exp=1          yes
+  repro |H(j 1e3)| decays                             got=0.001                                          exp=<2e-3      yes
+  repro freq-integral sigma_y2 = 1/2                  got=0.499994                                       exp=0.5        yes
+  control C=[0,1] is inf                              got=qz-marginal-driven (zero/imaginary mode integrates noise, observable at output) exp=inf        yes
+  control |H(j 1e-2)| ~ 100 (real pole at 0)          got=100                                            exp=100        yes
+  driven+observable marginal is inf                   got=qz-marginal-driven (zero/imaginary mode integrates noise, observable at output) exp=inf        yes
+  full-cancellation sigma_y ~ 0 (analytic H=0)        got=1.23e-32                                       exp=0          yes
+  full-cancellation h2_finite                         got=qz-marginal-unobservable (PBH: dropped 1 unobservable marginal dim(s); inner: direct) exp=True       yes
+  coupled sigma_y2 = 1/2 (analytic H=-1/(s+1))        got=0.5                                            exp=0.5        yes
+  coupled freq-integral agrees                        got=0.499994                                       exp=0.5        yes
+  conservation zero-mode sigma_y2 = 1/4               got=0.25                                           exp=0.25       yes
+  conservation freq-integral agrees                   got=0.249996                                       exp=0.25       yes
+  3-state coupled finite (was inf)                    got=0.5                                            exp=finite     yes
+  3-state matches freq integral                       got=0.5 vs 0.49999374                              exp=equal (2e-3) yes
+  3-state method reports drop                         got=qz-marginal-unobservable (PBH: dropped 1 unobservable marginal dim(s); inner: direct) exp=PBH drop   yes
+  stable driven-unobservable sigma_y2 = 1/2           got=0.5                                            exp=0.5        yes
+  oscillator (imaginary marginal, observable) is inf  got=qz-marginal-driven (zero/imaginary mode integrates noise, observable at output) exp=inf        yes
+  index-1 eliminated sigma_y2 = 1/2 (unchanged)       got=0.5 (qz-dae-eliminated)                        exp=0.5        yes
+  index-1 feedthrough control is inf                  got=qz-direct-feedthrough (D_total≠0)              exp=inf        yes
+  index-2 nilpotent is inf                            got=qz-index>1 (nilpotent infinite block, |BB_ii|=1.00e+00) exp=inf        yes
+  sys.D=1 feedthrough is inf                          got=direct-feedthrough (sys.D≠0, ‖D‖=1.00e+00)     exp=inf        yes
+  undriven marginal still finite                      got=0.5                                            exp=0.5        yes
+
+  26/26 checks passed
+
+  读法：PBH 剔除是精确最小实现（运行时 H(s) 核对），不是软化阈值；
+  驱动+可观 ⇒ ∞、馈通 ⇒ ∞、index-2 ⇒ ∞ 三条诚实负对照不变。

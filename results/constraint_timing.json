@@ -1,0 +1,260 @@
+{
+  "checks": [
+    {
+      "name": "\u03b5_c formula = \u03c4_relax / \u03c4_external",
+      "got": "4.281653e-03",
+      "expected": "4.281653e-03",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "\u03b5_c < 0.01 for slow external dynamics",
+      "got": "0.0043",
+      "expected": "< 0.01",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "external_state_timescale=None raises (no bogus \u03b5_c)",
+      "got": "raises",
+      "expected": "ValueError",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "non-positive external timescale raises",
+      "got": "raises",
+      "expected": "ValueError",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "solve_constraint \u03b5_c matches eps_c()",
+      "got": "4.281653e-03",
+      "expected": "4.281653e-03",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "solve_constraint records declared timescale",
+      "got": "1.000e-08",
+      "expected": "1.000e-08",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "coupled record is not steady_state",
+      "got": "False",
+      "expected": "False",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "steady no-deadline: eps_c is None",
+      "got": "None",
+      "expected": "None",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "steady no-deadline: verdict STEADY (fact, not PASS/FAIL)",
+      "got": "STEADY",
+      "expected": "STEADY",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "steady no-deadline: flagged steady_state",
+      "got": "True",
+      "expected": "True",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "steady no-deadline: note explains no-\u03b5_c policy",
+      "got": true,
+      "expected": true,
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "steady deadline met: verdict PASS",
+      "got": "PASS",
+      "expected": "PASS",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "steady deadline met: converged=True",
+      "got": "True",
+      "expected": "True",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "steady deadline met: residual below tol",
+      "got": "3.591e-13",
+      "expected": "< 8.000e-06",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "steady residual_tol defaults to 1e-6\u00b7||I||",
+      "got": "8.000e-06",
+      "expected": "8.000e-06",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "steady deadline missed: verdict FAIL (constructed)",
+      "got": "FAIL",
+      "expected": "FAIL",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "steady deadline missed: converged=False",
+      "got": "False",
+      "expected": "False",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "steady deadline missed: residual \u2248 ||I|| (unconverged)",
+      "got": "0.982\u00b7||I||",
+      "expected": "\u2265 0.5\u00b7||I||",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "steady deadline missed: note names the fact (not infeasibility)",
+      "got": true,
+      "expected": true,
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "slow external dynamics: \u03b5_c = 1e-3",
+      "got": "0.001000",
+      "expected": "\u2248 1e-3",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "slow external dynamics: verdict PASS",
+      "got": "PASS",
+      "expected": "PASS",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "fast external dynamics: \u03b5_c = 0.02 \u2265 0.01",
+      "got": "0.020000",
+      "expected": "\u2265 0.01",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "fast external dynamics: verdict FAIL",
+      "got": "FAIL",
+      "expected": "FAIL",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "FAIL note cites \u00a73.4 timing contract",
+      "got": true,
+      "expected": true,
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "external dynamics faster than relaxation \u21d2 FAIL",
+      "got": "verdict=FAIL \u03b5_c=10.0",
+      "expected": "FAIL, \u03b5_c > 1",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "constraint FAIL \u21d2 cert status rejected",
+      "got": "rejected",
+      "expected": "rejected",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "constraint FAIL \u21d2 cert infeasible",
+      "got": "False",
+      "expected": "False",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "rejection reason names the constraint fabric",
+      "got": true,
+      "expected": true,
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "cert carries constraint item with rejected verdict",
+      "got": "rejected",
+      "expected": "rejected",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "cert.as_dict() exposes the constraint field",
+      "got": "FAIL",
+      "expected": "FAIL",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "pure-steady fact \u21d2 cert stays 'no violation on evaluated axes'",
+      "got": "no violation on evaluated axes",
+      "expected": "no violation on evaluated axes",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "steady fact recorded as pass-with-fact, not a feasibility verdict",
+      "got": "constraint steady-state fact (no \u03b5_c defined, no external dynamic state declared): tau_relax=4.282e-11; not a feasibility verdict",
+      "expected": "detail states 'not a feasibility verdict'",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "steady fact keeps eps_c None in the cert",
+      "got": "None",
+      "expected": "None",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "coupled \u03b5_c PASS \u21d2 cert unchanged",
+      "got": "no violation on evaluated axes",
+      "expected": "no violation on evaluated axes",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "malformed constraint evidence (no verdict) \u21d2 rejected",
+      "got": "rejected",
+      "expected": "rejected",
+      "passed": true,
+      "kind": "exact"
+    },
+    {
+      "name": "negative control: \u03b5_c>1 external timescale \u21d2 cert rejected",
+      "got": "rejected",
+      "expected": "rejected",
+      "passed": true,
+      "kind": "exact"
+    }
+  ],
+  "summary": {
+    "n_checks": 36,
+    "n_passed": 36
+  }
+}

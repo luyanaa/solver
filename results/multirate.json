@@ -3856,21 +3856,22 @@
     },
     "zoh": {
       "T_s": 1e-06,
+      "w_nyq": 3141592.6535897935,
       "latency": 5e-07,
       "closure_zoh": {
         "name": "zoh_island_swap",
         "latency": 5e-07,
-        "phase_delay_omega_c": 4.999999999995066e-07,
+        "phase_delay_omega_c": 5.000000000000007e-07,
         "latency_class": "L4",
         "noise_rms": 0.0,
         "tau_max_abs": 1.3888888888888887e-06,
-        "eta": 0.03141463462364137,
+        "eta": 0.03141248154516282,
         "f_3db": Infinity,
-        "max_gain_err": 2.220446049250313e-16,
-        "max_phase_err_deg": 1.8000000000000005,
-        "max_group_err": 5.000000000000963e-07,
-        "j_h": 0.0003290194973552704,
-        "j_tau": 2.499999999999959e-13,
+        "max_gain_err": 0.00016448528945134377,
+        "max_phase_err_deg": 1.800000000000001,
+        "max_group_err": 6.248776362716439e-07,
+        "j_h": 0.0003289924191631542,
+        "j_tau": 2.4999997557987116e-13,
         "pass_gain": true,
         "pass_phase": true,
         "pass_noise": true,
@@ -3898,6 +3899,151 @@
         "pass_absolute": true,
         "verdict": true,
         "pad_can_fix": false
+      },
+      "mag_zoh_nyq": 0.6366197723675813,
+      "mag_pd_nyq": 1.0,
+      "phase_zoh_nyq": -1.5707963267948968,
+      "phase_pd_nyq": -1.5707963267948968,
+      "dc_zoh": 1.0,
+      "closure_zoh_hi": {
+        "name": "zoh_island_swap",
+        "latency": 5e-07,
+        "phase_delay_omega_c": 5e-07,
+        "latency_class": "L4",
+        "noise_rms": 0.0,
+        "tau_max_abs": 2.7777777777777774e-08,
+        "eta": 1.185447061057284,
+        "f_3db": 2782681.2436386445,
+        "max_gain_err": 0.36338022763241906,
+        "max_phase_err_deg": 90.00000000000006,
+        "max_group_err": 5.000282095600714e-07,
+        "j_h": 0.5946912843479845,
+        "j_tau": 2.4999999999224245e-13,
+        "pass_gain": false,
+        "pass_phase": false,
+        "pass_noise": true,
+        "pass_absolute": false,
+        "verdict": false,
+        "pad_can_fix": false
+      },
+      "closure_pd_hi": {
+        "name": "zoh_island_swap",
+        "latency": 5e-07,
+        "phase_delay_omega_c": 4.999999999995067e-07,
+        "latency_class": "L4",
+        "noise_rms": 0.0,
+        "tau_max_abs": 2.7777777777777774e-08,
+        "eta": 1.4142135623730958,
+        "f_3db": Infinity,
+        "max_gain_err": 2.220446049250313e-16,
+        "max_phase_err_deg": 90.00000000000006,
+        "max_group_err": 5.00000000000108e-07,
+        "j_h": 0.7268090224635079,
+        "j_tau": 2.500000000000059e-13,
+        "pass_gain": true,
+        "pass_phase": false,
+        "pass_noise": true,
+        "pass_absolute": false,
+        "verdict": false,
+        "pad_can_fix": false
+      },
+      "closure_zoh_lo": {
+        "name": "zoh_lo",
+        "latency": 5e-07,
+        "phase_delay_omega_c": 4.999999999999564e-07,
+        "latency_class": "L4",
+        "noise_rms": 0.0,
+        "tau_max_abs": 2.7777777777777775e-06,
+        "eta": 0.015707532629938424,
+        "f_3db": Infinity,
+        "max_gain_err": 4.1122844335328423e-05,
+        "max_phase_err_deg": 0.8999999999999212,
+        "max_group_err": 9.191063227454132e-07,
+        "j_h": 8.22562283344361e-05,
+        "j_tau": 2.500002376682783e-13,
+        "pass_gain": true,
+        "pass_phase": true,
+        "pass_noise": true,
+        "pass_absolute": true,
+        "verdict": true,
+        "pad_can_fix": false
+      },
+      "droop_lo": 4.11228443352174e-05,
+      "degrade_lo": {
+        "degraded": true,
+        "block": "PureDelay",
+        "droop": 4.11228443352174e-05
+      },
+      "degrade_hi": {
+        "degraded": false,
+        "block": "ZOH",
+        "droop": 0.36338022763241884
+      },
+      "wts_threshold": 0.4906356177080499,
+      "droop_at_threshold": 0.01000000000000012,
+      "contract_hi": {
+        "T_s": 1e-06,
+        "omega_nyquist": 3141592.6535897935,
+        "omega_sig": 2984513.0209103036,
+        "bandwidth_fraction": 0.95,
+        "droop": 0.33193969887317887,
+        "droop_eps": 0.01,
+        "droop_ok": false,
+        "aliasing": "violation",
+        "reconstruction": {
+          "filter_declared": false,
+          "recon_budget_db": null,
+          "image_freq": 3298672.2862692834,
+          "sinc_image_atten_db": -4.373000576270428
+        }
+      },
+      "contract_mid": {
+        "T_s": 1e-06,
+        "omega_nyquist": 3141592.6535897935,
+        "omega_sig": 2199114.8575128554,
+        "bandwidth_fraction": 0.7,
+        "droop": 0.1896680419902449,
+        "droop_eps": 0.01,
+        "droop_ok": false,
+        "aliasing": "warning",
+        "reconstruction": {
+          "filter_declared": false,
+          "recon_budget_db": null,
+          "image_freq": 4084070.4496667315,
+          "sinc_image_atten_db": -7.203646905359564
+        }
+      },
+      "contract_lo": {
+        "T_s": 1e-06,
+        "omega_nyquist": 3141592.6535897935,
+        "omega_sig": 314159.26535897935,
+        "bandwidth_fraction": 0.1,
+        "droop": 0.004107264756438633,
+        "droop_eps": 0.01,
+        "droop_ok": true,
+        "aliasing": "none",
+        "reconstruction": {
+          "filter_declared": false,
+          "recon_budget_db": null,
+          "image_freq": 5969026.041820608,
+          "sinc_image_atten_db": -25.610820732519876
+        }
+      },
+      "contract_recon": {
+        "T_s": 1e-06,
+        "omega_nyquist": 3141592.6535897935,
+        "omega_sig": 2984513.0209103036,
+        "bandwidth_fraction": 0.95,
+        "droop": 0.33193969887317887,
+        "droop_eps": 0.01,
+        "droop_ok": false,
+        "aliasing": "violation",
+        "reconstruction": {
+          "filter_declared": true,
+          "recon_budget_db": -40.0,
+          "image_freq": 3298672.2862692834,
+          "sinc_image_atten_db": -4.373000576270428
+        }
       }
     }
   },
@@ -3987,9 +4133,9 @@
       "passed": true
     },
     {
-      "name": "zoh closure \u2261 manual PureDelay closure",
-      "got": "verdict=True, abs=True",
-      "expected": "identical dicts",
+      "name": "zoh closure \u2261 manual PureDelay closure (low-\u03c9 spec, tol 1e-8)",
+      "got": "verdict=True, gain_err=1.64e-04 vs 2.22e-16",
+      "expected": "identical within numerical tol",
       "passed": true
     },
     {
@@ -3997,10 +4143,112 @@
       "got": "\u03c4=5.00e-07 \u2264 \u03c4_max=1.39e-06",
       "expected": "pass_absolute",
       "passed": true
+    },
+    {
+      "name": "ZOH magnitude @ Nyquist = 2/\u03c0 (droop)",
+      "got": "0.636620",
+      "expected": "0.636620",
+      "passed": true
+    },
+    {
+      "name": "PureDelay magnitude @ Nyquist = 1.0 (the wrong old model)",
+      "got": "1.000000",
+      "expected": "1.000000",
+      "passed": true
+    },
+    {
+      "name": "ZOH phase @ Nyquist = \u2212\u03c0/2 (\u2261 PureDelay phase)",
+      "got": "-1.570796 vs -1.570796 rad",
+      "expected": "both = \u2212\u03c0/2",
+      "passed": true
+    },
+    {
+      "name": "ZOH dc gain = 1",
+      "got": "1.000000000000",
+      "expected": "1.0",
+      "passed": true
+    },
+    {
+      "name": "droop negligible well below Nyquist (\u03c9T_s\u22480.031, \u2248x\u00b2/6)",
+      "got": "4.11e-05",
+      "expected": "< 1e-4",
+      "passed": true
+    },
+    {
+      "name": "high-\u03c9 workload: ZOH gain verdict NO (droop penalty)",
+      "got": "gain_err=0.363 (\u22481\u22122/\u03c0)",
+      "expected": "pass_gain=NO",
+      "passed": true
+    },
+    {
+      "name": "high-\u03c9 workload: PureDelay wrongly passes gain (old bug)",
+      "got": "gain_err=2.22e-16",
+      "expected": "pass_gain=YES",
+      "passed": true
+    },
+    {
+      "name": "high-\u03c9 workload: ZOH phase err \u2261 PureDelay phase err (droop doesn't touch phase)",
+      "got": "90.000000\u00b0 vs 90.000000\u00b0",
+      "expected": "equal (\u03c4_ideal=0 \u21d2 both measure absolute phase)",
+      "passed": true
+    },
+    {
+      "name": "low-\u03c9 workload: ZOH passes full closure (droop < \u03b5)",
+      "got": "gain_err=4.11e-05 droop=4.11e-05",
+      "expected": "pass_gain=YES",
+      "passed": true
+    },
+    {
+      "name": "auto-degrade at low \u03c9 \u2192 PureDelay(T_s/2), recorded",
+      "got": "PureDelay (droop 4.11e-05 < \u03b5)",
+      "expected": "degraded=True, block=PureDelay",
+      "passed": true
+    },
+    {
+      "name": "no degradation at Nyquist-scale \u03c9 (ZOH kept)",
+      "got": "ZOH (droop 0.363)",
+      "expected": "degraded=False, block=ZOH",
+      "passed": true
+    },
+    {
+      "name": "degradation threshold \u03c9T_s* from droop=\u03b5 (\u03b5=0.01 \u21d2 \u221a(24\u03b5)\u22480.49)",
+      "got": "\u03c9T_s*=0.49064, droop there=0.01000",
+      "expected": "droop(\u03c9T_s*) = \u03b5 within 5%",
+      "passed": true
+    },
+    {
+      "name": "aliasing flagged near Nyquist (violation)",
+      "got": "\u03c9_sig/\u03c9_N=0.95 \u2192 violation",
+      "expected": "violation",
+      "passed": true
+    },
+    {
+      "name": "aliasing warning at 0.7 Nyquist",
+      "got": "\u03c9_sig/\u03c9_N=0.70 \u2192 warning",
+      "expected": "warning",
+      "passed": true
+    },
+    {
+      "name": "aliasing clean well below Nyquist",
+      "got": "\u03c9_sig/\u03c9_N=0.10 \u2192 none",
+      "expected": "none",
+      "passed": true
+    },
+    {
+      "name": "reconstruction filter is a separate line (not folded into droop)",
+      "got": "declared=True budget=-40 dB | sinc-only image atten=-4.37 dB (exp -4.37)",
+      "expected": "separate keys; sinc-only atten matches |sinc(1.05\u03c0/2)|",
+      "passed": true
+    },
+    {
+      "name": "droop term stays in route gain axis (not in alias/recon)",
+      "got": "droop=0.3319, droop_ok=False",
+      "expected": "droop \u2248 1\u2212|sinc(0.475\u03c0)|=0.323, droop_ok=False",
+      "passed": true
     }
   ],
   "summary": {
-    "n_checks": 16,
-    "n_passed": 16
+    "n_checks": 33,
+    "n_passed": 33
   }
 }

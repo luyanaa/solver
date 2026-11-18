@@ -1,0 +1,81 @@
+
+==============================================================================
+T10 ε_c 时序语义验收（外部时标 + 证书可见性）
+==============================================================================
+
+==============================================================================
+CASE A  ε_c 签名/语义：外部时标显式声明
+==============================================================================
+               quantity     value
+                τ_relax 4.282e-11
+  τ_external (declared) 1.000e-08
+                    ε_c    0.0043
+
+==============================================================================
+CASE B  纯稳态：无 ε_c，deadline+residual 事实
+==============================================================================
+              case  C_node T_deadline    res(T) verdict
+       no deadline 1.0e-13          —         —  STEADY
+       T=40τ_relax 1.0e-13   1.71e-09 3.591e-13    PASS
+  constructed miss    1e-9       1e-9 7.855e+00    FAIL
+
+==============================================================================
+CASE C  耦合 ε_c：显式外部时标的 PASS / FAIL
+==============================================================================
+               case τ_external/τ_relax    ε_c verdict
+               slow               1000 0.0010    PASS
+               fast                 50 0.0200    FAIL
+  faster than relax                0.1   10.0    FAIL
+
+==============================================================================
+CASE D  约束判决到达 Certificate（不再埋 side-record）
+==============================================================================
+   constraint evidence                    cert status feasible
+       ε_c=0.02 (FAIL)                       rejected    False
+  pure steady (STEADY) no violation on evaluated axes    False
+       ε_c=1e-3 (PASS) no violation on evaluated axes    False
+             malformed                       rejected    False
+      ε_c>1 (negative)                       rejected    False
+
+==============================================================================
+验收汇总
+==============================================================================
+                                                              check                                                                                                                               got                                  expected PASS
+                                 ε_c formula = τ_relax / τ_external                                                                                                                      4.281653e-03                              4.281653e-03  yes
+                              ε_c < 0.01 for slow external dynamics                                                                                                                            0.0043                                    < 0.01  yes
+                external_state_timescale=None raises (no bogus ε_c)                                                                                                                            raises                                ValueError  yes
+                             non-positive external timescale raises                                                                                                                            raises                                ValueError  yes
+                               solve_constraint ε_c matches eps_c()                                                                                                                      4.281653e-03                              4.281653e-03  yes
+                        solve_constraint records declared timescale                                                                                                                         1.000e-08                                 1.000e-08  yes
+                                 coupled record is not steady_state                                                                                                                             False                                     False  yes
+                                  steady no-deadline: eps_c is None                                                                                                                              None                                      None  yes
+           steady no-deadline: verdict STEADY (fact, not PASS/FAIL)                                                                                                                            STEADY                                    STEADY  yes
+                           steady no-deadline: flagged steady_state                                                                                                                              True                                      True  yes
+                    steady no-deadline: note explains no-ε_c policy                                                                                                                              True                                      True  yes
+                                  steady deadline met: verdict PASS                                                                                                                              PASS                                      PASS  yes
+                                steady deadline met: converged=True                                                                                                                              True                                      True  yes
+                            steady deadline met: residual below tol                                                                                                                         3.591e-13                               < 8.000e-06  yes
+                         steady residual_tol defaults to 1e-6·||I||                                                                                                                         8.000e-06                                 8.000e-06  yes
+                 steady deadline missed: verdict FAIL (constructed)                                                                                                                              FAIL                                      FAIL  yes
+                            steady deadline missed: converged=False                                                                                                                             False                                     False  yes
+             steady deadline missed: residual ≈ ||I|| (unconverged)                                                                                                                       0.982·||I||                               ≥ 0.5·||I||  yes
+    steady deadline missed: note names the fact (not infeasibility)                                                                                                                              True                                      True  yes
+                                 slow external dynamics: ε_c = 1e-3                                                                                                                          0.001000                                    ≈ 1e-3  yes
+                               slow external dynamics: verdict PASS                                                                                                                              PASS                                      PASS  yes
+                          fast external dynamics: ε_c = 0.02 ≥ 0.01                                                                                                                          0.020000                                    ≥ 0.01  yes
+                               fast external dynamics: verdict FAIL                                                                                                                              FAIL                                      FAIL  yes
+                               FAIL note cites §3.4 timing contract                                                                                                                              True                                      True  yes
+                    external dynamics faster than relaxation ⇒ FAIL                                                                                                             verdict=FAIL ε_c=10.0                             FAIL, ε_c > 1  yes
+                             constraint FAIL ⇒ cert status rejected                                                                                                                          rejected                                  rejected  yes
+                                  constraint FAIL ⇒ cert infeasible                                                                                                                             False                                     False  yes
+                       rejection reason names the constraint fabric                                                                                                                              True                                      True  yes
+                 cert carries constraint item with rejected verdict                                                                                                                          rejected                                  rejected  yes
+                        cert.as_dict() exposes the constraint field                                                                                                                              FAIL                                      FAIL  yes
+     pure-steady fact ⇒ cert stays 'no violation on evaluated axes'                                                                                                    no violation on evaluated axes            no violation on evaluated axes  yes
+  steady fact recorded as pass-with-fact, not a feasibility verdict constraint steady-state fact (no ε_c defined, no external dynamic state declared): tau_relax=4.282e-11; not a feasibility verdict detail states 'not a feasibility verdict'  yes
+                           steady fact keeps eps_c None in the cert                                                                                                                              None                                      None  yes
+                                  coupled ε_c PASS ⇒ cert unchanged                                                                                                    no violation on evaluated axes            no violation on evaluated axes  yes
+              malformed constraint evidence (no verdict) ⇒ rejected                                                                                                                          rejected                                  rejected  yes
+         negative control: ε_c>1 external timescale ⇒ cert rejected                                                                                                                          rejected                                  rejected  yes
+
+  36/36 checks passed

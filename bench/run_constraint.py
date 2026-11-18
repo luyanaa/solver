@@ -268,7 +268,8 @@ def case_eps_c():
     eps_big_c = eps_c(mesh, 1e-9, tau_state)
     add("ε_c fail: C_node too large", "%.4f" % eps_big_c, "≥ 0.01 → FAIL flag",
         eps_big_c >= 0.01)
-    res = solve_constraint(mesh, _poisson_1d_rhs(n)[0], 1e-9, tau_state_min=tau_state)
+    res = solve_constraint(mesh, _poisson_1d_rhs(n)[0], 1e-9,
+                           external_state_timescale=tau_state)
     add("verdict flags timing violation", res.verdict, "FAIL", res.verdict == "FAIL")
     add("ε_c fail: state too fast (τ_state=1e-12)", "%.4f" % eps_c(mesh, c_good, 1e-12),
         "≥ 0.01", eps_c(mesh, c_good, 1e-12) >= 0.01)

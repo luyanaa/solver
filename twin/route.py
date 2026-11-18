@@ -28,7 +28,7 @@ import numpy as np
 from analysis.skew import phase_budget
 
 __all__ = [
-    "Wire", "Buffer", "AllPass", "PureDelay", "RouteEdge",
+    "Wire", "Buffer", "AllPass", "PureDelay", "ZOH", "RouteEdge",
     "rc_wire", "buffer_chain",
     "group_delay", "edge_metrics", "eta_route", "j_h", "j_tau", "j_tau_group",
     "latency_class", "CoupledNets", "coupled_nets",
@@ -96,6 +96,51 @@ class AllPass:
     def H(self, s):
         s = np.asarray(s, dtype=complex)
         return (1.0 - s * self.tau / 2.0) / (1.0 + s * self.tau / 2.0)
+
+
+@dataclass(frozen=True)
+class ZOH:
+    """零阶保持的真实等效传递 H_ZOH(s) = (1−e^{−sT_s})/(sT_s)。
+
+    = e^{−sT_s/2}·sinc(sT_s/2)：相位与 PureDelay(T_s/2) **完全一致**，
+    但幅度带 sinc droop——jω 处 |H| = |sin(ωT_s/2)/(ωT_s/2)|，
+    DC=1，Nyquist(ω=π/T_s) 处只有 2/π≈0.637（−3.92 dB）。PureDelay
+    只在 ωT_s≪1（droop<ε）时是合法近似；带宽逼近 Nyquist 时必须
+    用本块，把 droop 记进 gain 轴。dc_gain=1，noise_var=0（采样折叠
+    噪声是单独的 B_p 端口，不在这里）。
+    """
+
+    T_s: float
+
+    def __post_init__(self):
+        if self.T_s <= 0:
+            raise ValueError("T_s 必须为正")
+
+    @property
+    def latency(self) -> float:
+        return float(self.T_s / 2.0)
+
+    @property
+    def noise_var(self) -> float:
+        return 0.0
+
+    def dc_gain(self) -> float:
+        return 1.0
+
+    def droop(self, omega):
+        """jω 处的幅度 |sinc(ωT_s/2)|（相对 DC 的幅度损失因子）。"""
+        x = np.asarray(omega, dtype=float) * self.T_s / 2.0
+        return np.sinc(x / np.pi)          # np.sinc(x)=sin(πx)/(πx)
+
+    def H(self, s):
+        s = np.asarray(s, dtype=complex)
+        scalar = s.shape == ()
+        with np.errstate(divide="ignore", invalid="ignore"):
+            v = (1.0 - np.exp(-s * self.T_s)) / (s * self.T_s)
+        # s=0 极限是 1；exp 饱和引起的 0/0 同样按极限 1 处理
+        bad = ~np.isfinite(v)
+        v = np.where(bad, 1.0 + 0j, v)
+        return complex(v) if scalar else v
 
 
 @dataclass(frozen=True)

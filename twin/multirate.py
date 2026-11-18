@@ -34,22 +34,39 @@
    ‖(jωE−A_diag)^{-1}‖∞ 是不挑扰动方向的保守上界（任何 port 扰动
    都成立），两者都在 bench 里报告。
 
-3. **ZOH 等效延迟**。跨岛 S&H 的等效传递 H_ZOH(s) = (1−e^{−sT_s})/(sT_s)
-   ≈ e^{−sT_s/2}：把跨岛 S&H 直接并入 ``twin/route.py`` 的
-   ``PureDelay(T_s/2)``，复用同一套 route_closure/slack 判定，**不建
-   新机制**。折叠/混叠噪声是单独的 B_p 端口：采样率 f_s 以上的信号
-   功率折叠到带内，混叠方差 ≈ 信号在 f_s/2 以上的方差（本模块不
-   实现，只立合同——混叠进 P0.5 的 noise 轴，不进 route 轴）。
+3. **ZOH 等效传递（含 sinc droop）**。跨岛 S&H 的精确等效传递是
+   H_ZOH(s) = (1−e^{−sT_s})/(sT_s) = e^{−sT_s/2}·sinc(sT_s/2)：相位
+   与 e^{−sT_s/2} 完全一致，但**幅度不是 1**——jω 处
+   |H| = |sinc(ωT_s/2)|，DC=1，Nyquist(ω=π/T_s) 处只有 2/π≈0.637
+   （−3.92 dB）。早期版本把它并成 PureDelay(T_s/2)：相位正确、幅度
+   错误（Nyquist 处报告 0 dB）。`twin/route.py` 现在有 `ZOH` 块，
+   `zoh_edge(T_s)` 返回它，droop 直接进 route_closure 的 gain 轴。
+   只有当带宽足够低（droop < ε，默认 0.01 ⇒ ωT_s ≲ 0.155）时才允许
+   退化成 PureDelay(T_s/2)——由 `zoh_edge(..., degrade=...)` 显式
+   记录（`degraded`/`droop` 字段），不允许在高带宽下静默使用延迟
+   近似。droop 小 u 展开 ≈ (ωT_s)²/24，ε=0.01 的退化阈值为
+   ωT_s* = √(24ε) ≈ 0.49。
+
+   合同里 ZOH 是**三项独立预算**，不许折叠成一个数：
+   (a) **sinc droop**（幅度损失 vs ω，−3.92 dB @ Nyquist）——route
+       gain 轴，进 η_route/J_H；
+   (b) **采样混叠**——f_s/2 以上的信号/噪声功率折叠进带内，混叠
+       方差 ≈ 信号在 Nyquist 以上的方差；信号带宽逼近 Nyquist 时
+       `zoh_contract` 置 flag。它进 §4.4/P0.5 的 noise 轴，不进
+       route 轴（本模块只立 flag，不做方差计算）；
+   (c) **重构滤波**——消除镜像的滤波器本身有纹波/延迟/极点预算，
+       依赖它必须在别处立单独预算，不能算进 droop 里。
 """
 
 from __future__ import annotations
 
 import numpy as np
 
-from .route import PureDelay
+from .route import PureDelay, RouteEdge, ZOH
 
 __all__ = ["wr_iteration_matrix", "wr_spectral_radius", "wr_error_bound",
-           "resolvent_norm_inf", "k_max", "zoh_edge"]
+           "resolvent_norm_inf", "k_max", "zoh_edge", "zoh_contract",
+           "DROOP_EPS_DEFAULT"]
 
 
 def wr_iteration_matrix(E, A_diag, A_off, omega):
@@ -162,18 +179,95 @@ def k_max(rho_sup, resolvent_norm_inf, eps_replay, e0_norm):
     return int(np.ceil(np.log(ratio) / np.log(rho_sup)))
 
 
-def zoh_edge(T_s):
-    """跨岛 S&H 的 ZOH 等效延迟：PureDelay(T_s/2)。
+#: droop 退化阈值：|sinc| 损失 < DROOP_EPS_DEFAULT（1%，−0.087 dB）
+#: 时允许把 ZOH 记成 PureDelay(T_s/2)。droop(u)=1−|sinc(u/2)|，
+#: u=ωT_s；小 u 时 droop≈u²/24，故阈值 u*≈√(24ε)≈0.49（ε=0.01）。
+DROOP_EPS_DEFAULT = 0.01
 
-    精确等效传递是 H_ZOH(s) = (1−e^{−sT_s})/(sT_s) = e^{−sT_s/2}·sinc(sT_s/2)：
-    相位与 e^{−sT_s/2} 完全一致，幅度差一个 sinc 因子（ωT_s ≪ 1 时
-    可忽略）。因此跨岛采样交换在 route 层就是 PureDelay(T_s/2)，由
-    ``route_closure`` 的同一套 gain/phase/noise/absolute-delay 判定
-    处理，不需要新机制。
 
-    **混叠是单独的 B_p 端口，不在这里**：采样把 f_s/2 以上的信号与
-    噪声功率折叠进带内，混叠方差 ≈ 信号在 f_s/2 以上的方差（加上
-    采样孔径/量化项）。它进 §4.4/P0.5 的 noise 轴预算，不进 route
-    轴；调用方负责在 noise slack 里加这一项。
+def _droop(omega, T_s):
+    x = np.asarray(omega, dtype=float) * T_s / 2.0
+    return np.abs(np.sinc(x / np.pi))
+
+
+def droop_omega_ts(eps: float = DROOP_EPS_DEFAULT) -> float:
+    """droop 恰好等于 eps 的 ωT_s 值（退化阈值的解析定义，供验收对表）。
+
+    droop(u)=1−|sinc(u/2)| 在 u∈(0,2) 上单调；小 u 近似 droop≈u²/24，
+    ε=0.01 ⇒ u*≈√(24ε)=0.49（与二分一致）。droop 在 |sinc| 的零点之外
+    回升（u>2 后 |sinc| 再增大），二分只在 (0,2) 内找第一个根——那正是
+    退化有意义的区间。
     """
-    return PureDelay(T_s / 2.0)
+    lo, hi = 1e-12, 2.0
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        if 1.0 - _droop(mid, 1.0) > eps:
+            hi = mid
+        else:
+            lo = mid
+    return lo
+
+
+def zoh_edge(T_s, omega_max: float | None = None,
+             eps_droop: float = DROOP_EPS_DEFAULT) -> dict:
+    """跨岛 S&H 的 ZOH 等效传递，含 sinc droop，不静默近似。
+
+    返回 dict：
+      block      `twin/route.py` 的 `ZOH` 块（H(s)=(1−e^{−sT_s})/(sT_s)），
+                 相位 = PureDelay(T_s/2)，幅度带 sinc droop（Nyquist 处
+                 2/π≈0.637）。直接进 RouteEdge/route_closure，droop 由
+                 gain 轴的 gain_err 判定，无新机制；
+      degraded   True ⇒ ω_max 处 droop < eps_droop，允许（且已经）用
+                 PureDelay(T_s/2) 代替 ZOH 块（记录在案，不静默）；
+      droop      ω_max 处（未给出 ω_max 时取 Nyquist）的幅度损失因子
+                 1−|sinc(ωT_s/2)|；
+      droop_max_allowed  eps_droop。
+
+    不给 omega_max ⇒ 不做退化判断，永远返回真 ZOH（保守侧）。
+    **混叠与重构滤波是单独预算，见 zoh_contract。**
+    """
+    zoh = ZOH(T_s)
+    out = dict(block=zoh, degraded=False, droop=float("nan"),
+               droop_max_allowed=eps_droop)
+    if omega_max is None:
+        return out
+    d = 1.0 - float(_droop(omega_max, T_s))
+    out["droop"] = d
+    if d < eps_droop:
+        out["block"] = PureDelay(T_s / 2.0)
+        out["degraded"] = True
+    return out
+
+
+def zoh_contract(T_s, omega_sig: float, recon_filter_db: float | None = None,
+                 eps_droop: float = DROOP_EPS_DEFAULT) -> dict:
+    """ZOH 三项独立预算（不许折叠成一个数）：
+
+      droop        sinc 幅度损失 1−|sinc(ω_sig T_s/2)|——route gain 轴；
+      aliasing     flag：信号带宽 ω_sig 是否逼近/越过 Nyquist π/T_s。
+                   flag 只立合同：混叠方差进 §4.4/P0.5 noise 轴，不进
+                   route 轴。阈值：ω_sig > 0.5·π/T_s 记 warning，
+                   > 0.9·π/T_s 记 violation；
+      reconstruction  重构滤波器预算，**独立一行**：只消除 f_s 附近的
+                   镜像，其纹波/延迟另行立账。recon_filter_db=None ⇒
+                   未声明滤波器，镜像残余由 sinc 本身在 ω_s−ω_sig 处
+                   的衰减量报告（不能默认为 0）。
+    """
+    w_nyq = np.pi / T_s
+    droop = 1.0 - float(_droop(omega_sig, T_s))
+    frac = omega_sig / w_nyq
+    alias_flag = ("violation" if frac > 0.9 else
+                  "warning" if frac > 0.5 else "none")
+    # 镜像位置 ω_s−ω_sig 处 sinc 本身的衰减（dB，负=衰减）：
+    img_atten_db = 20.0 * np.log10(max(_droop(2.0 * np.pi / T_s - omega_sig, T_s),
+                                       1e-300))
+    recon = dict(filter_declared=recon_filter_db is not None,
+                 recon_budget_db=recon_filter_db,
+                 image_freq=(2.0 * np.pi / T_s - omega_sig),
+                 sinc_image_atten_db=img_atten_db)
+    return dict(T_s=T_s, omega_nyquist=w_nyq, omega_sig=omega_sig,
+                bandwidth_fraction=frac, droop=droop,
+                droop_eps=eps_droop, droop_ok=droop < eps_droop,
+                aliasing=alias_flag,
+                reconstruction=recon)
+
