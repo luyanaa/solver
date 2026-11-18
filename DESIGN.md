@@ -1684,14 +1684,19 @@ Gamma 与 Bessel 的边界也按 §1.5 执行：Gamma 直接拒绝（native-only
         ✅ spice/extract.py  # 真实 PDK 提取：ngspice 电流镜 → λ, g_m/I_D, r_o, ratio
         ✅ noise.py        # OU 滤波色噪声 + replay + ρ_ij 相关矩阵；色噪声/白噪声极限
         ✅ multirate.py    # WR 谱半径 + replay 底噪 k_max + ZOH→PureDelay(T_s/2)
-        constraint.py     # A(x)y=b(x)：Poisson/KCL 松弛网 + τ_relax/残差
+        ✅ constraint.py   # T10：A(x)y=b(x) → C_node·V̇+G·V=I_rhs KCL 松弛
+                          # τ_relax=C/λ_min(G_sym)、非对称时全谱横坐标守卫、
+                          # mirror 失配静差下界 ‖G⁻¹‖·‖δI‖（∝1/λ_min，κ trade-off）、
+                          # kcl_relaxation_descriptor → 复用 analysis 栈（44/44）
         calib.py          # primitive behavioral model、replica、pilot、物理残差、placement
         ✅ coupling.py     # spectral↔local 接口守恒：单通量源 + 电流镜像
         ✅ qoi.py          # W_d → ν_num；Osborn–Cox → κ_num；x_s(t) 对比
         ✅ route.py        # H(s)=wire+buffer+delay；η/J_H/J_τ、S_τ,ij、latency class、route_closure
                           # 实测：0.3795 RC 可测；fanout 4 级 11.45°；all-pass J_H 108× 优于 RC
-        substrate.py      # §3.7 constitutive law + transducer cost：MEMS m,c,k；fluidic C_f,R；
-                          # photonic loss/SNR/thermal；给出每域 κ_hw 与 S_n
+        ✅ substrate.py    # §3.7 最小子集：KAPPA_HW 每域时间窗 + 流体→电学
+                          # P↔V/Q↔I/R_f↔R/C_f↔C 映射 + Hagen–Poiseuille R_f +
+                          # fluidic_mesh_to_conductance + TransducerCost 合同
+                          # （MEMS/photonic constitutive law 仍是 Phase 8 TODO）
         ✅ transform.py    # §5.7–§5.9：smoothness sensor/σ（相对 ε floor + attack/release）、
                           # lifting wavelet、W_inv/W_star、Gram 右/左标定、transposeable edge
                           # 实测：守恒 2.2e-16；CDF53 W_inv≠W* 0.684；isometry 2.3e-2→3.5e-15
@@ -1706,6 +1711,7 @@ Gamma 与 Bessel 的边界也按 §1.5 执行：Gamma 直接拒绝（native-only
         ✅ run_sde.py               # OU/GBM/双势阱 + CRN/moment 参数恢复（27/27）
         ✅ run_multirate.py         # §4.3 WR/S&H 合法性验收（16/16）
         ✅ run_compiler.py          # P6 证书聚合层验收（22/22）
+        ✅ run_constraint.py        # T10 KCL 松弛孪生验收（44/44）
         diffusion.py biharmonic.py burgers.py robertson.py shear.py hh.py
         airfoil.py bore.py front.py   # 20 个 benchmark 待补；当前模型在 run_phase0.py 内
       results/                    # report.txt / twin_experiments.json /

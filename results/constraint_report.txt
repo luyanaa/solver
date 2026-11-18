@@ -1,0 +1,131 @@
+T10 constraint fabric acceptance (DESIGN.md §3.4/§3.7)
+
+==============================================================================
+CASE 1  Poisson 1D: steady state vs analytic sin(πx)/π²
+==============================================================================
+  quantity      value
+         N         64
+         h 1.5385e-02
+   max err  1.972e-05
+    max|u|     0.1013
+
+==============================================================================
+CASE 2  τ_relax = C_node/λ_min(G) vs fitted slow-mode decay
+==============================================================================
+   quantity        value
+   λ_min(G)   2.3355e-03
+  τ formula 4.2817e-10 s
+   τ fitted 4.2817e-10 s
+      ratio       1.0000
+       R(0)    1.349e-03
+     R(end)    2.781e-12
+
+==============================================================================
+CASE 3  κ(G) ~ N² scaling (N=32 vs N=64)
+==============================================================================
+   N     κ(G)      λ_min
+  32  440.689 9.0562e-03
+  64 1711.661 2.3355e-03
+
+==============================================================================
+CASE 4  Descriptor handoff → analysis stack
+==============================================================================
+       field       value
+           n          64
+  max Re eig -2.3355e+09
+  is_regular        True
+
+==============================================================================
+CASE 5  mismatch floor: deterministic bound, κ growth, λ·ΔV term
+==============================================================================
+  λ table (results/device_extract.json): gf180mcu=0.03405, ihp-hbt=0.01385, ihp-sg13g2=0.9701, sky130=0.08103
+                 model floor ‖δV‖∞ dominant mode
+   eps_dev=0.01 (N=32)   3.346e-01             0
+  eps_dev=0.01 (N=128)   2.882e+00             —
+        λ=0.0138, ΔV≠0   3.314e-05             —
+         λ=0.970, ΔV≠0   2.322e-03             —
+          eps_sys=0.01   3.333e-04             0
+
+==============================================================================
+CASE 6  ε_c = τ_constraint/τ_state,min timing contract (§3.4)
+==============================================================================
+                   case τ_constraint     ε_c verdict
+  C=1e-13, τ_state=1e-8    4.282e-11  0.0043    PASS
+   C=1e-9, τ_state=1e-8    4.282e-07 42.8165    FAIL
+
+==============================================================================
+CASE 7  Neumann leakage: single weak ground keeps G nonsingular
+==============================================================================
+                      mesh     λ_min      κ(G)  verdict
+  neumann-mixed g_ref=1e-3 3.093e-05 1.290e+05     PASS
+     pure Neumann (no gnd) 1.836e-16       inf SINGULAR
+
+==============================================================================
+CASE 8  non-symmetric guard: (G+Gᵀ)/2 + full-spectrum abscissa
+==============================================================================
+                             mesh monotone_spd abscissa(−G) stable_full
+  gm=0.005 (stable, non-monotone)        False   -4.085e-03        True
+               gm=0.05 (unstable)        False    4.011e-02       False
+
+==============================================================================
+CASE 9  fluidic substrate → same graph Laplacian (§3.7)
+==============================================================================
+             quantity              value
+  R1 (l=1cm, r=100µm) 2.5465e+11 Pa·s/m³
+           R2 (l=2cm)         5.0930e+11
+       P0/P1 analytic             2.0000
+
+==============================================================================
+CASE 10  2D mesh sanity + substrate constants
+==============================================================================
+
+==============================================================================
+VERDICT
+==============================================================================
+                                                    check                                                               got                                        expected pass
+                                      poisson1d max|V*−u|                                                         1.972e-05                                     < 1.013e-03  yes
+                                  poisson1d symmetric SPD                                                              True                                            True  yes
+                                    tau_relax fit/formula                                                            1.0000                                        1 ± 0.05  yes
+                                          tau_relax value                                                       4.282e-10 s                                         C/λ_min  yes
+                                   residual t=0 = ‖G·0−I‖                                                         1.349e-03                                       1.349e-03  yes
+                                       residual t_end → 0                                                         2.781e-12                                       < 1e-6·r0  yes
+                                          κ ratio N=64/32                                                             3.884                                         ≈4 ±20%  yes
+                                             κ growth ~N²                                                       ratio 3.884                                  (65/33)²=3.880  yes
+                         descriptor A stable (Re eig < 0)                                                        -2.336e+09                                             < 0  yes
+                                 eigvals = −λ_mesh/C_node                                                         7.324e-03                                  ≈0 (<1e-9 rel)  yes
+                                   E = C_node·I (regular)                                                              True                                            True  yes
+                                     descriptor.check() n                                                                64                                              64  yes
+                           ‖δV‖∞ ≤ ‖G⁻¹‖∞‖δI‖∞ (10 seeds)                                                          all hold                                        all hold  yes
+                                     floor ratio N=128/32                                                              8.61                         ≈κ ratio 15.30 (×0.5–2)  yes
+                       lam systematic grows with λ (ΔV≠0)                                               3.31e-05 → 2.32e-03                                       increases  yes
+                eps_dev-dominant when ΔV=0 (λ term inert)                                                            1.0000                           1.0 (identical draws)  yes
+                          eps_sys floor ≈ η·eps_sys·‖V*‖∞                                                         3.333e-04                                    O(1.013e-03)  yes
+                                    ε_c pass case (<0.01)                                                            0.0043                                          < 0.01  yes
+                               ε_c fail: C_node too large                                                           42.8165                              ≥ 0.01 → FAIL flag  yes
+                           verdict flags timing violation                                                              FAIL                                            FAIL  yes
+                 ε_c fail: state too fast (τ_state=1e-12)                                                           42.8165                                          ≥ 0.01  yes
+                                neumann-mixed nonsingular                                                              True                                            True  yes
+                                     λ_min is g_ref-scale                                                         3.093e-05                               0 < λ_min < g_ref  yes
+                                    λ_min ≫ 0 but ≪ λ_max                                               3.09e-05 ≪ 3.99e+00        κ large (leakage-only zero-mode lifting)  yes
+                          pure Neumann zero mode detected                                                              True                                            True  yes
+       solve_constraint verdict SINGULAR (never inverted)                                                          SINGULAR                                        SINGULAR  yes
+                              non-symmetric mesh detected                                                             False                                           False  yes
+                             monotone_spd correctly False                                                             False                                           False  yes
+                      full-spectrum abscissa < 0 (stable)                                                        -4.085e-03                                             < 0  yes
+                 stable_full uses full eig (not sym part)                                                              True                                            True  yes
+                            λ_min taken on symmetric part                                                         4.079e-03                               = λ_min((G+Gᵀ)/2)  yes
+                 destabilizing gm caught by full spectrum                                                             False                                           False  yes
+                               destabilizing abscissa > 0                                                         4.011e-02                                             > 0  yes
+                                          R_f = 8μl/(πr⁴)                                                        2.5465e+11                                      2.5465e+11  yes
+                       two-node chain P0 = Q·(R1∥(R2+R3))                                                        2.0372e-01                                      2.0372e-01  yes
+                        two-node chain P1 = P0·R3/(R2+R3)                                                        1.0186e-01                                      1.0186e-01  yes
+                  fluidic G structure (sym, off-diag ≤ 0)                                                              True                                            True  yes
+                            mapping table P↔V, Q↔I, R_f↔R          {'P': 'V', 'Q': 'I', 'R_f': 'R', 'C_f': 'C', 'L_R': 'G'} {'P':'V','Q':'I','R_f':'R','C_f':'C','L_R':'G'}  yes
+                 fluidic G → relaxation_modes works (SPD)                                                              True                                            True  yes
+                             poisson_2d(8×8) SPD monotone                                                              True                                            True  yes
+                         poisson_2d interior row sums ≈ 0                                                         0.000e+00                                              ≈0  yes
+  κ_hw windows present (electronic/mems/fluidic/photonic)                     ['electronic', 'fluidic', 'mems', 'photonic']                                       4 domains  yes
+                           photonic window is 1e-12..1e-9                                                    (1e-12, 1e-09)                                   (1e-12, 1e-9)  yes
+                   TransducerCost.as_dict contract fields ['bandwidth_hz', 'energy', 'extra', 'gain', 'noise_rms', 'notes']              gain/noise_rms/bandwidth_hz/energy  yes
+
+  44/44 checks passed
