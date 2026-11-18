@@ -15,10 +15,12 @@
 
 物理缩放后的描述符（ODE 形式推导，保留 descriptor 形式）：
 
-    x = S⁻¹V,  ẋ = S⁻¹V̇  ⇒  (E S⁻¹) V̇ = (A S⁻¹) V
-    τ = t/T0             ⇒  A_v = T0·A·S⁻¹,  E_v = E·S⁻¹
+    时间：t_phys = α·t_model ⇒ d/dt_model = α·d/dt_phys
+          E ẋ_phys = α⁻¹ A x        ⇒ eig 缩小 α 倍（λ_phys = λ/α）
+    状态：V = S x ⇔ x = S⁻¹V，左乘 S
+          E_v = S E S⁻¹,  A_v = α⁻¹ S A S⁻¹,  B_v = S B,  C_v = C S⁻¹
 
-    ⇒ eig(A_v, E_v) = T0 · eig(A, E)      （selftest 里断言）
+    ⇒ eig(A_v, E_v) = eig(A, E)/α      （selftest 里断言）
 
 已知限制：PhysicalScaling.S_x 是标量（twin/route.py:745），本模块只存
 S_x_vec 的几何均值作为代表值；完整逐状态向量在 ScalingResult.S_x_vec。
@@ -102,6 +104,7 @@ class ScalingResult:
     k_head: float
     bandwidth_pass: bool
     notes: list[str] = field(default_factory=list)
+    scaled: object | None = None      # 物理时间 descriptor（P6 证书输入；eig=λ/α）
 
     def as_dict(self) -> dict:
         return dict(
@@ -189,10 +192,20 @@ def gramian_scaling(sys: Descriptor, v_swing: float, B_hw: float,
     S_scalar = float(np.exp(np.mean(np.log(np.clip(S_x, _TINY, None)))))
     ps = PhysicalScaling(S_x=S_scalar, alpha=alpha, v_swing=float(v_swing))
 
-    # 缩放后的描述符：E_v = E·S⁻¹, A_v = alpha·A·S⁻¹ ⇒ eig = alpha·eig(orig)
+    # 缩放后的**物理时间**描述符。两步，方向相反：
+    #   时间  t_phys = α·t_model ⇒ d/dt_model = α·d/dt_phys，
+    #         E ẋ_phys = α⁻¹ A x（α>1 = 硬件比模型**慢**：eig 缩 α 倍小）。
+    #         由 alpha_for_bandwidth 得 scaled.bandwidth() = B_hw·margin ≤ B_hw。
+    #   状态  V = S x ⇔ x = S⁻¹V，代入并左乘 S ⇒ 双边相似（不是单边右乘）：
+    #         E_v = S E S⁻¹（E=I ⇒ E_v=I），A_v = α⁻¹ S A S⁻¹，
+    #         B_v = S B，C_v = C S⁻¹。
+    #         eig(A_v,E_v) = eig(A,E)/α（相似不变非平凡部分）；§4.0 "不改 κ_t、
+    #         经 S A S⁻¹ 降 Γ" 的预条件目标只在双边形式下成立。
     Sinv = np.diag(1.0 / S_x)
-    scaled = Descriptor(sys.E @ Sinv, alpha * sys.A @ Sinv,
-                        sys.B, sys.C @ Sinv, sys.D)
+    S_mat = np.diag(S_x)
+    scaled = Descriptor(S_mat @ sys.E @ Sinv,
+                        (1.0 / alpha) * (S_mat @ sys.A @ Sinv),
+                        S_mat @ sys.B, sys.C @ Sinv, sys.D)
 
     g_before = float(resolvent_peak(sys)["Gamma"])
     g_after = float(resolvent_peak(scaled)["Gamma"])
@@ -205,6 +218,7 @@ def gramian_scaling(sys: Descriptor, v_swing: float, B_hw: float,
         method=method, d_balanced=d_balanced, Wo=Wo,
         gamma_before=g_before, gamma_after=g_after,
         k_head=float(k_head), bandwidth_pass=bool(bw_ok), notes=notes,
+        scaled=scaled,
     )
 
 
@@ -225,13 +239,13 @@ def selftest() -> dict:
 
     res = gramian_scaling(sys, v_swing=1.0, B_hw=1.0)
 
-    # 1) 特征值不变性：eig(A_v, E_v) = alpha·eig(A, E)
+    # 1) 特征值缩放：eig(A_v, E_v) = eig(A, E)/α（S 相似不变非平凡部分，
+    #    α 把物理特征值缩小 α 倍）；且 res.scaled 自洽。
     lam0 = np.sort_complex(sys.finite_eigs())
-    Sinv = np.diag(1.0 / res.S_x_vec)
-    scaled = Descriptor(sys.E @ Sinv, res.alpha * sys.A @ Sinv,
-                        sys.B, sys.C @ Sinv)
-    lam1 = np.sort_complex(scaled.finite_eigs())
-    assert np.allclose(lam1, res.alpha * lam0, rtol=1e-9, atol=1e-9), (lam0, lam1)
+    lam1 = np.sort_complex(res.scaled.finite_eigs())
+    assert np.allclose(lam1, lam0 / res.alpha, rtol=1e-9, atol=1e-9), (lam0, lam1)
+    # scaled.bandwidth() = B_hw·margin（Hz：max|λ_scaled|/2π = B_hw·margin）
+    assert abs(res.scaled.bandwidth() - 1.0 * 0.8) < 1e-9
 
     # 2) bandwidth_pass 由构造为真
     assert res.bandwidth_pass, res.as_dict()

@@ -175,26 +175,26 @@ def drive(name, bundle, spec, checks, ctrl):
     # （problems.py 把它们放在 spec_meta —— 证书证据是 spec 的一部分）。
     reg = _find(meta, "reg") or _find(bundle.reference, "reg")
     reg_w = _find(meta, "reg_w") or _find(bundle.reference, "reg_w")
-    # P6 证书评在**原始** descriptor 上（与 run_compiler 的语义一致）。
-    # bandwidth 轴的 model-time 值不带 alpha（slack 无 PhysicalScaling 输入，
-    # 已上报 owner）：raw 判决若是 bandwidth 且 P3 的 alpha 能移除它
-    # （sc.bandwidth_pass，§6.15 verdict-flip），对账记"feasible after
-    # P3 time-scaling"，而不是假装 raw 可行、也不是评 sc.scaled
-    # （α·A·S⁻¹ 把 eig 放大 α 倍：实测 poisson scaled bandwidth=2e18，更糟）。
-    cert = evaluate_sys(dsc, spec, reg=reg)
+    # P6 证书评在 P3 的物理时间 descriptor（sc.scaled：eig=λ/α、双边
+    # 预条件）上 —— scaling 修好方向后（α⁻¹·S·A·S⁻¹，非 α·A·S⁻¹）这就是
+    # 唯一一致入口：bandwidth 轴的物理值 = B_hw·margin ≤ B_hw，model-time
+    # 的原始带宽是伪违反。evaluate_sys(scaling=...) 内部取 sc.scaled。
+    # gamma_M：poisson 的 Γ_proj 解析上 = ∞（G 守恒零模，S 相似改不掉）；
+    # delta_A_norm=None 时该轴不被读，供 gamma_M=inf 是**真值**（非捷径），
+    # 省去 scaled 矩阵上 ~15min 的 resolvent sweep（其它问题 None→正常 sweep）。
+    gamma_M = (float("inf") if (spec.delta_A_norm is None
+                                and name == "poisson-2d") else None)
+    cert = evaluate_sys(dsc, spec, reg=reg, scaling=sc, gamma_M=gamma_M)
     rec["p6_certificate"] = cert.as_dict()
     rec["p6_binding_axis"] = cert.binding_axis
-    rec["bandwidth_flip"] = dict(
-        raw_bandwidth_hz=float(dsc.bandwidth()), alpha=float(sc.alpha),
-        bandwidth_pass=bool(sc.bandwidth_pass))
+    rec["scaling"] = dict(alpha=float(sc.alpha),
+                          scaled_bandwidth_hz=float(sc.scaled.bandwidth()),
+                          bandwidth_pass=bool(sc.bandwidth_pass))
     exp_axis = bundle.expected_axis
     if exp_axis is not None:
         ok = cert.feasible is False and cert.binding_axis == exp_axis
     else:
         ok = cert.status in ("feasible", "no violation on evaluated axes")
-        if (not ok and cert.status == "infeasible"
-                and cert.binding_axis == "bandwidth" and sc.bandwidth_pass):
-            ok = True   # bandwidth 违约可由 P3 时间缩放移除（§6.15）
     add("P6 certificate status", cert.status,
         "feasible/no-violation" if exp_axis is None else
         "infeasible w/ binding_axis=%s" % exp_axis, ok)
@@ -519,21 +519,23 @@ def main():
     # ---- poisson-2d -----------------------------------------------------------
     hr("2. poisson-2d")
     bundle_p = build_problem("poisson-2d")
+    # delta_A_norm=None：KCL 松弛网格的物理扰动是**失配/泄漏**（δI 注入，
+    # 激发守恒零模）—— slack.py docstring 明确这类扰动判 drift budget，
+    # 不用 Γ_proj‖ΔA‖；robustness_A 轴对此问题"不适用"（未评估），其误差
+    # 落到 floor_bound（mismatch_floor 实测有界）由对账核对。这与
+    # 其它锚点不同：它们的 ΔA 是 conservative A-perturbation（robustness_A
+    # 轴正是为其设计）。
     spec_p = HardwareSpec(kappa_hw=1e6, B_hw=10e6, sigma_req=None,
-                          delta_A_norm=1e-3, tol_l2=1e-2, eta_route=None)
+                          delta_A_norm=None, tol_l2=1e-2, eta_route=None)
     rec_p, twin_p, cert_p, extra_p = drive("poisson-2d", bundle_p, spec_p,
                                            checks, ctrl)
     reconcile_poisson(rec_p, twin_p, cert_p, extra_p, bundle_p, checks)
-    # bandwidth 违约的对账：raw 证书判 bandwidth，P3 的 α 把它移出频窗
-    # （§6.15 PhysicalScaling verdict-flip 在 compile 层复现）。
-    bf = rec_p.get("bandwidth_flip", {})
     r0 = rec_p.setdefault("reconciliation", {})
     r0["cert_note"] = (
-        "raw cert binds bandwidth (B_req=%.3e Hz >> B_hw); P3 alpha=%.3e "
-        "removes it (t_phys=alpha*t_model, bandwidth_pass=%s) — feasible "
-        "after time scaling, not on the raw model clock"
-        % (bf.get("raw_bandwidth_hz", float("nan")),
-           bf.get("alpha", float("nan")), bf.get("bandwidth_pass")))
+        "cert on P3 physical-time descriptor (eig=lambda/alpha): bandwidth "
+        "= B_hw*margin within window; robustness_A unevaluated (delta_A_norm "
+        "=None — mismatch is a leakage/drift perturbation judged by "
+        "floor_bound, not Gamma_proj); feasible on evaluated axes")
 
     # ---- burgers-1d -----------------------------------------------------------
     hr("3. burgers-1d")

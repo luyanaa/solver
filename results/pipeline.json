@@ -96,7 +96,7 @@
         "alpha": 8.148733086305042e-07,
         "method": "rms3sigma",
         "gamma_before": 1000.0,
-        "gamma_after": Infinity,
+        "gamma_after": 0.0008148733086305042,
         "notes": [],
         "bandwidth_pass": true
       },
@@ -106,9 +106,9 @@
         "slack": {
           "values": {
             "noise": NaN,
-            "bandwidth": 6.518986469044034e-08,
+            "bandwidth": 0.08,
             "stiffness": 0.004096,
-            "robustness_A": 1.0,
+            "robustness_A": 8.148733086305042e-07,
             "robustness_io": NaN,
             "routing": NaN,
             "representation": NaN
@@ -127,9 +127,9 @@
           "slack": {
             "value": {
               "noise": NaN,
-              "bandwidth": 6.518986469044034e-08,
+              "bandwidth": 0.08,
               "stiffness": 0.004096,
-              "robustness_A": 1.0,
+              "robustness_A": 8.148733086305042e-07,
               "robustness_io": NaN,
               "routing": NaN,
               "representation": NaN
@@ -139,41 +139,41 @@
           },
           "resolvent": {
             "value": {
-              "Gamma": 1000.0,
-              "Gamma_proj": 1000.0,
+              "Gamma": 0.0008148733086305042,
+              "Gamma_proj": 0.0008148733086305042,
               "method": "diag",
               "projected": false
             },
             "verdict": "pass",
-            "detail": "\u0393_proj=1000"
+            "detail": "\u0393_proj=0.0008149"
           },
           "hinf": {
-            "value": 1000.0009536742325,
+            "value": 0.0008148740857541815,
             "verdict": "pass",
             "detail": "\u2016H\u2016\u221e"
           },
           "lyapunov": {
             "value": {
-              "sigma_y": 22.360679774997898,
-              "sigma_y2": 500.0,
+              "sigma_y": 0.02018506017616128,
+              "sigma_y2": 0.0004074366543152521,
               "h2_finite": true,
               "method": "direct"
             },
             "verdict": "pass",
-            "detail": "\u03c3_y=22.36 (direct)"
+            "detail": "\u03c3_y=0.02019 (direct)"
           }
         },
-        "binding_axis": "robustness_A",
+        "binding_axis": "bandwidth",
         "rejection_reasons": [],
         "assumptions": [
           "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
           "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
         ]
       },
-      "p6_binding_axis": "robustness_A",
-      "bandwidth_flip": {
-        "raw_bandwidth_hz": 0.6518986469044034,
+      "p6_binding_axis": "bandwidth",
+      "scaling": {
         "alpha": 8.148733086305042e-07,
+        "scaled_bandwidth_hz": 800000.0,
         "bandwidth_pass": true
       },
       "twin": {
@@ -391,77 +391,70 @@
         "alpha": 1577990.2760159757,
         "method": "rms3sigma",
         "gamma_before": Infinity,
-        "gamma_after": 5.869103047240721e-12,
+        "gamma_after": Infinity,
         "notes": [],
         "bandwidth_pass": true
       },
       "p6_certificate": {
         "feasible": false,
-        "status": "infeasible",
+        "status": "no violation on evaluated axes",
         "slack": {
           "values": {
             "noise": NaN,
-            "bandwidth": 126239.22208127806,
-            "stiffness": 0.00011661730804677344,
-            "robustness_A": Infinity,
+            "bandwidth": 0.08000000000000068,
+            "stiffness": 0.0001166173080467753,
+            "robustness_A": NaN,
             "robustness_io": NaN,
             "routing": NaN,
             "representation": NaN
           },
-          "violated": [
-            "bandwidth",
-            "robustness_A"
-          ],
+          "violated": [],
           "unknown": [
             "noise",
+            "robustness_A",
             "robustness_io",
             "routing",
             "representation"
           ],
-          "reasons": {
-            "bandwidth": "shift A_t or widen the hardware window",
-            "robustness_A": "conservative \u0394A only: recondition slow modes, calibrate, or change basis; leakage \u0394A needs drift budget, not \u0393_proj"
-          },
-          "status": "infeasible"
+          "reasons": {},
+          "status": "no violation on evaluated axes"
         },
         "items": {
           "slack": {
             "value": {
               "noise": NaN,
-              "bandwidth": 126239.22208127806,
-              "stiffness": 0.00011661730804677344,
-              "robustness_A": Infinity,
+              "bandwidth": 0.08000000000000068,
+              "stiffness": 0.0001166173080467753,
+              "robustness_A": NaN,
               "robustness_io": NaN,
               "routing": NaN,
               "representation": NaN
             },
-            "verdict": "infeasible",
-            "detail": "violated=['bandwidth', 'robustness_A'], unknown=['noise', 'robustness_io', 'routing', 'representation']"
+            "verdict": "no violation on evaluated axes",
+            "detail": "violated=-, unknown=['noise', 'robustness_A', 'robustness_io', 'routing', 'representation']"
           },
           "resolvent": {
             "value": {
-              "Gamma": Infinity,
               "Gamma_proj": Infinity,
-              "method": "sweep",
-              "projected": false
+              "metric": "caller-supplied"
             },
             "verdict": "pass",
             "detail": "\u0393_proj=inf"
           },
           "hinf": {
-            "value": 14.702420309406557,
+            "value": 23200298.407650985,
             "verdict": "pass",
             "detail": "\u2016H\u2016\u221e"
           },
           "lyapunov": {
             "value": {
-              "sigma_y": 7939980.802557795,
-              "sigma_y2": 63043295144986.33,
+              "sigma_y": 9974051669.547,
+              "sigma_y2": 9.94817067067933e+19,
               "h2_finite": true,
               "method": "direct"
             },
             "verdict": "pass",
-            "detail": "\u03c3_y=7.94e+06 (direct)"
+            "detail": "\u03c3_y=9.974e+09 (direct)"
           }
         },
         "binding_axis": "bandwidth",
@@ -472,9 +465,9 @@
         ]
       },
       "p6_binding_axis": "bandwidth",
-      "bandwidth_flip": {
-        "raw_bandwidth_hz": 1262392220812.7805,
+      "scaling": {
         "alpha": 1577990.2760159757,
+        "scaled_bandwidth_hz": 800000.0000000069,
         "bandwidth_pass": true
       },
       "twin": {
@@ -1012,7 +1005,7 @@
         "predicted": "eps_c=1.17e+08 >= 0.01 \u21d2 FAIL (elliptic becomes parabolic)",
         "measured": "res(t=\u03c4_state)=1.131e+01 vs res(t=\u03c4_relax)=8.695e-01",
         "verdict": "bound-holds: nonconverged at \u03c4_state, converged at \u03c4_relax",
-        "cert_note": "raw cert binds bandwidth (B_req=1.262e+12 Hz >> B_hw); P3 alpha=1.578e+06 removes it (t_phys=alpha*t_model, bandwidth_pass=True) \u2014 feasible after time scaling, not on the raw model clock"
+        "cert_note": "cert on P3 physical-time descriptor (eig=lambda/alpha): bandwidth = B_hw*margin within window; robustness_A unevaluated (delta_A_norm =None \u2014 mismatch is a leakage/drift perturbation judged by floor_bound, not Gamma_proj); feasible on evaluated axes"
       }
     },
     "burgers-1d": {
@@ -1027,7 +1020,7 @@
           "T": 0.3
         },
         "cfl": 0.2,
-        "rhs_func": "<function _burgers_fv.<locals>.rhs_func at 0x7fb9faf39dd0>",
+        "rhs_func": "<function _burgers_fv.<locals>.rhs_func at 0x7f9e5370df30>",
         "u0": "0.5+0.5 sin(2 pi x) point values (run_phase0/run_transform convention)",
         "reg": {
           "p": 1.4385004176399947,
@@ -1186,7 +1179,7 @@
         "alpha": 3.3983607518192975e-05,
         "method": "rms3sigma",
         "gamma_before": Infinity,
-        "gamma_after": 400171948.56933165,
+        "gamma_after": 586.3142773169596,
         "notes": [
           "Wo \u4e0d\u53ef\u7528\uff08unavailable\uff09\uff1aMoore \u53e3\u5f84\u7f3a\u7701"
         ],
@@ -1198,9 +1191,9 @@
         "slack": {
           "values": {
             "noise": NaN,
-            "bandwidth": 2.7186886014554377e-06,
-            "stiffness": 0.0022217215781996065,
-            "robustness_A": 0.036763242170002375,
+            "bandwidth": 0.0802418285047454,
+            "stiffness": 0.0022279823748737825,
+            "robustness_A": 9.463614866008874e-07,
             "robustness_io": NaN,
             "routing": NaN,
             "representation": 2.5733990126494986
@@ -1222,9 +1215,9 @@
           "slack": {
             "value": {
               "noise": NaN,
-              "bandwidth": 2.7186886014554377e-06,
-              "stiffness": 0.0022217215781996065,
-              "robustness_A": 0.036763242170002375,
+              "bandwidth": 0.0802418285047454,
+              "stiffness": 0.0022279823748737825,
+              "robustness_A": 9.463614866008874e-07,
               "robustness_io": NaN,
               "routing": NaN,
               "representation": 2.5733990126494986
@@ -1234,28 +1227,28 @@
           },
           "resolvent": {
             "value": {
-              "Gamma": Infinity,
-              "Gamma_proj": 36.76324217000237,
+              "Gamma": 586.3142773169596,
+              "Gamma_proj": 0.0009463614866008874,
               "method": "sweep",
               "projected": true
             },
             "verdict": "pass",
-            "detail": "\u0393_proj=36.76"
+            "detail": "\u0393_proj=0.0009464"
           },
           "hinf": {
-            "value": 6.124887252775304,
+            "value": 0.00020814576480961507,
             "verdict": "pass",
             "detail": "\u2016H\u2016\u221e"
           },
           "lyapunov": {
             "value": {
-              "sigma_y": 3.6323055726292695,
-              "sigma_y2": 13.193643772953644,
+              "sigma_y": 0.02117469271828472,
+              "sigma_y2": 0.00044836761171377986,
               "h2_finite": true,
               "method": "qz"
             },
             "verdict": "pass",
-            "detail": "\u03c3_y=3.632 (qz)"
+            "detail": "\u03c3_y=0.02117 (qz)"
           }
         },
         "binding_axis": "representation",
@@ -1266,9 +1259,9 @@
         ]
       },
       "p6_binding_axis": "representation",
-      "bandwidth_flip": {
-        "raw_bandwidth_hz": 27.18688601455438,
+      "scaling": {
         "alpha": 3.3983607518192975e-05,
+        "scaled_bandwidth_hz": 802418.285047454,
         "bandwidth_pass": true
       },
       "twin": {
@@ -1769,7 +1762,7 @@
     {
       "problem": "poisson-2d",
       "name": "poisson-2d: P6 certificate status",
-      "got": "infeasible",
+      "got": "no violation on evaluated axes",
       "expected": "feasible/no-violation",
       "passed": true,
       "kind": "recon"

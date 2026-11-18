@@ -23,8 +23,8 @@ Stage A5 step-3：3 锚定基准 e2e（符号 → 证书 → 孪生对账）
 5. 对账汇总
 ==============================================================================
        problem                    cert status   binding axis                                                  predicted                                             measured                                                    verdict
-  diffusion-1d no violation on evaluated axes   robustness_A          sigma_y=2.236e+01 (noise floor; no axis violated)       det_err=1.776e-15 meas_sigma=22.48507078790137             within-band: algorithm error below noise floor
-    poisson-2d                     infeasible      bandwidth eps_c=1.17e+08 >= 0.01 ⇒ FAIL (elliptic becomes parabolic) res(t=τ_state)=1.131e+01 vs res(t=τ_relax)=8.695e-01 bound-holds: nonconverged at τ_state, converged at τ_relax
+  diffusion-1d no violation on evaluated axes      bandwidth          sigma_y=2.236e+01 (noise floor; no axis violated)       det_err=1.776e-15 meas_sigma=22.48507078790137             within-band: algorithm error below noise floor
+    poisson-2d no violation on evaluated axes      bandwidth eps_c=1.17e+08 >= 0.01 ⇒ FAIL (elliptic becomes parabolic) res(t=τ_state)=1.131e+01 vs res(t=τ_relax)=8.695e-01 bound-holds: nonconverged at τ_state, converged at τ_relax
     burgers-1d                     infeasible representation     E_tail^(1/2)=1.604e-02 (representation violation size)                                   l2_blend=2.334e-02                  within-band (scaling claim, not identity)
 
 ==============================================================================
@@ -41,7 +41,7 @@ Stage A5 step-3：3 锚定基准 e2e（符号 → 证书 → 孪生对账）
                          poisson-2d: spec recorded (spec_meta from PDESpec)       keys=analytic,bc,c_node,conductance,h,hy                          non-empty spec_meta  yes
                    poisson-2d: P1 check: finite modes (stable iff expected)                       n_finite=256 stable=True                          n_finite>=1, stable  yes
                             poisson-2d: P3 scaling: alpha & method recorded               alpha=1.578e+06 method=rms3sigma          alpha>0, fallback recorded honestly  yes
-                                          poisson-2d: P6 certificate status                                     infeasible                        feasible/no-violation  yes
+                                          poisson-2d: P6 certificate status                 no violation on evaluated axes                        feasible/no-violation  yes
                                           poisson-2d: twin steady_err small                                      0.000e+00                                      < 1e-09  yes
                                             poisson-2d: twin residual small                                      6.158e-17                                      < 1e-07  yes
                               poisson-2d: floor_meas <= deterministic bound                         1.381e-04 vs 3.627e-03                             measured ≤ bound  yes

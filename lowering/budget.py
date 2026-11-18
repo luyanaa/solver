@@ -58,6 +58,8 @@ class BudgetInput:
     multirate: dict | None = None          # {"rho_sup","k_max","eps_replay",...} 来自 twin.multirate
     sde_cert: dict | None = None           # noise_realizability 输出（随机证书，§4.4）
     metric: object | None = None           # Γ 的度量矩阵 / "energy"（§5.8）
+    scaling: object | None = None          # ScalingResult：给定时 slack/Γ/σ_y/‖H‖∞
+                                           # 在其 .scaled（物理时间）descriptor 上评
 
 
 # ‖S‖∞ 的阈值（loop 轴）：§6.15 的必要条件探针。靠近失稳时 S_peak 发散，
@@ -199,21 +201,28 @@ def compile_budget(inp: BudgetInput, s_max_threshold: float = S_PEAK_THRESHOLD) 
     sys = inp.sys
     spec = inp.spec
     if sys is not None and spec is not None:
+        # P3 衔接：给了 ScalingResult 就把 slack/Γ/σ_y/‖H‖∞ 全部评在物理时间
+        # descriptor（sc.scaled：eig=λ/α、双边预条件）上 —— model-time 的
+        # bandwidth/κ 值不是物理量；没有 scaling 就回退原始 sys（§6.17 待办：
+        # slack 轴目前不接受单独 α，scaled-descriptor 是唯一一致入口）。
+        eval_sys = sys
+        if inp.scaling is not None and getattr(inp.scaling, "scaled", None) is not None:
+            eval_sys = inp.scaling.scaled
         lyap = inp.lyap
         if lyap is None:
-            lyap = solve_generalized_lyapunov(sys)
+            lyap = solve_generalized_lyapunov(eval_sys)
         if inp.gamma_M is not None:
             gamma_proj = float(inp.gamma_M)
             proj_meta = dict(Gamma_proj=gamma_proj, metric="caller-supplied")
         else:
-            res = peak_with_projection(sys, metric=inp.metric)
+            res = peak_with_projection(eval_sys, metric=inp.metric)
             gamma_proj = res["Gamma_proj"]
             proj_meta = dict(Gamma=float(res["Gamma"]), Gamma_proj=gamma_proj,
                              method=res["method"], projected=bool(res["projected"]))
         hi = inp.hinf
         if hi is None:
-            hi = hinf_norm(sys)["value"]
-        sl = slack_evaluate(sys, spec, lyap=lyap, reg=inp.reg,
+            hi = hinf_norm(eval_sys)["value"]
+        sl = slack_evaluate(eval_sys, spec, lyap=lyap, reg=inp.reg,
                             gamma_proj=gamma_proj, hinf=hi)
         slack_block = sl.as_dict()
         items["slack"] = dict(
@@ -294,9 +303,16 @@ def compile_budget(inp: BudgetInput, s_max_threshold: float = S_PEAK_THRESHOLD) 
 
 
 def evaluate_sys(sys: Descriptor, spec: HardwareSpec, metric=None, loop=None,
-                 multirate=None, manifold=None, sde_cert=None, reg=None) -> Certificate:
-    """便捷入口：由 (sys, spec) + 可选证据直接建 BudgetInput 聚合。"""
+                 multirate=None, manifold=None, sde_cert=None, reg=None,
+                 scaling=None, gamma_M=None, hinf=None, lyap=None) -> Certificate:
+    """便捷入口：由 (sys, spec) + 可选证据直接建 BudgetInput 聚合。
+
+    scaling: ScalingResult（lowering.scaling）—— 给定时证书评在物理时间
+    descriptor 上；不传则评 model-time 原始 sys。
+    gamma_M/hinf/lyap: 直接供给（跳过 resolvent sweep / hinf bisect / lyap
+    求解）—— delta_A_norm=None 或调用方已有证据时避免无谓的昂贵重算。"""
     return compile_budget(BudgetInput(sys=sys, spec=spec, metric=metric,
                                       loop=loop, multirate=multirate,
                                       manifold=manifold, sde_cert=sde_cert,
-                                      reg=reg))
+                                      reg=reg, scaling=scaling,
+                                      gamma_M=gamma_M, hinf=hinf, lyap=lyap))
