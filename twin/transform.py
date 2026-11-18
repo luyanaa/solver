@@ -29,9 +29,11 @@ __all__ = [
     "weno5_face_flux", "central_face_flux", "rusanov_face_flux",
     "muscl_face_flux", "blend_face_flux", "rhs_from_face_flux",
     "conservation_drift", "count_threshold_crossings",
+    "tracker_rate_bounds",
     "LiftingWavelet", "stationary_haar", "stationary_haar_inverse",
     "gram_calibrate", "isometry_error", "pr_error",
     "TransposeableEdge", "edge_matrix", "transpose_apply",
+    "adjoint_asym_bound",
     "quadratic_gradient", "finite_difference_gradient",
     "adjoint_ode_gradient", "rk4_matrix", "scale_poles", "scale_time_error",
 ]
@@ -87,6 +89,20 @@ class SigmaTracker:
     max_rate: float = 500.0
     release_rate: float | None = None
     sigma: np.ndarray | None = None
+
+    # jacobian_coupling(dF) — 表示反馈的线性化说明（仅文档级，不新增机制）：
+    #
+    # 当 σ(u) 调制 face flux 时，F_σ = (1−σ_f)·F_smooth + σ_f·F_shock
+    # （σ_f = 两侧 cell 平均）。对状态求导，effective Jacobian 多出
+    #
+    #     ∂F_σ/∂σ · ∂σ/∂u = (F_shock − F_smooth) · ∂σ_f/∂u
+    #
+    # 这一项就是 representation-feedback：σ 降 → 中心格式 → 振荡 → S 升 →
+    # σ 升 → MUSCL → S 降 的闭环。它使极限环不再是纯经验观察，而是一个
+    # **线性稳定性问题**：环增益 ∝ ‖(F_shock−F_smooth)·∂σ/∂u‖ 随
+    # attack/release 速率与 hysteresis 改变（见 tracker_rate_bounds 的推导）。
+    # tracker.update 的速率限制把这个反馈限制在有限带宽内；若把该耦合项
+    # 显式线性化，chatter 判据等价于闭环特征值的实部符号。
 
     def reset(self):
         self.sigma = None
@@ -213,6 +229,52 @@ def count_threshold_crossings(history: np.ndarray,
     """每个 cell 的 σ 穿越次数。移动激波正常是 2 次（进/出），chatter 会远大于 2。"""
     above = np.asarray(history) > threshold
     return np.sum(np.abs(np.diff(above.astype(np.int8), axis=0)), axis=0)
+
+
+def tracker_rate_bounds(dx: float, nu_num: float, s_shock: float,
+                        dsigma_hyst: float) -> tuple[float, float]:
+    """SigmaTracker attack/release 速率的解析可行域（外部 review 的可证伪预测）。
+
+    返回 (r_attack_min, r_release_max)。推导（可证伪：数字错了就推翻）：
+
+    1. **advection 下界（attack）**。激波每扫过一个 cell，表示必须在该
+       cell 内完成 σ 的上升，否则新到达的激波先被中心格式处理一拍，产生
+       振荡 → S 再升 → 二次切换（chatter）。一个 cell 的 advection 时间
+           τ_adv = Δx / |s_shock|，
+       所以 attack 速率必须满足
+           r_attack ≫ 1/τ_adv = |s_shock| / Δx。
+       “≫”按工程取 ~3× 余量解读；本函数只返回硬下界本身。
+
+    2. **耗散上界（release）**。σ 一旦升高，表示反馈闭环（见
+       SigmaTracker 的 jacobian_coupling 注释）靠格式自身的数值黏性把
+       振荡压下去，之后才允许 σ 下降。激波区 Rusanov/MUSCL 的数值黏性
+           ν_num ≈ ½·alpha·Δx
+       在网格尺度 k_max = π/Δx 上的衰减时间为
+           τ_dissip = Δx² / (π²·ν_num)，
+       （扩散 e^{−ν k² t} 在 k=π/Δx 处衰减 e^{−1} 的时间）。若 release
+       快于该时间，格式还没把振荡耗散掉 σ 就回退，闭环重振 → 极限环。
+       一次完整迟滞回环要求 σ 变化 ≥ Δσ_hyst，所以
+           r_release ≤ Δσ_hyst / τ_dissip = π²·ν_num·Δσ_hyst / Δx²。
+
+    注意 Δσ_hyst 是 **σ 坐标**里的迟滞（SigmaTracker.hysteresis），
+    不是 S 的；用它时要用 tracker 的实际配置，不是默认值。
+
+    对 bench 的 Burgers（N=256, Δx=1/256, ν_num≈3e-3, |s|≈0.5），
+    外部 review 用 Δσ_hyst≈0.008 预测 r_attack_min≈128, r_release_max≈15；
+    用 bench 实际的 hysteresis=0.08 时 r_release_max 放大 10×。两种取法
+    （400, 10）都在可行域内 — 这是本函数的可检验预测。
+    """
+    dx = float(dx)
+    nu_num = float(nu_num)
+    s_shock = float(s_shock)
+    dsigma_hyst = float(dsigma_hyst)
+    if dx <= 0 or nu_num <= 0 or dsigma_hyst <= 0:
+        raise ValueError("dx, nu_num, dsigma_hyst 必须为正")
+    tau_adv = dx / abs(s_shock) if s_shock != 0 else float("inf")
+    tau_dissip = dx * dx / (np.pi ** 2 * nu_num)
+    r_attack_min = 1.0 / tau_adv if tau_adv > 0 else 0.0
+    r_release_max = dsigma_hyst / tau_dissip
+    return (r_attack_min, r_release_max)
 
 
 # ---------------------------------------------------------------------------
@@ -389,6 +451,16 @@ def gram_calibrate(W_hw: np.ndarray, side: str = "right") -> dict:
       left : T_cal = (T̃T̃^*)^{-1/2} T̃              → T_cal^*T_cal = I
     两者一般不同，只有 T̃ 可交换时才一样。DESIGN §5.9 的 G_T 是右 Gram，
     所以默认 right；left 保留给“只能在后级做增益修正”的硬件。
+
+    Δ_asym 预算（transpose-reuse 合法性合同）：`adjoint_before` 里的
+    A↔Aᵀ 一致性（~2.7e-16，§6.16）是**理想开关假设**下的数——硬件里
+    forward i→j 与 reverse j→i 的晶体管级传输不相等，Ã_adj = Aᵀ+Δ_asym。
+    相对梯度误差界：err ≤ Γ_proj(A)·‖Δ_asym‖·T_obs（resolvent 在观测窗
+    内放大不对称）。预算的实测（case G, bench/run_sde.py）：误差随
+    ‖Δ_asym‖ 线性（log-log 斜率≈1）、落在界的 ~0.05–0.5 倍带内。
+    用法：‖Δ_asym‖·Γ_proj·T_obs ≪ 目标梯度精度时才能免费复用 forward
+    阵列做 adjoint；否则必须先跑本函数的 Gram whitening 把 T̃ 校成
+    等距，再按 `adjoint_after` 判定。
     """
     W = np.asarray(W_hw, dtype=float)
     if W.ndim != 2 or W.shape[0] != W.shape[1]:
@@ -427,7 +499,14 @@ def gram_calibrate(W_hw: np.ndarray, side: str = "right") -> dict:
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True)
 class TransposeableEdge:
-    """forward: I_j += g V_i；adjoint: I_i += g V_j。"""
+    """forward: I_j += g V_i；adjoint: I_i += g V_j。
+
+    transpose-reuse 合同：这里假设同一条 gm 边正反向增益严格相等
+    （理想开关）。真实器件 forward/reverse 传输差 Δ_asym，其梯度预算
+    是 err ≤ Γ_proj(A)·‖Δ_asym‖·T_obs（推导与实测见 gram_calibrate
+    docstring 与 bench/run_sde.py case G）——不对称预算超差时，
+    adjoint 必须走独立校准边或先 Gram whitening，不能白拿 forward。
+    """
 
     i: int
     j: int
@@ -486,6 +565,20 @@ def rk4_matrix(A: np.ndarray, dt: float) -> np.ndarray:
     return (I + dt * A + 0.5 * dt ** 2 * A @ A
             + (1.0 / 6.0) * dt ** 3 * A @ A @ A
             + (1.0 / 24.0) * dt ** 4 * A @ A @ A @ A)
+
+
+def adjoint_asym_bound(gamma_proj: float, delta_norm: float,
+                       T_obs: float) -> float:
+    """Ã_adj = Aᵀ + Δ_asym 时 adjoint 梯度的相对误差上界。
+
+    err ≤ Γ_proj(A)·‖Δ_asym‖·T_obs：resolvent 峰值把单步不对称放大，
+    观测窗 T_obs 内累加。这是必要方向的一阶界（报告里同时给实测比值
+    err/bound，case G）——bound 不是紧的，但不空转：case G 断言
+    bound/100 ≤ err ≤ bound。
+    """
+    if gamma_proj <= 0 or delta_norm < 0 or T_obs < 0:
+        raise ValueError("gamma_proj>0, delta_norm/T_obs≥0")
+    return gamma_proj * delta_norm * T_obs
 
 
 def adjoint_ode_gradient(A: np.ndarray, x0: np.ndarray, T: float,

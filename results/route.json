@@ -16,6 +16,7 @@
       "1": {
         "name": "depth1",
         "latency": 7.957747154594768e-11,
+        "phase_delay_omega_c": 7.951125628088188e-11,
         "latency_class": "L2",
         "noise_rms": 1e-05,
         "tau_max_abs": Infinity,
@@ -38,6 +39,7 @@
       "4": {
         "name": "depth4",
         "latency": 3.183098861837907e-10,
+        "phase_delay_omega_c": 3.180450251235275e-10,
         "latency_class": "L3",
         "noise_rms": 1.997003248874672e-05,
         "tau_max_abs": Infinity,
@@ -96,6 +98,7 @@
       "closure_1deg": {
         "name": "e20",
         "latency": 5.984371484277936e-11,
+        "phase_delay_omega_c": 5.984163410604097e-11,
         "latency_class": "L2",
         "noise_rms": 0.0,
         "tau_max_abs": 2.777777777777778e-11,
@@ -116,6 +119,7 @@
       "closure_5deg": {
         "name": "e20",
         "latency": 5.984371484277936e-11,
+        "phase_delay_omega_c": 5.984163410604097e-11,
         "latency_class": "L2",
         "noise_rms": 0.0,
         "tau_max_abs": 1.388888888888889e-10,
@@ -139,6 +143,7 @@
       "r150": {
         "name": "150ps",
         "latency": 1.5e-10,
+        "phase_delay_omega_c": 1.5e-10,
         "latency_class": "L2",
         "noise_rms": 0.0,
         "tau_max_abs": 1.388888888888889e-10,
@@ -159,6 +164,7 @@
       "r130": {
         "name": "130ps",
         "latency": 1.3e-10,
+        "phase_delay_omega_c": 1.3e-10,
         "latency_class": "L2",
         "noise_rms": 0.0,
         "tau_max_abs": 1.388888888888889e-10,
@@ -303,6 +309,124 @@
           314236761.4696408,
           314236761.4696408
         ]
+      ]
+    },
+    "weighted_j": {
+      "tau": 2e-10,
+      "peak_low": 125664143.65812077,
+      "peak_high": 1881349161.59248,
+      "j_low": 0.0012457606412179924,
+      "j_high": 0.007068643677837478,
+      "j_unif": 0.00601797788270785,
+      "j_flat": 0.00601797788270785,
+      "ratio": 5.674158778147298,
+      "jtau_low": 1.650421133165757e-22,
+      "jtau_high": 9.053716175353948e-22,
+      "jtau_ratio": 5.485700584788049,
+      "j_unif_prev": 0.00601797788270785
+    },
+    "crosstalk_asym": {
+      "R1": 400.0,
+      "R2": 800.0,
+      "C1": 200.0,
+      "C2": 100.0,
+      "Cm": 20.0,
+      "solve_err": 7.191509613340162e-16,
+      "recip_err": 0.0,
+      "floor_v1": 0.09089422656629789,
+      "floor_v1_pred": 0.09090909090909091,
+      "floor_cross": 0.08332188355597256,
+      "floor_cross_pred": 0.08333333333333331,
+      "floor_prop": 0.16666666666666666,
+      "victim1": 0.09090909090909091,
+      "victim2": 0.16666666666666666,
+      "h01_dc": 0.0,
+      "h00_dc": 1.0
+    },
+    "loop": {
+      "a": 31415926.535897933,
+      "b": 314159265.3589793,
+      "tau_ex": 3.1568069722056075e-10,
+      "tau_fo": 3.1515830315226786e-10,
+      "ratio_fo": 0.9983451821004821,
+      "root_a": [
+        2.216833000766869e-08,
+        315726154.2080454
+      ],
+      "lam_abs": 315726154.2080455,
+      "dip_omega": 313141022.7725242,
+      "dip_smin": 31432423.674826987,
+      "fo_eq_true_h1": 0.0,
+      "smin_seq": [
+        31432423.674826987,
+        21495579.520761378,
+        11530223.692895468,
+        1562031.6068300284
+      ],
+      "speak_seq": [
+        10.044350488973066,
+        14.696628367147568,
+        27.38352884171281,
+        202.13305010454448
+      ],
+      "speak_omega": [
+        318356944.40386635,
+        315738213.04581225,
+        315738213.04581225
+      ],
+      "skew_before": 1.4999999999997125e-10,
+      "skew_after": 9.828797852781184e-20,
+      "tau_desk": [
+        2.503345868257228e-10,
+        2.5e-10
+      ],
+      "smin_short": 21495579.520761378,
+      "smin_desk": 6531046.24315339,
+      "smin_long_target": 6546316.267874628,
+      "tau_ex2": 1.2297255460132422e-08,
+      "tau_fo2": 7.95277666917653e-09,
+      "ratio2": 0.6467115117645033,
+      "root_ex": [
+        -1857316.4952484719,
+        -128593638.62146749
+      ],
+      "lam2_abs": 125702969.91775519,
+      "re_fo": -2.295495830220248e-05,
+      "re_over": 2011875935.3589003,
+      "lam2_abs_scale": 125702969.91775519,
+      "smin_fo_6ns": 125056475.34292716,
+      "smin_true_6ns": 87894021.60476932
+    },
+    "scaling": {
+      "lam_model": -50265482.45743669,
+      "B_hw": 10000000.0,
+      "omega_phys": 502654824.57436687,
+      "omega_phys_fast": 50265482457436.69,
+      "omega_round": 50265482.45743669,
+      "lam_hw": 50265482457436.69,
+      "pass_unscaled": true,
+      "pass_scaled": false,
+      "v_swing_state": 2.0,
+      "noise_model": 0.08,
+      "state_back": 0.0017
+    },
+    "phase_delay": {
+      "pd_pure": 9.999999999999998e-12,
+      "lat_pure": 1e-11,
+      "pass_pure": true,
+      "lat_pad": 2.0500000000000002e-10,
+      "pd_pad": 1.3281858535437833e-10,
+      "pd_naive": 3.281858535437833e-11,
+      "pd_int": 1.3282049642285208e-10,
+      "tau_max_216": 6e-11,
+      "pass_pad216": false,
+      "pd_oob": 8.999986840605393e-12,
+      "lat_oob": 9e-12,
+      "diverg_deskew": 0.00025252061125968783,
+      "pass_deskew": [
+        true,
+        true,
+        true
       ]
     }
   },
@@ -534,10 +658,220 @@
       "got": "1.000 \u03c90",
       "expected": "\u2248 50 MHz",
       "passed": true
+    },
+    {
+      "name": "W_low vs W_high J_H ratio",
+      "got": "5.67\u00d7",
+      "expected": "> 3\u00d7",
+      "passed": true
+    },
+    {
+      "name": "W_low peak @20 MHz",
+      "got": "20 MHz",
+      "expected": "20 MHz",
+      "passed": true
+    },
+    {
+      "name": "W_high peak @300 MHz",
+      "got": "299 MHz",
+      "expected": "300 MHz",
+      "passed": true
+    },
+    {
+      "name": "uniform j_h regression vs old run",
+      "got": "6.0180e-03 vs 6.0180e-03",
+      "expected": "equal",
+      "passed": true
+    },
+    {
+      "name": "flat weight = weight=None",
+      "got": "6.0179778827078503e-03 vs 6.0179778827078503e-03",
+      "expected": "identical",
+      "passed": true
+    },
+    {
+      "name": "weighted J_tau ratio",
+      "got": "5.49\u00d7",
+      "expected": "> 3\u00d7",
+      "passed": true
+    },
+    {
+      "name": "H vs direct solve (R1\u2260R2, C1\u2260C2)",
+      "got": "7.19e-16",
+      "expected": "< 1e-12",
+      "passed": true
+    },
+    {
+      "name": "reciprocity R2\u00b7H01 = R1\u00b7H10",
+      "got": "0.00e+00",
+      "expected": "< 1e-12",
+      "passed": true
+    },
+    {
+      "name": "victim-1 floor V1/V2 = Cm/(C1+Cm)",
+      "got": "0.09089 vs 0.09091",
+      "expected": "equal",
+      "passed": true
+    },
+    {
+      "name": "crosstalk_hf_victim(1) = measured V1/V2 floor, \u2260 crosstalk_hf",
+      "got": "0.09091 vs 0.09089 (hf=0.16667)",
+      "expected": "victim method = |H01/H11| floor; C2-version differs by (C2+Cm)/(C1+Cm)",
+      "passed": true
+    },
+    {
+      "name": "crosstalk() floor carries R1/R2",
+      "got": "0.08332 vs 0.08333",
+      "expected": "Cm/(C2+Cm)\u00b7R1/R2",
+      "passed": true
+    },
+    {
+      "name": "H01(0) = 0",
+      "got": "0.00e+00",
+      "expected": "< 1e-15",
+      "passed": true
+    },
+    {
+      "name": "H00(0) = 1",
+      "got": "1.000000000000",
+      "expected": "1",
+      "passed": true
+    },
+    {
+      "name": "loop H=1 dip at pole freq",
+      "got": "49.84 MHz vs \u00b150.00 MHz",
+      "expected": "dip at poles",
+      "passed": true
+    },
+    {
+      "name": "loop first-order = true at H=1",
+      "got": "0.00e+00",
+      "expected": "< 1e-10",
+      "passed": true
+    },
+    {
+      "name": "loop margin monotone in tau",
+      "got": "3.14e+07 \u2192 2.15e+07 \u2192 1.15e+07 \u2192 1.56e+06",
+      "expected": "decreasing",
+      "passed": true
+    },
+    {
+      "name": "loop tau_ex exact (scalar_dde_root)",
+      "got": "Re/|\u03bb|=7.0e-17, Im/|\u03bb|=1.000000",
+      "expected": "root on j\u03c9 axis at \u03c4_ex",
+      "passed": true
+    },
+    {
+      "name": "loop 2/\u03c0 optimism (Loop B)",
+      "got": "0.6467 vs 2/\u03c0=0.6366",
+      "expected": "\u2248 2/\u03c0",
+      "passed": true
+    },
+    {
+      "name": "first-order descriptor boundary",
+      "got": "max Re @\u03c4_fo=-2.3e-05, @1.05\u03c4=2.0e+09",
+      "expected": "0 then > 0",
+      "passed": true
+    },
+    {
+      "name": "first-order optimistic at loop level",
+      "got": "1.251e+08 vs 8.789e+07",
+      "expected": "fo > true",
+      "passed": true
+    },
+    {
+      "name": "deskew skew \u2192 0",
+      "got": "150.0 \u2192 9.8e-08 ps",
+      "expected": "< 0.01 ps",
+      "passed": true
+    },
+    {
+      "name": "deskew does NOT recover absolute margin",
+      "got": "deskew=6.531e+06, target=6.546e+06, short=2.150e+07",
+      "expected": "deskew \u2248 250 ps level (\u00b11%), \u226a short",
+      "passed": true
+    },
+    {
+      "name": "S peak grows toward instability",
+      "got": "10.0 \u2192 14.7 \u2192 27.4 \u2192 202.1",
+      "expected": "increasing",
+      "passed": true
+    },
+    {
+      "name": "scaling: unscaled 8 MHz passes 10 MHz",
+      "got": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "scaling: alpha=0.1 \u2192 80 MHz fails 10 MHz",
+      "got": "80 MHz",
+      "expected": "fail",
+      "passed": true
+    },
+    {
+      "name": "scaling: forgetting alpha flips the verdict",
+      "got": "unscaled=True, scaled=False",
+      "expected": "differ (load-bearing)",
+      "passed": true
+    },
+    {
+      "name": "scaling: band round-trip + \u03bb_hw=\u03bb/\u03b1",
+      "got": "round=5.03e+07, \u03bb_hw/\u03b1=5.0e+13",
+      "expected": "\u03c9\u00b7\u03b1\u00b7(1/\u03b1) = \u03c9; \u03bb_hw = 1e6\u00b7\u03bb",
+      "passed": true
+    },
+    {
+      "name": "scaling: x=V/S_x and noise budget",
+      "got": "swing\u21922.00 units, 80\u00b5V\u21920.080 units",
+      "expected": "\u00b12.00 units, 0.080 units",
+      "passed": true
+    },
+    {
+      "name": "PureDelay: pd == latency",
+      "got": "10.000000 vs 10.000000 ps",
+      "expected": "identical, pass",
+      "passed": true
+    },
+    {
+      "name": "in-band pads: pd < latency",
+      "got": "132.8 vs 205.0 ps (ratio 0.648)",
+      "expected": "pd < lat, ratio \u2248 0.65",
+      "passed": true
+    },
+    {
+      "name": "naive angle wraps (bug the unwrap fixes)",
+      "got": "naive 32.8 ps vs true 132.8 ps",
+      "expected": "naive < true/2",
+      "passed": true
+    },
+    {
+      "name": "unwrap vs \u222b\u03c4_g d\u03c9 cross-check",
+      "got": "1.44e-05 (trapezoid quadrature err)",
+      "expected": "< 1e-4",
+      "passed": true
+    },
+    {
+      "name": "verdict uses unwrapped phase delay",
+      "got": "\u03c4_max=60.0 ps, pd=132.8, naive=32.8, lat=205.0",
+      "expected": "FAIL (naive-angle impl would pass)",
+      "passed": true
+    },
+    {
+      "name": "out-of-band pads: pd \u2248 latency",
+      "got": "8.999987 vs 9.000000 ps",
+      "expected": "ratio 1 \u00b1 1e-3",
+      "passed": true
+    },
+    {
+      "name": "deskewed case-D set: divergence & verdicts",
+      "got": "diverg=2.5e-04, pass=[True, True, True]",
+      "expected": "< 1e-3, all True (criterion change keeps verdicts)",
+      "passed": true
     }
   ],
   "summary": {
-    "n_checks": 38,
-    "n_passed": 38
+    "n_checks": 73,
+    "n_passed": 73
   }
 }

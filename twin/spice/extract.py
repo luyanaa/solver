@@ -102,12 +102,18 @@ def analyse(pdk):
     i2 = -i2
     gds = np.gradient(i2, v_out)
     k = int(np.argmin(np.abs(v_out - 0.5 * PDKS[pdk]["vdd"])))
+    # vsweep 的偏置点由 Iin=ibias 决定（i2[k] 是该点实际漏极电流），
+    # 与 isweep 在 i_in≈10u 处的 i_out[j] 无关；gds 是 vsweep 量，
+    # 必须用同一点的电流归一（否则 ibias≠10u 的器件 λ 被错报约 2 倍）。
+    i_op_isweep = float(i_out[j])
+    i_op_vsweep = float(i2[k])
     return dict(
-        pdk=pdk, i_in=float(i_in[j]), i_out=float(i_out[j]),
+        pdk=pdk, i_in=float(i_in[j]), i_out=i_op_isweep,
         ratio=float(i_out[j] / i_in[j]), vgs=float(vgs[j]),
         gm=float(gm[j]), gm_over_id=float(gm[j] / i_out[j]),
-        gds=float(gds[k]), gds_over_id=float(gds[k] / i_out[j]),
-        ro=float(1.0 / gds[k]), lambda_eff=float(gds[k] / i_out[j]),
+        gds=float(gds[k]), gds_over_id=float(gds[k] / i_op_vsweep),
+        ro=float(1.0 / gds[k]), lambda_eff=float(gds[k] / i_op_vsweep),
+        i_bias=i_op_vsweep, i_op_isweep=i_op_isweep, i_op_vsweep=i_op_vsweep,
     )
 
 

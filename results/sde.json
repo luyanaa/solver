@@ -1,0 +1,439 @@
+{
+  "seed": 20261118,
+  "cases": {
+    "A_ou_white": {
+      "lam": 1.0,
+      "D": 1.0,
+      "var": 1.0050276270771226,
+      "var_pred": 1.0,
+      "var_ratio": 1.0050276270771226,
+      "lam_hat": 1.0282451099398657,
+      "n_traj": 700,
+      "T": 300.0,
+      "dt": 0.05
+    },
+    "A_ou_colored": {
+      "tau_c": 0.05,
+      "var": 0.9370580591597243,
+      "var_pred": 0.9523809523809523,
+      "var_ratio": 0.9839109621177106,
+      "n_traj": 160,
+      "T": 100.0,
+      "dt": 0.0025
+    },
+    "A_bandwidth": {
+      "B_req": 0.15915494309189535,
+      "var_100": 0.9980292553197339,
+      "var_10": 0.9312280406406189,
+      "ratio": 0.9330668772252431,
+      "drop": 0.06693312277475694,
+      "drop_pct": 6.693312277475694,
+      "pred_drop_pct": 6.345103486110704,
+      "ratio10_vs_white": 0.9312280406406189,
+      "ratio100_vs_white": 0.9980292553197339,
+      "pred10": 0.936548965138893,
+      "pred100": 0.9936340144701836
+    },
+    "B_gbm": {
+      "mu": 0.5,
+      "sigma": 0.6,
+      "x0": 1.0,
+      "T": 5.0,
+      "dt": 0.01,
+      "N": 40000,
+      "sep_time": 2.7800000000000002,
+      "sep_sigma": 51.94254030486048,
+      "mean_I_sep": 3.9613691366194317,
+      "mean_S_sep": 6.597332134173988,
+      "land_I": 0.9819877207684032,
+      "land_S": 0.9907961993779877,
+      "log_err": 0.010647198477983677,
+      "log_se": 0.006708203932499369,
+      "corr_used": 0.17999999999999994,
+      "corr_exact": 0.18
+    },
+    "C_doublewell": {
+      "T": 0.15,
+      "dt": 0.005,
+      "M": 1400,
+      "K": 24000,
+      "burn": 4000,
+      "n_samples": 9332400,
+      "kl": 0.00048824897247692553,
+      "n_kept": 148,
+      "T_hat": 0.15055239530157427,
+      "T_resid": 0.031170967053036656,
+      "kept_frac": 0.7115384615384616
+    },
+    "D_inverse": {
+      "lam0": 1.0,
+      "D": 1.0,
+      "delta": 0.03,
+      "lam_eval": 1.1,
+      "R": 20,
+      "g_crn_mean": 0.0036861052747114154,
+      "g_ind_mean": 0.06845556083366845,
+      "var_crn": 2.418989635155589e-06,
+      "var_ind": 0.5533288934946602,
+      "var_ratio": 228743.80503869755,
+      "mean_gap": 0.06476945555895704,
+      "se_diff": 0.23522995397786728,
+      "lam_crn": 1.04958622818619,
+      "lam_ind": 1.0700000000000003,
+      "lam_mom": 0.9986108860350255,
+      "D_hat": 0.9983232590325744,
+      "grid": "0.85\u20131.15 step 0.010"
+    },
+    "F_wong_zakai": {
+      "mu": 0.0,
+      "sigma_w": 1.0,
+      "tau_c": 0.04,
+      "dt": 0.002,
+      "N": 16000,
+      "T": 2.0,
+      "points": [
+        {
+          "chi": 0.0,
+          "tau_d": 0.0,
+          "rate": 0.49096741269078026,
+          "corr": 0.49096741269078026,
+          "theta": 0.5,
+          "pred": 0.5,
+          "ratio": 0.9819348253815605
+        },
+        {
+          "chi": 0.25,
+          "tau_d": 0.01,
+          "rate": 0.3845417845124994,
+          "corr": 0.3845417845124994,
+          "theta": 0.4,
+          "pred": 0.4,
+          "ratio": 0.9613544612812484
+        },
+        {
+          "chi": 1.0,
+          "tau_d": 0.04,
+          "rate": 0.2719127622886261,
+          "corr": 0.2719127622886261,
+          "theta": 0.25,
+          "pred": 0.25,
+          "ratio": 1.0876510491545044
+        },
+        {
+          "chi": 4.0,
+          "tau_d": 0.16,
+          "rate": 0.11039856102379449,
+          "corr": 0.11039856102379449,
+          "theta": 0.1,
+          "pred": 0.1,
+          "ratio": 1.1039856102379448
+        },
+        {
+          "chi": 16.0,
+          "tau_d": 0.64,
+          "rate": 0.025031635138150057,
+          "corr": 0.025031635138150057,
+          "theta": 0.029411764705882353,
+          "pred": 0.029411764705882353,
+          "ratio": 0.8510755946971019
+        }
+      ],
+      "corr0": 0.49096741269078026,
+      "strat_pred": 0.5,
+      "corr16_over_corr0": 0.050984310752851154,
+      "max_interp_dev": 0.14892440530289808
+    },
+    "G_adjoint_asym": {
+      "gamma_proj": 1.014887245296588,
+      "T_obs": 1.0,
+      "nsteps": 50,
+      "fd_err": 7.970733959287036e-10,
+      "slope": 0.9999717782182421,
+      "points": [
+        {
+          "delta_norm": 1e-06,
+          "rel_err": 7.163427804695136e-07,
+          "bound": 1.014887245296588e-06,
+          "ratio": 0.7058348440078893
+        },
+        {
+          "delta_norm": 1e-05,
+          "rel_err": 7.163414229770709e-06,
+          "bound": 1.0148872452965882e-05,
+          "ratio": 0.7058335064283215
+        },
+        {
+          "delta_norm": 0.0001,
+          "rel_err": 7.16327847579558e-05,
+          "bound": 0.0001014887245296588,
+          "ratio": 0.7058201301664996
+        },
+        {
+          "delta_norm": 0.001,
+          "rel_err": 0.0007161921543532863,
+          "bound": 0.001014887245296588,
+          "ratio": 0.70568642740602
+        }
+      ],
+      "max_ratio": 0.7058348440078893,
+      "min_ratio": 0.70568642740602
+    }
+  },
+  "contracts": {
+    "A_ou_white": {
+      "S_xi": "two-sided 2D/(1+(2\u03c0f\u03c4c)\u00b2), flat = 2D (one-sided = 2\u00d7)",
+      "tau_c": 0.0,
+      "rho": "I",
+      "B_noise": "inf (white limit)",
+      "mode": "physical",
+      "B_req": "0.1592 Hz = \u03bb/2\u03c0",
+      "note": "white limit of ColorNoise, exact AR(1) update",
+      "n_traj": 700,
+      "T": 300.0,
+      "dt": 0.05
+    },
+    "A_ou_colored": {
+      "S_xi": "two-sided 2D/(1+(2\u03c0f\u03c4c)\u00b2), flat = 2D (one-sided = 2\u00d7)",
+      "tau_c": 0.05,
+      "rho": "user \u03c1_ij (Cholesky L)",
+      "B_noise": "3.1831 Hz = 1/(2\u03c0\u03c4c)",
+      "mode": "physical",
+      "B_req": "0.1592 Hz",
+      "B_over_Breq": "20.0",
+      "n_traj": 160,
+      "T": 100.0,
+      "dt": 0.0025
+    },
+    "A_bandwidth": {
+      "S_xi": "two-sided flat 2D, ideal brickwall lowpass at f_c (FFT)",
+      "tau_c": "0 (brickwall; effective 1/(2\u03c0f_c))",
+      "rho": "I",
+      "B_noise": "f_c = 100\u00b7B_req and 10\u00b7B_req",
+      "B_req": "0.1592 Hz = \u03bb/2\u03c0",
+      "mode": "physical (idealized band limit, \u00a72 arctan model)",
+      "n_traj": 120,
+      "T": 260.0,
+      "dt": 0.0078125
+    },
+    "B_gbm": {
+      "S_xi": "two-sided flat 2D (unit white \u2192 \u03c3x dW scaled)",
+      "tau_c": 0.0,
+      "rho": "I (scalar, diagonal G)",
+      "B_noise": "inf; dt = 0.01 \u226a 1/\u03bb_state",
+      "mode": "physical",
+      "interpretation": "model Stratonovich; integrator It\u00f4 with f_I = f_S + \u00bd\u03c3\u00b2x (\u00a71.4 direction)",
+      "n_traj": 40000,
+      "T": 5.0,
+      "dt": 0.01
+    },
+    "C_doublewell": {
+      "S_xi": "two-sided flat 2T (thermal Langevin bath, \u221a(2T)dW)",
+      "tau_c": 0.0,
+      "rho": "I (scalar)",
+      "B_noise": "inf (white bath)",
+      "mode": "physical",
+      "n_traj": 1400,
+      "T_total": "120.0 per traj (dt=0.005)",
+      "tail_guard": "bins with expected count \u2265 10"
+    },
+    "D_inverse": {
+      "S_xi": "two-sided flat 2D (white limit of ColorNoise)",
+      "tau_c": 0.0,
+      "rho": "I",
+      "B_noise": "inf (white; exact AR(1) update, no dt bias)",
+      "mode": "replay (CRN: capture\u2192replay identical realization; control: independent draws per \u00b1\u03b4)",
+      "n_traj": 200,
+      "T": 20.0,
+      "R_reps": 20,
+      "adjoint": "GAP: continuous-time adjoint is Phase-6C-later (listed, not faked)"
+    },
+    "F_wong_zakai": {
+      "S_xi": "two-sided 2D/(1+(2\u03c0f\u03c4c)\u00b2), flat = 2D; D=0.50",
+      "tau_c": 0.04,
+      "rho": "I (scalar)",
+      "B_noise": "3.979 Hz = 1/(2\u03c0\u03c4c) (dt = 0.050\u00b7\u03c4c)",
+      "mode": "physical (delay implemented as exact one-pole filter on x\u00b7\u03be, not a pure delay \u2014 deviation from \u03b8(\u03c7) reported per \u03c7)",
+      "n_traj": 16000,
+      "T": 2.0,
+      "dt": 0.002
+    },
+    "G_adjoint_asym": {
+      "S_xi": "n/a (deterministic gradient check)",
+      "tau_c": 0.0,
+      "rho": "I",
+      "B_noise": "n/a (no stochastic driver)",
+      "mode": "adjoint (backward with A\u1d40+\u0394_asym; forward states from A; ideal branch cross-checked to adjoint_ode_gradient)",
+      "n_state": 4,
+      "T_obs": 1.0,
+      "nsteps": 50
+    }
+  },
+  "checks": [
+    {
+      "name": "A OU Var vs D/\u03bb",
+      "got": "0.02 dB (0.50%)",
+      "expected": "within \u00b13 dB",
+      "passed": true
+    },
+    {
+      "name": "A ACF \u03c4 within \u00b15%",
+      "got": "2.825%",
+      "expected": "< 5%",
+      "passed": true
+    },
+    {
+      "name": "A colored Var vs (D/\u03bb)/(1+\u03bb\u03c4c)",
+      "got": "-1.61%",
+      "expected": "within \u00b13%",
+      "passed": true
+    },
+    {
+      "name": "A bandwidth drop 100\u219210 B_req",
+      "got": "6.69%",
+      "expected": "\u22486.4% (window 4.5\u20138.3%)",
+      "passed": true
+    },
+    {
+      "name": "A Var(f_c=10B)/white",
+      "got": "0.9312 (pred 0.9365)",
+      "expected": "\u00b10.025",
+      "passed": true
+    },
+    {
+      "name": "A Var(f_c=100B)/white",
+      "got": "0.9980 (pred 0.9936)",
+      "expected": "\u00b10.025",
+      "passed": true
+    },
+    {
+      "name": "B It\u00f4/Strato separation",
+      "got": "51.9\u03c3",
+      "expected": "> 3\u03c3",
+      "passed": true
+    },
+    {
+      "name": "B It\u00f4 lands e^{\u03bct}",
+      "got": "0.9820",
+      "expected": "\u00b110%",
+      "passed": true
+    },
+    {
+      "name": "B Strato lands e^{(\u03bc+\u03c3\u00b2/2)t}",
+      "got": "0.9908",
+      "expected": "\u00b110%",
+      "passed": true
+    },
+    {
+      "name": "B E[ln x] sharp",
+      "got": "1.06e-02 (3\u00b7SE 2.01e-02)",
+      "expected": "< 3\u00b7SE",
+      "passed": true
+    },
+    {
+      "name": "B linear correction A_S\u2212A_I = \u03c3\u00b2/2",
+      "got": "5.55e-17",
+      "expected": "< 1e-12",
+      "passed": true
+    },
+    {
+      "name": "C histogram KL",
+      "got": "0.0005",
+      "expected": "< 0.05",
+      "passed": true
+    },
+    {
+      "name": "C T\u0302 recovery",
+      "got": "0.37%",
+      "expected": "< 10%",
+      "passed": true
+    },
+    {
+      "name": "D CRN variance ratio",
+      "got": "228743.8\u00d7",
+      "expected": "\u2265 10\u00d7",
+      "passed": true
+    },
+    {
+      "name": "D CRN/IND mean gradients agree",
+      "got": "0.065 vs SE 0.235",
+      "expected": "< 4\u00b7SE",
+      "passed": true
+    },
+    {
+      "name": "D CRN recovery \u03bb",
+      "got": "4.96%",
+      "expected": "< 10%",
+      "passed": true
+    },
+    {
+      "name": "D moment/AR(1) recovery \u03bb",
+      "got": "0.14%",
+      "expected": "< 10%",
+      "passed": true
+    },
+    {
+      "name": "D moment recovery D",
+      "got": "0.17%",
+      "expected": "< 10%",
+      "passed": true
+    },
+    {
+      "name": "E noise contract complete per case",
+      "got": "0 missing",
+      "expected": "0 missing (\u00a71.3)",
+      "passed": true
+    },
+    {
+      "name": "F \u03c7=0 lands Stratonovich \u03c3_w\u00b2/2",
+      "got": "0.491 (pred 0.500)",
+      "expected": "ratio 0.80\u20131.20",
+      "passed": true
+    },
+    {
+      "name": "F monotone decreasing in \u03c7",
+      "got": "0.491 \u2192 0.385 \u2192 0.272 \u2192 0.110 \u2192 0.025",
+      "expected": "strictly decreasing",
+      "passed": true
+    },
+    {
+      "name": "F strong-suppression limit \u03c7=16",
+      "got": "0.0510 \u00d7 corr(0)",
+      "expected": "\u2208 [0.005, 0.10] (theory 1/17 = 0.0588)",
+      "passed": true
+    },
+    {
+      "name": "F interpolant \u03b8(\u03c7)=1/(2(1+\u03c7))",
+      "got": "max dev 14.9%",
+      "expected": "\u2264 25% (one-pole, not pure delay)",
+      "passed": true
+    },
+    {
+      "name": "G ideal adjoint == FD",
+      "got": "7.97e-10",
+      "expected": "< 1e-5",
+      "passed": true
+    },
+    {
+      "name": "G error linear in \u2016\u0394_asym\u2016",
+      "got": "1.000",
+      "expected": "log-log slope 0.90\u20131.10",
+      "passed": true
+    },
+    {
+      "name": "G error within bound",
+      "got": "max err/bound 0.706",
+      "expected": "\u2264 1",
+      "passed": true
+    },
+    {
+      "name": "G bound not vacuous",
+      "got": "min err/bound 0.706",
+      "expected": "\u2265 0.01",
+      "passed": true
+    }
+  ],
+  "summary": {
+    "n_checks": 27,
+    "n_passed": 27
+  }
+}

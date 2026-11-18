@@ -6,12 +6,13 @@ Phase 1 前端验收：方程 → canonical IR
 ==============================================================================
 A. 分类与 canonical IR
 ==============================================================================
-   system       kind level  n degree monomials dense sparsity divisions                                  note
-   Lorenz polynomial     0  3      2         7    10    0.233         0                                      
-  Duffing polynomial     0  4      3         7    35     0.05         0                                      
-       HH   rational     1 10      6        65  8008 0.000812         3                                      
-   Bessel   rational     1  4      2         6    15      0.1         1                                      
-    Gamma   rejected     2  1      -         -     -      n/a         0 Gamma 是 differentially transcendenta…
+     system       kind level  n degree monomials dense sparsity divisions                                  note
+     Lorenz polynomial     0  3      2         7    10    0.233         0                                      
+    Duffing polynomial     0  4      3         7    35     0.05         0                                      
+  SharedDen polynomial     0  3      -         -     -      n/a         0                                      
+         HH   rational     1 10      6        65  8008 0.000812         3                                      
+     Bessel   rational     1  4      2         6    15      0.1         1                                      
+      Gamma   rejected     2  1      -         -     -      n/a         0 Gamma 是 differentially transcendenta…
 
 ==============================================================================
 B. 状态与增广
@@ -33,34 +34,50 @@ B. 状态与增广
 ==============================================================================
 C. 验收
 ==============================================================================
-                               check                    got   expected PASS
-                         Lorenz kind             polynomial polynomial  yes
-                       Lorenz states                      3          3  yes
-                       Lorenz degree                      2          2  yes
-                    Lorenz monomials                      7          7  yes
-                       Lorenz sparse    0.23333333333333334        < 1  yes
-                        Duffing kind             polynomial polynomial  yes
-                      Duffing states                      4          4  yes
-                      Duffing degree                      3          3  yes
-                   Duffing monomials                      7          7  yes
-                 Duffing s²+c² drift  9.880984919163893e-15     < 1e-3  yes
-            Lorenz canonical rebuild                    0.0    < 1e-10  yes
-           Duffing canonical rebuild                    0.0    < 1e-10  yes
-                HH canonical rebuild 1.1424589264360604e-15    < 1e-10  yes
-            Bessel canonical rebuild                    0.0    < 1e-10  yes
-                             HH kind               rational   rational  yes
-                           HH states                     10         10  yes
-                        HH divisions                      3          3  yes
-                      HH RHS rel err                    0.0    < 1e-10  yes
-                           HH sparse  0.0008116883116883117     < 0.01  yes
-                      Gamma rejected               rejected   rejected  yes
-                         Bessel kind               rational   rational  yes
-                       Bessel domain                   True       True  yes
-                   Bessel J0 rel err  4.965708545124035e-15     < 1e-6  yes
-              Bessel at x=0 rejected               rejected   rejected  yes
-  Lorenz/Duffing share polynomial IR             polynomial polynomial  yes
+                                                    check                                                  got                                      expected PASS
+                                              Lorenz kind                                           polynomial                                    polynomial  yes
+                                            Lorenz states                                                    3                                             3  yes
+                                            Lorenz degree                                                    2                                             2  yes
+                                         Lorenz monomials                                                    7                                             7  yes
+                                            Lorenz sparse                                  0.23333333333333334                                           < 1  yes
+                                             Duffing kind                                           polynomial                                    polynomial  yes
+                                           Duffing states                                                    4                                             4  yes
+                                           Duffing degree                                                    3                                             3  yes
+                                        Duffing monomials                                                    7                                             7  yes
+                                      Duffing s²+c² drift                                9.880984919163893e-15                                        < 1e-3  yes
+  Duffing stabilized drift (γ=100, injected) < 1% of bare                                 6.00e-06 vs 1.00e-03                        stabilized < 0.01·bare  yes
+                     Duffing aug records stabilized/gamma                                          True, 100.0                                   True, 100.0  yes
+                                 Lorenz canonical rebuild                                                  0.0                                       < 1e-10  yes
+                                Duffing canonical rebuild                                                  0.0                                       < 1e-10  yes
+                                     HH canonical rebuild                               1.1424589264360604e-15                                       < 1e-10  yes
+                                 Bessel canonical rebuild                                                  0.0                                       < 1e-10  yes
+                                                  HH kind                                             rational                                      rational  yes
+                                                HH states                                                   10                                            10  yes
+                                             HH divisions                                                    3                                             3  yes
+                                           HH RHS rel err                                                  0.0                                       < 1e-10  yes
+                                                HH sparse                                0.0008116883116883117                                        < 0.01  yes
+                                   HH augmented monomials                                                   65                                            65  yes
+                                      HH augmented degree                                                    6                                             6  yes
+                                         HH native states                                                    4                                             4  yes
+                         HH native primitives (exp tiles)                                                    6                                             6  yes
+                      HH native degree < augmented degree                                               5 vs 6                            native < augmented  yes
+                   Manifold γ=0: E[g²] grows (last/first)                                                102.6                          ≥ 10 (no saturation)  yes
+                             Manifold γ=γ0 plateau vs γ=0                                 2.31e-10 vs 1.07e-05                        plateau < 0.1·unstable  yes
+                         Manifold two-term fit a/γ + b/γ²                  a=1.08e-08 b=1.12e-06 resid=8.8e-04                     a>0, b>0, rel resid < 0.2  yes
+                    Manifold offset-only ∝ 1/γ² (γ0/10γ0)                                                100.0                              ≈ 100 (E ∝ b/γ²)  yes
+                      Manifold noise-only ∝ 1/γ (γ0/10γ0)                                                  7.9                                ≈ 10 (E ∝ a/γ)  yes
+                         Manifold γ=1000× plateau bounded                                             3.53e-05                                 max|g| < 1e-3  yes
+                           Manifold γ=1000× pushes max|λ|                                         2e+05 vs 200                                        > 100×  yes
+                   Manifold feasible γ interval non-empty                                         [0.1, 5e+05] γ_min < γ0 < γ_max (no forced native verdict)  yes
+                                           Gamma rejected                                             rejected                                      rejected  yes
+                        a/x + b/x denominator not squared 1.000·x + 1.000·y over [((0, 0, 1), Fraction(1, 1))]         numerator summed, den = z^1 (not z^2)  yes
+                                              Bessel kind                                             rational                                      rational  yes
+                                            Bessel domain                                                 True                                          True  yes
+                                        Bessel J0 rel err                                4.965708545124035e-15                                        < 1e-6  yes
+                                   Bessel at x=0 rejected                                             rejected                                      rejected  yes
+                       Lorenz/Duffing share polynomial IR                                           polynomial                                    polynomial  yes
 
-  25/25 checks passed
+  41/41 checks passed
 
 ==============================================================================
 D. 读法
@@ -75,3 +92,30 @@ D. 读法
     但 numerator monomials=65，仍远小于 dense=8008。
   - Bessel J0 可精确增广成有理系统（1/t），t≥1 时相对误差 5.0e-15；
     t=0 被拒绝：1/x 增广在 x=0 处失效。Gamma 没有有限阶代数增广。
+
+==============================================================================
+E. Baumgarte 流形随机验收（P1-manifold-stoch）
+==============================================================================
+  注入：offset ε=1e-3·(单位法向) + 每步高斯 σ_n=3e-6；RK4，h=1e-3，2000 步。E[g²](∞) ≈ a/γ + b/γ²。
+      γ E[g²] first ¼ E[g²] last ¼    max|g|
+    0.0     1.048e-07    1.075e-05 3.849e-03
+   10.0     4.341e-09    1.228e-08 1.699e-04
+   25.0     1.167e-09    2.219e-09 9.383e-05
+   50.0     4.141e-10    6.664e-10 6.285e-05
+  100.0     1.593e-10    2.308e-10 4.202e-05
+  200.0     7.402e-11    9.789e-11 3.210e-05
+  两项拟合：E[g²] = 1.080e-08/γ + 1.120e-06/γ²，最大相对残差 8.8e-04。
+  分项标度（2γh≪1 区间，γ=10 → 100）：offset-only E 比值 = 100.0（≈100 → 1/γ²）；noise-only = 7.9（≈10 → 1/γ，离散脉冲注入带来的 ~15% 压缩）。
+  γ 可行区间：γ_min(offset ≤ 1e-02) = 0.1，γ_max(κ_hw=1e+06) = 5e+05
+    max|λ|(γ=γ0) = 200，max|λ|(γ=1000γ0) = 2e+05（1000×）。区间非空——对这组参数稳定化可行，不触发“必须用原生原语”的判决。
+    γ=1000× 在 h=1e-3 下 RK4 失稳（γh=100），按 h=1e-6 积分：max|g| = 3.53e-05（有界）。
+
+==============================================================================
+F. 增广 vs 原生原语成本（P1-native-primitives，HH）
+==============================================================================
+                           路径 states monomials degree                附加
+         augmented (exp→6 状态)     10        65      6 6 divider / gm 乘法
+  native (exp/tanh = 原子 tile)      4        29      5       6 次原生 NL 求值
+  native 的 degree=5 来自 HH 自身的门控幂（n⁴·(V+77)、m³h·(V−50)），
+  不是增广引入的；增广把 6 个 exp 变成 6 个带状态、继承 V̇ 全部复杂度的积分器。
+  breakeven：原生 tile 用 1 次跨导律求值换掉每 exp 两个状态 + 乘法器，代价是该原语不再是多项式环内的精确代数。

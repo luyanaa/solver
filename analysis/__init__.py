@@ -12,6 +12,11 @@ from .resolvent import peak_with_projection, resolvent_peak
 from .skew import (dde_characteristic_roots, delay_mass_matrix, phase_budget,
                    scalar_dde_root, scalar_tau_crit, skew_descriptor,
                    skew_report, uniform_delay_poles, uniform_tau_crit)
+from .sde import (NoiseRealizability, NoiseSpec, SdeResult,
+                  hardware_drift, ito_to_stratonovich, linear_correction,
+                  linear_sde_covariance, multiplicative_correction,
+                  noise_realizability, ou_variance_deficit, sylvester_operator,
+                  stratonovich_to_ito)
 from .slack import HardwareSpec, Slack, evaluate
 
 __all__ = [
@@ -22,4 +27,9 @@ __all__ = [
     "uniform_delay_poles", "dde_characteristic_roots",
     "uniform_tau_crit", "scalar_tau_crit", "scalar_dde_root", "phase_budget",
     "HardwareSpec", "Slack", "evaluate",
+    "SdeResult", "linear_sde_covariance", "sylvester_operator",
+    "multiplicative_correction", "ito_to_stratonovich",
+    "stratonovich_to_ito", "linear_correction", "hardware_drift",
+    "NoiseSpec", "NoiseRealizability", "noise_realizability",
+    "ou_variance_deficit",
 ]

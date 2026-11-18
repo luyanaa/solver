@@ -271,8 +271,9 @@ def exp_c():
           % (0.5 * (1 / n), 1 / n))
     print("  因此两个 CFL 给出同样的 κ_num —— 时间积分器已收敛，扩散完全是空间的。")
     print("  红线换算：κ_num < 1e-6 m²/s（物理跨密度的 10%）")
-    for a, cfl in [(0.1, 0.5), (1.0, 0.5)]:
-        print("    a=%.1f m/s, CFL=%.1f ⇒ 一阶迎风需要 h < %.2e m" % (a, cfl, 2e-6 / (a * (1 - cfl))))
+    for a in [0.1, 1.0]:
+        print("    a=%.1f m/s ⇒ 一阶迎风需要 h < %.2e m（ν_num=½·a·h 与 CFL 无关）"
+              % (a, 2e-6 / a))
     return rows
 
 
@@ -433,7 +434,7 @@ def _plots(res):
     n = 256
     x = (np.arange(n) + 0.5) / n
     u0s = 0.5 + 0.5 * np.sin(2 * np.pi * x)
-    for sch in ["upwind1", "minmod", "weno5"]:
+    for sch in ["first", "minmod", "weno5"]:
         u = burgers(u0s, 0.3, sch, cfl=0.35)
         ax[1].plot(x, u, lw=1.2, label=sch)
     ax[1].set_xlim(0.30, 0.70); ax[1].set_title("Burgers shock @T=0.3, N=256")

@@ -14,6 +14,20 @@
 口径（§1.5）：增广只在不变流形上等价。sin/cos 的 s²+c²=1 必须单独验收；
 Gamma 是 Hölder 的，没有有限阶代数微分方程，不会因为换个写法就消失。
 Bessel 可以精确增广成有理系统，但分母含 1/x，要求 x 远离 0。
+
+不变流形的法向是中性的：d(s²+c²)/dt ≡ 0 恒等式意味着法向偏差 δ = s²+c²−1
+满足 δ̇ = 0——线性化在 (s,c) 方向给出零特征值（Jacobian ∂(c·u̇, −s·u̇)/∂(s,c)
+在 s²+c²=1 处的法向分量为零）。数值积分里 RK4 的截断让它表现为小漂移，
+但连续时间模拟硬件上积分器的 offset 电流会让中性方向按 δ ∝ t 线性（或经
+噪声成 Brown 运动）漂离流形。所以 `reduce_system(..., manifold_gamma=γ)`
+提供可选的 Baumgarte 流形投影：
+
+    ṡ += −γ·s·(s²+c²−1),   ċ += −γ·c·(s²+c²−1)
+
+δ̇ = −2γδ(s²+c²)，法向从零特征值变成 −2γ。默认关闭：稳定化后的系统只在
+流形上等于原系统，且额外引入一个真实的乘法器 + gm 项——Phase 1 的 exactness
+声明只对未稳定版本成立。硬件部署必须二选一：打开稳定化，或者调度周期性
+S&H 重投影（把 (s,c) 重新归一化到流形上）。
 """
 
 from __future__ import annotations
@@ -26,6 +40,7 @@ __all__ = [
     "Expr", "C", "V", "add", "mul", "pow", "sub", "div",
     "sin", "cos", "exp", "tanh", "besselj", "gamma",
     "System", "Canonical", "Reduced", "first_order", "reduce_system",
+    "PrimitiveCost", "reduce_with_primitives",
     "eval_expr", "eval_system", "complete_env", "NotReducible",
 ]
 
@@ -403,10 +418,26 @@ def _poly_frac(e: Expr, idx: dict[str, int], n: int) -> tuple[Poly, Poly]:
         m[idx[e.args[0]]] = 1
         return {tuple(m): Fraction(1)}, _pconst(Fraction(1), n)
     if op == "add":
-        num: Poly = {}
-        den = _pconst(Fraction(1), n)
+        # 先按分母分组：同分母的加数先在分子上相加，再跨组合并。
+        # 旧实现 den=_pmul(den,ad) 会把共享分母平方（a/x + b/x → /x²），
+        # 多付一个 divider 深度。Fraction 算术保持精确。
+        groups: dict[frozenset, tuple[Poly, list[Poly]]] = {}
+        order: list[frozenset] = []
         for a in e.args:
             an, ad = _poly_frac(a, idx, n)
+            k = frozenset(ad.items())
+            if k in groups:
+                groups[k][1].append(an)
+            else:
+                groups[k] = (ad, [an])
+                order.append(k)
+        num: Poly = {}
+        den = _pconst(Fraction(1), n)
+        for k in order:
+            ad, nums = groups[k]
+            an = nums[0]
+            for extra in nums[1:]:
+                an = _padd(an, extra)
             num = _padd(_pmul(num, ad), _pmul(an, den))
             den = _pmul(den, ad)
         return num, den
@@ -432,7 +463,7 @@ def _poly_frac(e: Expr, idx: dict[str, int], n: int) -> tuple[Poly, Poly]:
 # ---------------------------------------------------------------------------
 # 增广
 # ---------------------------------------------------------------------------
-def _augment(system: System):
+def _augment(system: System, manifold_gamma: float | None = None):
     rhs = dict(system.rhs)
     states = list(system.states)
     augs: list[dict] = []
@@ -481,9 +512,15 @@ def _augment(system: System):
                 rhs[s] = mul(V(c), ud)
                 rhs[c] = mul(C(-1), V(s), ud)
                 sin_pairs[u] = (s, c)
+                # 法向中性：d(s²+c²)/dt ≡ 0，偏差 δ̇=0（零特征值方向）。
+                # 数值上 δ 只被积分误差驱动；模拟积分器的 offset 电流让它
+                # 线性增长。是否加 Baumgarte 稳定化由 manifold_gamma 决定，
+                # 在 _augment 末尾统一注入（此时 rhs 已闭合，不会再被
+                # rewrite 队列改写）。
                 augs.append(dict(
                     kind="sin", arg=u, states=(s, c),
-                    invariant=sub(add(mul(V(s), V(s)), mul(V(c), V(c))), _ONE)))
+                    invariant=sub(add(mul(V(s), V(s)), mul(V(c), V(c))), _ONE),
+                    stabilized=False, gamma=None))
             s, c = sin_pairs[u]
             return V(s) if op == "sin" else V(c)
         if op == "exp":
@@ -565,6 +602,25 @@ def _augment(system: System):
             states.append(system.time)
             rhs[system.time] = _ONE
 
+    # Baumgarte 流形投影（可选，默认关）：δ̇ = −2γδ(s²+c²)，把法向的
+    # 零特征值变成 −2γ。只在 sin/cos 增广上可用；exp/tanh 的增广状态
+    # （e=e^u, h=tanh u）没有显式二次不变流形，漂移由 u 的方程本身
+    # 决定，稳定化没有独立的意义。放在 rewrite 队列闭合之后，避免
+    # 注入项再被 rewrite 改写。
+    if manifold_gamma is not None:
+        g = float(manifold_gamma)
+        if g <= 0:
+            raise ValueError("manifold_gamma 必须为正（None 表示关闭）")
+        for a in augs:
+            if a["kind"] != "sin" or a.get("invariant") is None:
+                continue
+            s, c = a["states"]
+            inv = a["invariant"]          # s²+c²−1
+            rhs[s] = add(rhs[s], mul(C(-g), V(s), inv))
+            rhs[c] = add(rhs[c], mul(C(-g), V(c), inv))
+            a["stabilized"] = True
+            a["gamma"] = g
+
     return System(states, rhs, invariants, system.time, list(system.notes)), augs, bessel_args
 
 
@@ -628,7 +684,9 @@ class Reduced:
                                 invariant=(str(a["invariant"])
                                            if a.get("invariant") is not None
                                            else None),
-                                n=a.get("n"))
+                                n=a.get("n"),
+                                stabilized=bool(a.get("stabilized", False)),
+                                gamma=a.get("gamma"))
                            for a in self.augmentations])
 
 
@@ -649,8 +707,18 @@ def _fmt_poly(poly: Poly, states: list[str]) -> str:
 
 
 def reduce_system(system: System, *, bessel_arg_min: float | None = None,
-                  bessel_floor: float = 1e-6) -> Reduced:
-    """把 System 降到 canonical IR；不满足条件时返回 kind='rejected'。"""
+                  bessel_floor: float = 1e-6,
+                  manifold_gamma: float | None = None) -> Reduced:
+    """把 System 降到 canonical IR；不满足条件时返回 kind='rejected'。
+
+    manifold_gamma：sin/cos 增广的 Baumgarte 流形投影强度（默认 None=关）。
+    开启后 rhs 加 −γ·s·(s²+c²−1)、−γ·c·(s²+c²−1)，augmentation dict 记录
+    invariant / stabilized / gamma。关闭时增广是精确的（只差一个不变流形
+    上的恒等）；开启时系统只在流形上等于原系统，且多了一个真实的硬件项
+    （每对增广状态一个乘法器 + gm）。连续时间模拟部署必须开启稳定化，
+    或调度周期性 S&H 重投影：模拟积分器的 offset 电流让中性法向按
+    δ ∝ t 线性漂离流形。
+    """
     for e in system.rhs.values():
         if _has_op(e, {"gamma"}):
             return Reduced(system, None, "rejected", 2,
@@ -658,7 +726,7 @@ def reduce_system(system: System, *, bessel_arg_min: float | None = None,
                                   "没有有限阶代数微分方程，不能有限增广")
 
     try:
-        aug, augs, bessel_args = _augment(system)
+        aug, augs, bessel_args = _augment(system, manifold_gamma)
         idx = {s: i for i, s in enumerate(aug.states)}
         n = len(aug.states)
         num: dict[str, Poly] = {}
@@ -714,6 +782,101 @@ def reduce_system(system: System, *, bessel_arg_min: float | None = None,
                            augmentations=augs, domain=domain)
     return Reduced(aug, canon, kind, level, reason=reason,
                    augmentations=augs, domain=domain)
+
+
+# ---------------------------------------------------------------------------
+# native 原语成本（增广 vs 原生 tile 的 breakeven 对照）
+# ---------------------------------------------------------------------------
+@dataclass
+class PrimitiveCost:
+    """把 exp/tanh 留作原子"原生 tile"（跨导本征律：亚阈 MOS exp、差分对
+    tanh）时的 IR 成本，与 reduce_system 的增广路径对照。原子的自变量不求
+    导、不进多项式环：它是一次非线性求值，不是 N+1 个状态。"""
+
+    n_states: int
+    n_primitives: int
+    primitives: list                # ["exp(arg)", ...]
+    kind: str                       # polynomial | rational
+    degree: int
+    n_monomials: int
+    dense_monomials: int
+    sparsity: float
+
+    def as_dict(self) -> dict:
+        return dict(n_states=self.n_states, n_primitives=self.n_primitives,
+                    primitives=list(self.primitives), kind=self.kind,
+                    degree=self.degree, n_monomials=self.n_monomials,
+                    dense_monomials=self.dense_monomials,
+                    sparsity=self.sparsity)
+
+
+def reduce_with_primitives(system: System) -> PrimitiveCost:
+    """native_primitives 路径：不改 reduce_system 默认行为，单独计数。
+
+    每个 (去重后的) exp(u)/tanh(u) 原子被替换成一个原子变量 P_k 参与
+    polynomial/rational 规范化；P_k 本身的方程 = 一次原生非线性求值，
+    不计状态、不计 monomial。degree 沿用 reduce_system 的口径：
+    num 恒计，den 仅在非平凡时计，原子变量按 1 次幂计。
+    """
+    atoms: dict[Expr, str] = {}
+    order: list[Expr] = []
+
+    def scan(e: Expr):
+        if e.op in ("exp", "tanh") and e not in atoms:
+            atoms[e] = ""
+            order.append(e)
+        for a in e.args:
+            if isinstance(a, Expr):
+                scan(a)
+
+    for rhs in system.rhs.values():
+        scan(rhs)
+    names = ["P%d" % (i + 1) for i in range(len(order))]
+    for p, nm in zip(order, names):
+        atoms[p] = nm
+
+    def sub(e: Expr) -> Expr:
+        if e.op in ("exp", "tanh"):
+            return V(atoms[e])
+        if e.op in ("const", "var"):
+            return e
+        if e.op == "add":
+            return add(*(sub(a) for a in e.args))
+        if e.op == "mul":
+            return mul(*(sub(a) for a in e.args))
+        if e.op == "pow":
+            return pow(sub(e.args[0]), e.args[1])
+        raise NotImplementedError(e.op)
+
+    idx = {s: i for i, s in enumerate(list(system.states) + names)}
+    n = len(idx)
+    num: dict[str, Poly] = {}
+    den: dict[str, Poly] = {}
+    degree = 0
+    n_mono = 0
+    for s in system.states:
+        nm, dn = _poly_frac(sub(system.rhs[s]), idx, n)
+        nm, dn = _cancel_monomial(nm, dn)
+        if not nm:
+            nm, dn = {}, _pconst(Fraction(1), n)
+        num[s], den[s] = nm, dn
+        for mono in nm:
+            degree = max(degree, sum(mono))
+        n_mono += len(nm)
+        if not (len(dn) == 1 and dn.get((0,) * n) == 1):
+            n_mono += len(dn)
+            for mono in dn:
+                degree = max(degree, sum(mono))
+    zero = (0,) * n
+    polynomial = all(len(den[s]) == 1 and den[s].get(zero) == 1
+                     for s in system.states)
+    dense = math.comb(n + degree, degree) if n + degree >= 0 else 1
+    return PrimitiveCost(
+        n_states=len(system.states), n_primitives=len(order),
+        primitives=["%s(%s)" % (p.op, _fmt_expr(p.args[0])) for p in order],
+        kind="polynomial" if polynomial else "rational",
+        degree=degree, n_monomials=n_mono, dense_monomials=dense,
+        sparsity=n_mono / float(n * max(dense, 1)))
 
 
 # ---------------------------------------------------------------------------

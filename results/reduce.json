@@ -295,7 +295,31 @@
       },
       "invariant_drift": 9.880984919163893e-15,
       "invariant_drift_perturbed": 0.000999999998806178,
-      "canonical_err": 0.0
+      "canonical_err": 0.0,
+      "stabilized_gamma": 100.0,
+      "aug_stabilized": true,
+      "aug_gamma": 100.0,
+      "invariant_drift_stabilized": 5.997897128628971e-06
+    },
+    "SharedDen": {
+      "kind": "polynomial",
+      "level": 0,
+      "n": 3,
+      "monos": [
+        [
+          [
+            0,
+            0,
+            1
+          ],
+          1.0
+        ]
+      ],
+      "num": {
+        "(1, 0, 0)": 1.0,
+        "(0, 1, 0)": 1.0
+      },
+      "ok": true
     },
     "HH": {
       "name": "HH",
@@ -1553,7 +1577,101 @@
         ]
       },
       "rhs_err": 0.0,
-      "canonical_err": 1.1424589264360604e-15
+      "canonical_err": 1.1424589264360604e-15,
+      "native": {
+        "n_states": 4,
+        "n_primitives": 6,
+        "primitives": [
+          "exp((-1/18*(65 + V)))",
+          "exp((-1/10*(40 + V)))",
+          "exp((-1/10*(35 + V)))",
+          "exp((-1/20*(65 + V)))",
+          "exp((-1/80*(65 + V)))",
+          "exp((-1/10*(10 + V)))"
+        ],
+        "kind": "rational",
+        "degree": 5,
+        "n_monomials": 29,
+        "dense_monomials": 3003,
+        "sparsity": 0.0009657009657009657
+      }
+    },
+    "Manifold": {
+      "g0": 100.0,
+      "tol": 0.01,
+      "kappa_hw": 1000000.0,
+      "combined": {
+        "0.0": {
+          "g2_first": 1.0476389947538965e-07,
+          "g2_last": 1.0745398005771688e-05,
+          "max_abs": 0.0038493195016364723
+        },
+        "10.0": {
+          "g2_first": 4.340811149351925e-09,
+          "g2_last": 1.2283766353841723e-08,
+          "max_abs": 0.0001698644768306501
+        },
+        "25.0": {
+          "g2_first": 1.1667202179065585e-09,
+          "g2_last": 2.2187736097969887e-09,
+          "max_abs": 9.383215761427088e-05
+        },
+        "50.0": {
+          "g2_first": 4.141002305628035e-10,
+          "g2_last": 6.664009443578356e-10,
+          "max_abs": 6.285107484971242e-05
+        },
+        "100.0": {
+          "g2_first": 1.5928181170044763e-10,
+          "g2_last": 2.3080468978195444e-10,
+          "max_abs": 4.2022901904470444e-05
+        },
+        "200.0": {
+          "g2_first": 7.402366927085966e-11,
+          "g2_last": 9.788940025071093e-11,
+          "max_abs": 3.2098978477224094e-05
+        }
+      },
+      "offset_only": {
+        "100.0": {
+          "g2_first": 9.857386392586316e-11,
+          "g2_last": 9.997352179151637e-11,
+          "max_abs": 9.998676002265228e-06
+        },
+        "10.0": {
+          "g2_first": 8.510171072141033e-09,
+          "g2_last": 9.999997584140474e-09,
+          "max_abs": 9.999998792142861e-05
+        }
+      },
+      "noise_only": {
+        "100.0": {
+          "g2_first": 1.3497745320843342e-10,
+          "g2_last": 1.1299612420304885e-10,
+          "max_abs": 4.0716943411456263e-05
+        },
+        "10.0": {
+          "g2_first": 2.6331950898006724e-09,
+          "g2_last": 8.914815322188705e-10,
+          "max_abs": 0.00013057283473616454
+        }
+      },
+      "fit": {
+        "a": 1.0795834095909343e-08,
+        "b": 1.1203486048467147e-06,
+        "rel_resid": 0.000880144413916523
+      },
+      "spectral": {
+        "radius_gamma0": 199.9927997410818,
+        "radius_1000x": 199999.9999931,
+        "gamma_min": 0.09998676001927274,
+        "gamma_max": 500000.00001725
+      },
+      "plateau_1000x": {
+        "g2_first": 1.313825426866676e-10,
+        "g2_last": 1.1499402427984922e-10,
+        "max_abs": 3.5251460921759126e-05
+      }
     },
     "Bessel": {
       "name": "Bessel",
@@ -1800,6 +1918,20 @@
       "kind": "abs"
     },
     {
+      "name": "Duffing stabilized drift (\u03b3=100, injected) < 1% of bare",
+      "got": "6.00e-06 vs 1.00e-03",
+      "expected": "stabilized < 0.01\u00b7bare",
+      "passed": true,
+      "kind": "abs"
+    },
+    {
+      "name": "Duffing aug records stabilized/gamma",
+      "got": "True, 100.0",
+      "expected": "True, 100.0",
+      "passed": true,
+      "kind": "value"
+    },
+    {
       "name": "Lorenz canonical rebuild",
       "got": 0.0,
       "expected": "< 1e-10",
@@ -1863,9 +1995,107 @@
       "kind": "value"
     },
     {
+      "name": "HH augmented monomials",
+      "got": 65,
+      "expected": 65,
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "HH augmented degree",
+      "got": 6,
+      "expected": 6,
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "HH native states",
+      "got": 4,
+      "expected": 4,
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "HH native primitives (exp tiles)",
+      "got": 6,
+      "expected": 6,
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "HH native degree < augmented degree",
+      "got": "5 vs 6",
+      "expected": "native < augmented",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Manifold \u03b3=0: E[g\u00b2] grows (last/first)",
+      "got": "102.6",
+      "expected": "\u2265 10 (no saturation)",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Manifold \u03b3=\u03b30 plateau vs \u03b3=0",
+      "got": "2.31e-10 vs 1.07e-05",
+      "expected": "plateau < 0.1\u00b7unstable",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Manifold two-term fit a/\u03b3 + b/\u03b3\u00b2",
+      "got": "a=1.08e-08 b=1.12e-06 resid=8.8e-04",
+      "expected": "a>0, b>0, rel resid < 0.2",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Manifold offset-only \u221d 1/\u03b3\u00b2 (\u03b30/10\u03b30)",
+      "got": "100.0",
+      "expected": "\u2248 100 (E \u221d b/\u03b3\u00b2)",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Manifold noise-only \u221d 1/\u03b3 (\u03b30/10\u03b30)",
+      "got": "7.9",
+      "expected": "\u2248 10 (E \u221d a/\u03b3)",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Manifold \u03b3=1000\u00d7 plateau bounded",
+      "got": "3.53e-05",
+      "expected": "max|g| < 1e-3",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Manifold \u03b3=1000\u00d7 pushes max|\u03bb|",
+      "got": "2e+05 vs 200",
+      "expected": "> 100\u00d7",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Manifold feasible \u03b3 interval non-empty",
+      "got": "[0.1, 5e+05]",
+      "expected": "\u03b3_min < \u03b30 < \u03b3_max (no forced native verdict)",
+      "passed": true,
+      "kind": "value"
+    },
+    {
       "name": "Gamma rejected",
       "got": "rejected",
       "expected": "rejected",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "a/x + b/x denominator not squared",
+      "got": "1.000\u00b7x + 1.000\u00b7y over [((0, 0, 1), Fraction(1, 1))]",
+      "expected": "numerator summed, den = z^1 (not z^2)",
       "passed": true,
       "kind": "value"
     },
@@ -1906,7 +2136,7 @@
     }
   ],
   "summary": {
-    "n_checks": 25,
-    "n_passed": 25
+    "n_checks": 41,
+    "n_passed": 41
   }
 }

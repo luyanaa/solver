@@ -89,46 +89,163 @@ G. 从 J 自动算 τ_tol
   这就是 sensitivity-driven routing 的输入：不需要手写 critical path。
 
 ==============================================================================
-H. 验收
+H. 谱权重：J_H 随 W(ω) 改变（P0-A 回归）
 ==============================================================================
-                            check                          got                  expected PASS
-       wire DC group delay = RC/2                     80.00 ps                  80.00 ps  yes
-            wire t50 by diffusion                    0.3791 RC                 0.3795 RC  yes
-         distributed t50 > lumped            60.72 vs 55.45 ps                         >  yes
-       distributed f3 > lumped f3             2.42 vs 1.99 GHz         f3_dist > f3_lump  yes
-            buffer depth1 closure                         True                      True  yes
-            buffer depth4 closure                        False                     False  yes
-                depth1 phase < 3°                       2.862°                      < 3°  yes
-                depth4 phase > 3°                      11.450°                      > 3°  yes
-                     depth4 noise                      20.0 µV                   < 50 µV  yes
-                     depth1 class                           L2                        L2  yes
-                     depth4 class                           L3                        L3  yes
-         depth4 eta declared vs 0             0.0090 vs 0.1988 declared < 5%, zero > 15%  yes
-               all-pass gain flat                     3.33e-16                   < 1e-12  yes
-         RC gain error at 500 MHz                        0.153                     > 0.1  yes
-        all-pass phase < RC phase             1.119° vs 3.858°                   ap < rc  yes
-            all-pass J_H / RC J_H                       107.5×                     > 10×  yes
-        all-pass J_tau / RC J_tau                        11.3×                      > 5×  yes
-                all-pass f3 = inf                          inf                       inf  yes
-               deskew skew before                      39.8 ps                   > 35 ps  yes
-                deskew skew after                  3.34e-07 ps                 < 0.01 ps  yes
-              deskew group spread      2.68e+02 → 2.86e-02 ps²                    > 5e3×  yes
-     deskew leaves absolute delay               2.15° @100 MHz                     2.15°  yes
-   deskewed loop fails 1° reserve                        False                     False  yes
-  deskewed loop passes 5° reserve                         True                      True  yes
-                   feedback τ_max                     138.9 ps                  138.9 ps  yes
-                  150 ps fails 5°                        False                     False  yes
-                 130 ps passes 5°                         True                      True  yes
-       matched 150 ps still fails                  skew=0.0 ps            absolute fails  yes
-      padding cannot fix feedback                        False                     False  yes
-               crosstalk HF limit                       0.0909                    0.0909  yes
-               shield improvement                     19.26 dB                   > 19 dB  yes
-             20 fF vs 1 mV budget                      90.9 mV                    > 1 mV  yes
-            0.1 fF vs 1 mV budget                      0.50 mV                    < 1 mV  yes
-            slow/fast τ_tol ratio                        200.0                       200  yes
-         resonance shrinks budget                       20.05×                  2Q = 20×  yes
-              resonant cross edge                      2.77 ps                   < 14 ps  yes
-             τ_tol ordered by |J| 0.69 < 6.93 < 13.85 < 138.52                increasing  yes
-             worst ω at resonance                     1.000 ω0                  ≈ 50 MHz  yes
+   weight    peak        J_H J_τ (ps²)
+    W_low  20 MHz 1.2458e-03  165.0421
+   W_high 299 MHz 7.0686e-03  905.3716
+  uniform       — 6.0180e-03         —
+  同一条 RC pad，误差随 ω 单调增长：把权重峰从 20 MHz 挪到 300 MHz，
+  J_H 变 5.7×、J_τ 变 5.5×。权重必须同时进分子和分母——否则 W 只
+  是归一化常数，谱加权形同虚设。uniform/flat 权重与无权重完全一致。
 
-  38/38 checks passed
+==============================================================================
+I. 非对称串扰：R1≠R2、C1≠C2（P0-B 回归）
+==============================================================================
+                       quantity          value               prediction
+   solve err (vs numpy, 200 pt)       7.19e-16                  < 1e-12
+  reciprocity err R2·H01−R1·H10       0.00e+00                  < 1e-12
+            HF V1/V2 (victim 1)        0.09089       Cm/(C1+Cm)=0.09091
+     HF |H01/H00| (crosstalk())        0.08332 Cm/(C2+Cm)·R1/R2=0.08333
+          crosstalk_hf property        0.16667       Cm/(C2+Cm)=0.16667
+                         H01(0)       0.00e+00                        0
+                         H00(0) 1.000000000000                        1
+  交叉项的 R 归属只由输入列决定：H_01=−m12/(det·R2)、H_10=−m12/(det·R1)。
+  修复前两者写反；R1=R2 的旧算例完全掩盖它。传递阻抗 Z=−m12/det 与 R
+  无关（互易），所以 R2·H01=R1·H10 逐点成立。
+  注意：非对称时 crosstalk() 的 |H01/H00| 地板带 R1/R2 因子；纯电容
+  分压是 V1/V2=Cm/(C1+Cm)。crosstalk_hf 属性仍是 C2 版本，仅对称网成立。
+
+==============================================================================
+K. 闭环 closure：per-edge → whole-loop（Review item B）
+==============================================================================
+                                  quantity                                                           value
+  Loop A: τ_ex (exact, complex-scalar DDE)                                                        315.7 ps
+                     Loop A: τ_fo (E=I+τA)                                          315.2 ps (ratio 0.998)
+                   Loop A: σ_min dip (H=1)                                49.84 MHz, depth 3.143e+07 (= a)
+                    Loop A: σ_min_min vs τ                       3.14e+07 → 2.15e+07 → 1.15e+07 → 1.56e+06
+                         Loop A: ‖S‖∞ vs τ                                      10.0 → 14.7 → 27.4 → 202.1
+                            deskew: margin short 2.150e+07 → deskewed 6.531e+06 (= 250 ps level 6.546e+06)
+                       Loop B: τ_fo / τ_ex                                           0.6467 (2/π = 0.6366)
+  per-edge closure 全过不等于闭环安全：σ_min(jωI−J∘H(jω)) 随 τ 单调
+  收缩，‖S‖∞ 从 10 涨到 200，deskew 把 skew 修到零但 margin 停在
+  250 ps 的绝对延迟水平——§2.8 的 matched ≠ instantaneous 在 loop 层。
+  近标量 loop 的 τ_fo/τ_ex = 0.647 ≈ 2/π：§6.14 的乐观性在 loop 层复现。
+  诚实声明：σ_min→0 是必要条件探针；DDE 精确根只在标量 1-DOF
+  (scalar_dde_root) 闭式，本例用它在 τ_ex 处验证根落在 jω 轴上。
+
+==============================================================================
+L. 物理时间/电压 scaling：B_hw 比较必须走 PhysicalScaling
+==============================================================================
+                            quantity                                         value
+                           λ (model)                     8.00 MHz (rad/model-time)
+                                B_hw                                        10 MHz
+                    unscaled verdict                                          pass
+   alpha = 0.1 s/model-unit → ω_phys                                 80 MHz → FAIL
+  alpha = 1e-6 s/model-unit → ω_phys                                       8.0 THz
+                x = V/S_x (S_x=1 mV) 2 mV swing → ±2.00 units; 80 µV → 0.080 units
+  同一个 8 MHz 模态：不 scaling 过 10 MHz 预算，alpha=0.1 时硬件
+  看到 80 MHz 而 fail。两个 verdict 不一致就是测试：忘掉 alpha 的
+  B_hw 比较会被这个 borderline 案例抓住。方向是 t_phys=alpha·t_model，
+  所以 ω_phys = ω_model/alpha、λ_hw = λ_model/alpha、x = V/S_x。
+
+==============================================================================
+M. absolute 判据：ωc 的 phase delay vs DC latency（P2-route-3）
+==============================================================================
+                        edge @ ωc latency (DC)        phase delay        naive angle    verdict
+           PureDelay 10 ps @1 GHz     10.00 ps           10.00 ps                  —       pass
+  5 ps + 4×AllPass(50 ps) @10 GHz     205.0 ps           132.8 ps 32.8 ps (wrapped!) FAIL @216°
+    5 ps + 4×AllPass(1 ps) @1 GHz     9.000 ps           9.000 ps                  —       pass
+       deskewed case-D 组 @100 MHz       ≈60 ps divergence 2.5e-04                  —   all pass
+ 闭环感到的是 −∠H(jωc)/ωc。pad 极点在带外时 pd≈latency（1e-4）；
+ 极点在带内时分开：lat 205 ps vs pd 132.8 ps——latency 判据是保守侧。
+ 4 个 50 ps all-pass 在 10 GHz 总相位 −8.08 rad，单点 np.angle 卷绕成
+ −1.80 rad（naive pd 32.8 ps）；unwrap 后与 ∫₀^ωc τ_g dω 一致到 1e-5（差值
+ 是梯形积分的离散误差，不是 unwrap 误差），verdict 按 unwrapped pd 判：
+ 216° reserve 下 naive-angle 实现会错放行。
+
+ 模型局限（P2-route-1 / P2-route-2，读数时不要超出）：
+ 1. RouteEdge.H 是各 block 开路 transfer 的乘积，忽略无 buffer 隔离
+    的段间阻抗加载（会高估带宽）；正确做法是 ABCD 级联，未实现。
+ 2. noise_var 按 DC 增益² 折算，忽略后级极点的 ENBW 压缩（保守侧）。
+ 本仓库立场是关键路径由 buffer 隔离，这两条由 PEX/SPICE 阶段兜底。
+
+==============================================================================
+J. 验收
+==============================================================================
+                                                          check                                                 got                                                               expected PASS
+                                     wire DC group delay = RC/2                                            80.00 ps                                                               80.00 ps  yes
+                                          wire t50 by diffusion                                           0.3791 RC                                                              0.3795 RC  yes
+                                       distributed t50 > lumped                                   60.72 vs 55.45 ps                                                                      >  yes
+                                     distributed f3 > lumped f3                                    2.42 vs 1.99 GHz                                                      f3_dist > f3_lump  yes
+                                          buffer depth1 closure                                                True                                                                   True  yes
+                                          buffer depth4 closure                                               False                                                                  False  yes
+                                              depth1 phase < 3°                                              2.862°                                                                   < 3°  yes
+                                              depth4 phase > 3°                                             11.450°                                                                   > 3°  yes
+                                                   depth4 noise                                             20.0 µV                                                                < 50 µV  yes
+                                                   depth1 class                                                  L2                                                                     L2  yes
+                                                   depth4 class                                                  L3                                                                     L3  yes
+                                       depth4 eta declared vs 0                                    0.0090 vs 0.1988                                              declared < 5%, zero > 15%  yes
+                                             all-pass gain flat                                            3.33e-16                                                                < 1e-12  yes
+                                       RC gain error at 500 MHz                                               0.153                                                                  > 0.1  yes
+                                      all-pass phase < RC phase                                    1.119° vs 3.858°                                                                ap < rc  yes
+                                          all-pass J_H / RC J_H                                              107.5×                                                                  > 10×  yes
+                                      all-pass J_tau / RC J_tau                                               11.3×                                                                   > 5×  yes
+                                              all-pass f3 = inf                                                 inf                                                                    inf  yes
+                                             deskew skew before                                             39.8 ps                                                                > 35 ps  yes
+                                              deskew skew after                                         3.34e-07 ps                                                              < 0.01 ps  yes
+                                            deskew group spread                             2.68e+02 → 2.86e-02 ps²                                                                 > 5e3×  yes
+                                   deskew leaves absolute delay                                      2.15° @100 MHz                                                                  2.15°  yes
+                                 deskewed loop fails 1° reserve                                               False                                                                  False  yes
+                                deskewed loop passes 5° reserve                                                True                                                                   True  yes
+                                                 feedback τ_max                                            138.9 ps                                                               138.9 ps  yes
+                                                150 ps fails 5°                                               False                                                                  False  yes
+                                               130 ps passes 5°                                                True                                                                   True  yes
+                                     matched 150 ps still fails                                         skew=0.0 ps                                                         absolute fails  yes
+                                    padding cannot fix feedback                                               False                                                                  False  yes
+                                             crosstalk HF limit                                              0.0909                                                                 0.0909  yes
+                                             shield improvement                                            19.26 dB                                                                > 19 dB  yes
+                                           20 fF vs 1 mV budget                                             90.9 mV                                                                 > 1 mV  yes
+                                          0.1 fF vs 1 mV budget                                             0.50 mV                                                                 < 1 mV  yes
+                                          slow/fast τ_tol ratio                                               200.0                                                                    200  yes
+                                       resonance shrinks budget                                              20.05×                                                               2Q = 20×  yes
+                                            resonant cross edge                                             2.77 ps                                                                < 14 ps  yes
+                                           τ_tol ordered by |J|                        0.69 < 6.93 < 13.85 < 138.52                                                             increasing  yes
+                                           worst ω at resonance                                            1.000 ω0                                                               ≈ 50 MHz  yes
+                                      W_low vs W_high J_H ratio                                               5.67×                                                                   > 3×  yes
+                                             W_low peak @20 MHz                                              20 MHz                                                                 20 MHz  yes
+                                           W_high peak @300 MHz                                             299 MHz                                                                300 MHz  yes
+                              uniform j_h regression vs old run                            6.0180e-03 vs 6.0180e-03                                                                  equal  yes
+                                      flat weight = weight=None    6.0179778827078503e-03 vs 6.0179778827078503e-03                                                              identical  yes
+                                           weighted J_tau ratio                                               5.49×                                                                   > 3×  yes
+                               H vs direct solve (R1≠R2, C1≠C2)                                            7.19e-16                                                                < 1e-12  yes
+                                    reciprocity R2·H01 = R1·H10                                            0.00e+00                                                                < 1e-12  yes
+                              victim-1 floor V1/V2 = Cm/(C1+Cm)                                  0.09089 vs 0.09091                                                                  equal  yes
+  crosstalk_hf_victim(1) = measured V1/V2 floor, ≠ crosstalk_hf                     0.09091 vs 0.09089 (hf=0.16667) victim method = |H01/H11| floor; C2-version differs by (C2+Cm)/(C1+Cm)  yes
+                                crosstalk() floor carries R1/R2                                  0.08332 vs 0.08333                                                       Cm/(C2+Cm)·R1/R2  yes
+                                                     H01(0) = 0                                            0.00e+00                                                                < 1e-15  yes
+                                                     H00(0) = 1                                      1.000000000000                                                                      1  yes
+                                      loop H=1 dip at pole freq                             49.84 MHz vs ±50.00 MHz                                                           dip at poles  yes
+                                 loop first-order = true at H=1                                            0.00e+00                                                                < 1e-10  yes
+                                    loop margin monotone in tau           3.14e+07 → 2.15e+07 → 1.15e+07 → 1.56e+06                                                             decreasing  yes
+                            loop tau_ex exact (scalar_dde_root)                     Re/|λ|=7.0e-17, Im/|λ|=1.000000                                                root on jω axis at τ_ex  yes
+                                     loop 2/π optimism (Loop B)                                0.6467 vs 2/π=0.6366                                                                  ≈ 2/π  yes
+                                first-order descriptor boundary               max Re @τ_fo=-2.3e-05, @1.05τ=2.0e+09                                                             0 then > 0  yes
+                           first-order optimistic at loop level                              1.251e+08 vs 8.789e+07                                                              fo > true  yes
+                                                deskew skew → 0                                  150.0 → 9.8e-08 ps                                                              < 0.01 ps  yes
+                        deskew does NOT recover absolute margin deskew=6.531e+06, target=6.546e+06, short=2.150e+07                                   deskew ≈ 250 ps level (±1%), ≪ short  yes
+                                S peak grows toward instability                          10.0 → 14.7 → 27.4 → 202.1                                                             increasing  yes
+                          scaling: unscaled 8 MHz passes 10 MHz                                                True                                                                   True  yes
+                       scaling: alpha=0.1 → 80 MHz fails 10 MHz                                              80 MHz                                                                   fail  yes
+                    scaling: forgetting alpha flips the verdict                         unscaled=True, scaled=False                                                  differ (load-bearing)  yes
+                            scaling: band round-trip + λ_hw=λ/α                      round=5.03e+07, λ_hw/α=5.0e+13                                            ω·α·(1/α) = ω; λ_hw = 1e6·λ  yes
+                              scaling: x=V/S_x and noise budget                  swing→2.00 units, 80µV→0.080 units                                               ±2.00 units, 0.080 units  yes
+                                       PureDelay: pd == latency                           10.000000 vs 10.000000 ps                                                        identical, pass  yes
+                                     in-band pads: pd < latency                     132.8 vs 205.0 ps (ratio 0.648)                                                 pd < lat, ratio ≈ 0.65  yes
+                       naive angle wraps (bug the unwrap fixes)                      naive 32.8 ps vs true 132.8 ps                                                         naive < true/2  yes
+                                  unwrap vs ∫τ_g dω cross-check                 1.44e-05 (trapezoid quadrature err)                                                                 < 1e-4  yes
+                             verdict uses unwrapped phase delay      τ_max=60.0 ps, pd=132.8, naive=32.8, lat=205.0                                     FAIL (naive-angle impl would pass)  yes
+                                 out-of-band pads: pd ≈ latency                             8.999987 vs 9.000000 ps                                                         ratio 1 ± 1e-3  yes
+                     deskewed case-D set: divergence & verdicts             diverg=2.5e-04, pass=[True, True, True]                     < 1e-3, all True (criterion change keeps verdicts)  yes
+
+  73/73 checks passed

@@ -238,6 +238,16 @@ class RouteEdge:
     def with_block(self, block) -> "RouteEdge":
         return RouteEdge(self.blocks + (block,), self.name)
 
+    # 明确的两个简化（P2-route-1 / P2-route-2），读数时不要超出：
+    # 1. H 是各 block **开路** transfer function 的乘积。两个无 buffer 隔离
+    #    的 Wire 段级联时，真实电路有段间阻抗加载（第二段的输入阻抗
+    #    分压第一段的输出），乘积模型高估带宽。正确的做法是 ABCD 矩阵
+    #    级联；本文件故意不做——本仓库的立场是每段关键路径由 buffer
+    #    隔离，加载效应是 PEX/SPICE 阶段的职责。
+    # 2. noise_var 把各级输入折算噪声按 **DC 增益²** 搬到输出，忽略了
+    #    后级极点对噪声的等效噪声带宽（ENBW）压缩：单极点链的输出噪声
+    #    实际上比 Σg²σ² 略小。这也是保守方向的近似，不是精确值。
+
 
 def rc_wire(length: float, r: float = 0.2, c: float = 0.2,
             model: str = "distributed", name: str = "") -> RouteEdge:
@@ -316,12 +326,39 @@ def eta_route(edge: RouteEdge, omega, g_ideal: float = 1.0,
     return edge_metrics(edge, omega, g_ideal, tau_ideal)["eta"]
 
 
+def phase_delay_at(edge: RouteEdge, omega: float, n_decades: float = 12.0,
+                   step: float = 1.02) -> float:
+    """pd(ω) = −∠H(jω)/ω：闭环在 crossover 真正感到的 phase delay。
+
+    ∠H 沿频率连续 unwrap 到目标 ω 再除——AllPass 级联的总相位会越过
+    −π，np.angle 的单点卷绕值会低估甚至变号（4×AllPass(50ps) 在 10 GHz
+    处真值 −8.08 rad 卷绕成 −1.80 rad）。实现：从 ω/10^n_decades 起
+    以固定步长比 march 到 ω，逐点 unwrap；要求每步相位增量 < π，对本
+    文的 block（pure delay/单极点/all-pass/分布式 RC）在 ωτ≲1e4 内成立。
+
+    独立参照：−φ(ωc) = ∫₀^{ωc} τ_g dω（group delay 的积分），bench 用它
+    交叉核对 unwrap 的正确性。
+
+    与 edge.latency（DC group delay 之和）的关系：对上述 block，每段的
+    phase delay ≤ 自身 DC group delay，所以 pd(ω) ≤ latency 恒成立——
+    latency 判据是保守侧。两者只在 pad 的极点落进带内时才在数值上
+    分开（pad 极点在带外时 pd ≈ latency 到 1e-4）。
+    """
+    w_target = float(omega)
+    if w_target <= 0:
+        raise ValueError("omega 必须 > 0")
+    n = int(np.ceil(n_decades * np.log(10.0) / np.log(step)))
+    w = w_target * np.power(step, np.arange(-n, 1))
+    p = np.unwrap(np.angle(edge.H(1j * w)))
+    return float(-p[-1] / w_target)
+
+
 def _weighted_mean(w: np.ndarray, y: np.ndarray, weight) -> float:
     W = np.ones_like(w) if weight is None else np.asarray(weight, dtype=float)
     if W.shape != w.shape:
         raise ValueError("weight 必须与 omega 同形")
     dw = np.diff(w)
-    num = np.sum(0.5 * (y[1:] + y[:-1]) * dw)
+    num = np.sum(0.5 * (W[1:] * y[1:] + W[:-1] * y[:-1]) * dw)
     den = np.sum(0.5 * (W[1:] + W[:-1]) * dw)
     return float(num / den) if den > 0 else float("nan")
 
@@ -393,7 +430,10 @@ class CoupledNets:
     """两条并行 RC 线，耦合电容 C_m（fF），输出节点各带 C_i 到地。
 
     节点方程 (Vin_i−Vo_i)/R_i = sC_iVo_i + sC_m(Vo_i−Vo_j) 给出 2×2 H(s)。
-    高频极限 H_12/H_11 → C_m/(C_2+C_m)：这就是串扰地板，不能靠 buffer 消掉。
+    高频地板有两个不相等的版本（非对称网）：|H_01/H_11| → Cm/(C1+Cm)
+    （crosstalk_hf_victim(1)，纯电容分压）与 |H_01/H_00| →
+    (Cm/(C2+Cm))·(R1/R2)（crosstalk()，带电阻比）。对称网两者重合，
+    crosstalk_hf = Cm/(C2+Cm)。这就是串扰地板，不能靠 buffer 消掉。
     """
 
     R1: float
@@ -416,13 +456,19 @@ class CoupledNets:
         det = m11 * m22 - m12 ** 2
         out = np.empty((w.size, 2, 2), dtype=complex)
         out[:, 0, 0] = m22 / (det * self.R1)
-        out[:, 0, 1] = -m12 / (det * self.R1)
-        out[:, 1, 0] = -m12 / (det * self.R2)
+        out[:, 0, 1] = -m12 / (det * self.R2)
+        out[:, 1, 0] = -m12 / (det * self.R1)
         out[:, 1, 1] = m11 / (det * self.R2)
         return out[0] if scalar else out
 
     def crosstalk(self, omega):
-        """|H_12/H_11|：aggressor 2 → victim 1。"""
+        """|H_12/H_11|：aggressor 2 → victim 1。
+
+        注意（非对称网）：这个比值的分母是 **victim 自己的对角项**
+        H_00（含 1/R1），所以高频地板带 R1/R2 因子：
+        |H_01/H_00| → (Cm/(C2+Cm))·(R1/R2)。纯电容分压（V1/V2）是
+        |H_01/H_11|，见 crosstalk_hf_victim。
+        """
         scalar = np.ndim(omega) == 0
         H = self.H(omega)
         H = H[None, :, :] if scalar else H
@@ -431,7 +477,30 @@ class CoupledNets:
 
     @property
     def crosstalk_hf(self) -> float:
+        """高频串扰地板 Cm/(C2+Cm)。
+
+        这是对称网（R1=R2）的 crosstalk() 极限，也是 |H_01/H_00| 对
+        R1=R2 的值。数值上等于 Cm/(C1+Cm) 仅当 C1=C2；非对称网请用
+        crosstalk_hf_victim 取 victim 自己的对角比值。数值不改动——
+        bench/run_route.py 的 crosstalk 算例依赖它。
+        """
         return float(self.Cm / (self.C2 + self.Cm)) if self.C2 + self.Cm else 0.0
+
+    def crosstalk_hf_victim(self, net: int = 1) -> float:
+        """victim 自对角比值的高频电容分压地板 |H_01/H_11|。
+
+        H_01 = −m12/(det·R2)、H_11 = m11/(det·R2) 共享同一个 R2 因子，
+        所以 |H_01/H_11| → ωCm/(ω(C1+Cm)) = Cm/(C1+Cm)：这是"victim 1
+        节点上，每单位 aggressor 在 victim 2 节点上的电压"的地板，
+        与电阻比无关。net=2 给对称的 Cm/(C2+Cm)（H_10/H_22）。
+        与 crosstalk()（|H_01/H_00|，带 R1/R2 因子）不同——两个地板
+        在非对称网上不相等，混用会把 R 比当成电容比。
+        """
+        if net == 1:
+            return float(self.Cm / (self.C1 + self.Cm)) if self.C1 + self.Cm else 0.0
+        if net == 2:
+            return float(self.Cm / (self.C2 + self.Cm)) if self.C2 + self.Cm else 0.0
+        raise ValueError("net 必须是 1 或 2")
 
 
 def coupled_nets(R: float = 400.0, C: float = 200.0, Cm: float = 20.0) -> CoupledNets:
@@ -505,23 +574,35 @@ def _band(omega_max: float, n: int = 400) -> np.ndarray:
 
 
 def route_closure(edge: RouteEdge, spec: RouteSpec) -> dict:
-    """四条 closure 一次判完；返回每个条件的 pass 与绝对延迟预算。"""
+    """四条 closure 一次判完；返回每个条件的 pass 与绝对延迟预算。
+
+    absolute 判据用的是 **ωc 处的 phase delay** −∠H(jωc)/ωc
+    （phase_delay_at），不是 DC latency：闭环感到的是 crossover 处的
+    相位，deskew 插入的 AllPass pad 在 DC 贡献 τ 的 group delay，但其
+    极点落进带内时在 ωc 处贡献的 phase delay 小于 τ（pd ≤ latency，
+    latency 是保守侧；pad 极点在带外时两者到 1e-4 一致）。两个数都
+    报告：`latency`（DC）与 `phase_delay_omega_c`（判定用量）。
+    """
     w = _band(spec.omega_max, spec.n_grid)
     m = edge_metrics(edge, w, spec.g_ideal, spec.tau_ideal)
     noise_rms = float(np.sqrt(edge.noise_var))
     gain_ok = bool(np.max(m["gain_err"]) <= spec.eps_gain)
     phase_ok = bool(np.max(m["phase_err_deg"]) <= spec.eps_phase_deg)
     noise_ok = bool(noise_rms <= spec.noise_budget)
+    pd_omega = (spec.omega_c if (spec.feedback_critical and spec.omega_c is not None)
+                else spec.omega_max)
+    phase_delay = phase_delay_at(edge, pd_omega)
     if spec.feedback_critical:
         if spec.omega_c is None:
             raise ValueError("feedback_critical 需要 omega_c")
         tau_max = phase_budget(spec.omega_c, spec.phi_reserve_deg)
-        absolute_ok = bool(edge.latency <= tau_max)
+        absolute_ok = bool(phase_delay <= tau_max)
     else:
         tau_max = float("inf")
         absolute_ok = True
     return dict(
         name=edge.name, latency=edge.latency,
+        phase_delay_omega_c=phase_delay,
         latency_class=latency_class(edge.latency),
         noise_rms=noise_rms, tau_max_abs=tau_max,
         eta=m["eta"], f_3db=m["f_3db"],
@@ -564,3 +645,146 @@ def deskew(edges, omega0: float, max_iter: int = 8) -> dict:
         skew_before=float(d0.max() - d0.min()),
         skew_after=float(d1.max() - d1.min()),
     )
+
+
+# ---------------------------------------------------------------------------
+# 闭环 closure：per-edge H_ij → whole-loop（Review item B，§2.8/§6.14）
+# ---------------------------------------------------------------------------
+def loop_gain_matrix(J, edge_map, s):
+    """延迟耦合矩阵 J∘H(s)：edge j→i 把 J_ij 换成 J_ij·H_ij(s)。
+
+    edge_map 是 {(i, j): RouteEdge}；没被覆盖的非零 J_ij 视为瞬时（H=1），
+    零元素不需要 edge。这是 §6.14 的 A∘H(s) 的逐 edge 版本：H_ij 不是
+    一个标量 e^{−sτ}，而是整条 RouteEdge 的 transfer function。
+    """
+    J = np.asarray(J, dtype=float)
+    if J.ndim != 2 or J.shape[0] != J.shape[1]:
+        raise ValueError("J 必须是方阵")
+    s_arr = np.atleast_1d(np.asarray(s, dtype=complex))
+    n = J.shape[0]
+    out = np.zeros((s_arr.size, n, n), dtype=complex)
+    covered = set()
+    for (i, j), edge in edge_map.items():
+        if not (0 <= i < n and 0 <= j < n):
+            raise ValueError("edge_map 下标越界: (%d,%d)" % (i, j))
+        out[:, i, j] = J[i, j] * np.asarray(edge.H(s_arr), dtype=complex)
+        covered.add((i, j))
+    for i in range(n):
+        for j in range(n):
+            if (i, j) not in covered and J[i, j] != 0.0:
+                out[:, i, j] = J[i, j]
+    return out
+
+
+def _sigma_min(M: np.ndarray) -> float:
+    e = np.linalg.eigvalsh(M.conj().T @ M)
+    return float(np.sqrt(max(e[0], 0.0)))
+
+
+def loop_margins(J, edge_map, omega_grid, with_first_order: bool = True) -> dict:
+    """闭环 stability margin：det(jωI − J∘H(jω)) 沿 jω 轴的最近距离。
+
+    返回三件事：
+
+    (a) sigma_min(ω) = σ_min(jωI − J∘H(jω)) 的带内最小值与所在频率。
+        σ_min→0 的邻接近似特征根穿过 jω 轴的位置——这是必要条件探针，
+        不是 DDE 精确根：对 DDE 用 argument principle 找全部根超出范围；
+        标量 1-DOF 的精确参照是 analysis.skew.scalar_dde_root（§6.14）。
+
+    (b) with_first_order=True 时同时给出 E=I+A∘T 版本
+        σ_min(jωE − J)（复用 analysis.skew.delay_mass_matrix，T 取每条
+        edge 的 DC latency）。这是 §6.14 的乐观性检查在 loop 层的重复：
+        一阶模型只在 ωτ≪1 可信。
+
+    (c) S(jω) = [I + L(jω)]⁻¹，L(jω) = J∘H(jω)/(jω) 是把状态注入点
+        割开后的 loop transfer（ẋ = J∘H(D)x 是正反馈互连：延迟后的状态
+        被重新注入，符号折进 L 的定义）。‖S‖∞ 是 1/σ_min(I−L) 的带内
+        峰值；靠近失稳时它发散，比 σ_min 更接近 classical margins。
+    """
+    J = np.asarray(J, dtype=float)
+    w = np.atleast_1d(np.asarray(omega_grid, dtype=float))
+    if np.any(w <= 0):
+        raise ValueError("omega 必须 > 0")
+    n = J.shape[0]
+    eye = np.eye(n)
+    A = loop_gain_matrix(J, edge_map, 1j * w)
+    smin = np.empty(w.size)
+    speak = np.empty(w.size)
+    for k in range(w.size):
+        smin[k] = _sigma_min(1j * w[k] * eye - A[k])
+        speak[k] = 1.0 / _sigma_min(eye - A[k] / (1j * w[k]))
+    i0 = int(np.argmin(smin))
+    i1 = int(np.argmax(speak))
+    out = dict(
+        omega=w, sigma_min=smin, sensitivity_peak=speak,
+        sigma_min_min=float(smin[i0]), omega_at_min=float(w[i0]),
+        S_peak=float(speak[i1]), S_peak_omega=float(w[i1]),
+    )
+    if with_first_order:
+        tau_mat = np.zeros((n, n))
+        for (i, j), edge in edge_map.items():
+            tau_mat[i, j] = edge.latency
+        from analysis.skew import delay_mass_matrix
+        E = delay_mass_matrix(J, tau_mat)
+        smin_fo = np.array([_sigma_min(1j * wk * E - J) for wk in w])
+        j0 = int(np.argmin(smin_fo))
+        out["sigma_min_first_order"] = smin_fo
+        out["sigma_min_min_first_order"] = float(smin_fo[j0])
+        out["omega_at_min_first_order"] = float(w[j0])
+    return out
+
+
+# ---------------------------------------------------------------------------
+# 物理时间/电压 scaling（Review item B 第二半）
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class PhysicalScaling:
+    """模型时间/状态单位 → 硬件物理量的显式换算字段。
+
+    方向（唯一的、显式的）：
+
+        t_phys = alpha · t_model      alpha [s / model-time-unit]
+
+    alpha 是“一个 model-time 单位在硬件上花多少秒”。alpha=1e-6 意味着
+    硬件比模型快 1e6×，硬件看到的频率/特征值是
+
+        omega_phys = omega_model / alpha        lambda_hw = lambda_model / alpha
+
+    所以任何 B_hw 比较**必须**经过 to_physical_band：模型坐标里 8 MHz
+    的模态在 alpha=1e-6 的硬件上是 8 THz 的需求，跳过这一步的带宽
+    verdict 是错的。电压侧同理：x = V / S_x（S_x [V / model-unit]），
+    噪声预算在 V 与 model 单位之间也要过 S_x。
+    """
+
+    S_x: float
+    alpha: float
+    v_swing: float
+
+    def __post_init__(self):
+        if self.S_x <= 0 or self.alpha <= 0 or self.v_swing <= 0:
+            raise ValueError("S_x/alpha/v_swing 必须为正")
+
+    def to_physical_band(self, omega_model):
+        """rad/model-time → rad/s 硬件需求。"""
+        return np.asarray(omega_model, dtype=float) / self.alpha
+
+    def to_model_band(self, omega_phys):
+        """rad/s → rad/model-time。与 to_physical_band 互逆。"""
+        return np.asarray(omega_phys, dtype=float) * self.alpha
+
+    def state_from_voltage(self, V):
+        """x = V / S_x：硬件电压 → 模型状态单位。"""
+        return np.asarray(V, dtype=float) / self.S_x
+
+    def voltage_from_state(self, x):
+        """V = x · S_x。"""
+        return np.asarray(x, dtype=float) * self.S_x
+
+    def noise_budget_model(self, sigma_v: float) -> float:
+        """V 的噪声预算折算到 model 单位（σ_model = σ_V / S_x）。"""
+        return float(sigma_v) / self.S_x
+
+    def bandwidth_pass(self, omega_model, B_hw_hz: float) -> bool:
+        """带宽 verdict：物理需求 |lambda_hw|/(2π) ≤ B_hw [Hz]。"""
+        return bool(np.max(np.abs(self.to_physical_band(omega_model)))
+                    / (2.0 * np.pi) <= float(B_hw_hz))

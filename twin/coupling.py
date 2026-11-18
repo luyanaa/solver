@@ -184,7 +184,7 @@ class InterfaceModel:
     single_source: bool = True     # 单通量源 + 镜像
     mismatch: float = 0.0          # 电流镜增益误差（相对），只在不单源时生效
     extrapolate: bool = False      # 不做 trace 交换，只用对侧单元平均值
-    stale: int = 0                 # trace 交换延迟（步）
+    stale: int = 0                 # trace 交换延迟（步，sample/hold：精确 k 个时间步）
     # --- 真实器件（twin.spice 提取值）---
     mode: str = "ideal"            # ideal | gm
     lam: float = 0.0               # 1/V，gds/ID
@@ -233,13 +233,15 @@ class CoupledSystem:
         a_fv_R = uL_fv[0]                      # A 的右迹（局部岛首单元左面）
         a_fv_L = uR_fv[-1]                     # B 的左迹（局部岛末单元右面）
 
-        # 延迟：两侧都用同一组"旧"迹，因此延迟本身不破坏守恒
+        # 延迟：两侧都用同一组"旧"迹，因此延迟本身不破坏守恒。
+        # interface_fluxes 是 (u, _hist) 的纯函数：只读历史，不推进历史。
+        # 历史由 step() 在每个被接受的时间步推进一次（采样本步初值），
+        # 因此 stale=k 精确表示 k 个物理时间步的 sample/hold 延迟
+        # （分段常数延迟耦合，对应 L4 latch 类；连续 DDE 插值是未来扩展）。
         if self.model.stale > 0:
-            self._hist.append((a_spec_L, a_fv_R, a_fv_L, a_spec_R))
-            if len(self._hist) > self.model.stale:
-                a_spec_L, a_fv_R, a_fv_L, a_spec_R = self._hist.pop(0)
-            else:
-                a_spec_L, a_fv_R, a_fv_L, a_spec_R = self._hist[0]
+            idx = max(0, len(self._hist) - self.model.stale)
+            if self._hist:
+                a_spec_L, a_fv_R, a_fv_L, a_spec_R = self._hist[idx]
 
         if self.model.extrapolate:
             # 只知对侧"平均值"，没有 trace
@@ -285,6 +287,13 @@ class CoupledSystem:
     # ---- RK4 ----
     def step(self, dt: float):
         u = self.u
+        # 采样本步初值的接口迹，推进历史恰好一次（每被接受的时间步）。
+        if self.model.stale > 0:
+            us, uf = self.unpack(u)
+            uL_fv, uR_fv = self.fv.traces(uf, self._lim)
+            self._hist.append((us[-1], uL_fv[0], uR_fv[-1], us[0]))
+            if len(self._hist) > self.model.stale:
+                del self._hist[:len(self._hist) - self.model.stale]
         k1, m1 = self.rhs(u)
         k2, m2 = self.rhs(u + 0.5 * dt * k1)
         k3, m3 = self.rhs(u + 0.5 * dt * k2)

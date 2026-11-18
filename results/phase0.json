@@ -250,9 +250,9 @@
         "stable": false
       },
       "lyapunov": {
-        "sigma_y": 3.632305572629186,
-        "sigma_y2": 13.193643772953038,
-        "rel_residual": 6.437731475789821e-14,
+        "sigma_y": 3.6323055726292695,
+        "sigma_y2": 13.193643772953644,
+        "rel_residual": 6.756431596076319e-14,
         "h2_finite": true,
         "n_stable": 127,
         "method": "qz"
@@ -268,7 +268,7 @@
         "omega": 1.7082024275461442e-06,
         "sigma_min": 0.0,
         "method": "sweep",
-        "Gamma_proj": 36.76324217967588,
+        "Gamma_proj": 36.76324217000237,
         "n_proj": 127,
         "projected": true
       },
@@ -277,7 +277,7 @@
           "noise": NaN,
           "bandwidth": 2.7186886014554377e-06,
           "stiffness": 0.0022217215781996065,
-          "robustness_A": 0.36763242179675876,
+          "robustness_A": 0.3676324217000237,
           "robustness_io": 0.06124887252775304,
           "routing": NaN,
           "representation": 2.5733990126494986
@@ -296,9 +296,9 @@
       },
       "projection": {
         "n": 127,
-        "hinf": 6.1248930924020115,
+        "hinf": 6.124893101632984,
         "method": "hamiltonian",
-        "sweep": 6.124887251254349
+        "sweep": 6.124887260485313
       },
       "regularity": {
         "p": 1.4385004176399947,
@@ -335,9 +335,9 @@
         "stable": false
       },
       "lyapunov": {
-        "sigma_y": 0.18959790224215473,
-        "sigma_y2": 0.03594736453462566,
-        "rel_residual": 1.815798656058921e-14,
+        "sigma_y": 0.18959790224215345,
+        "sigma_y2": 0.03594736453462517,
+        "rel_residual": 4.169118488492203e-14,
         "h2_finite": true,
         "n_stable": 2,
         "method": "qz"
@@ -378,15 +378,15 @@
         ],
         "reasons": {
           "stiffness": "delete modes (QSSA/CSP) or use multirate",
-          "robustness_A": "recondition the slow modes (\u0393_proj), calibrate, or change basis"
+          "robustness_A": "conservative \u0394A only: recondition slow modes, calibrate, or change basis; leakage \u0394A needs drift budget, not \u0393_proj"
         },
         "status": "infeasible"
       },
       "projection": {
         "n": 2,
-        "hinf": 22.36461610001354,
+        "hinf": 22.364616100013112,
         "method": "hamiltonian",
-        "sweep": 22.320914130190385
+        "sweep": 22.320914130189962
       }
     }
   },
@@ -561,9 +561,9 @@
     },
     {
       "name": "Burgers N=128 H\u221e sweep proj vs full",
-      "got": 6.124887251254349,
+      "got": 6.124887260485313,
       "expected": 6.124887252775304,
-      "log10_err": -9.604981757220397,
+      "log10_err": -8.90004323434204,
       "tol": 0.001,
       "passed": true,
       "kind": "rel"
@@ -577,12 +577,147 @@
     },
     {
       "name": "Robertson t=1e4 H\u221e sweep proj vs full",
-      "got": 22.320914130190385,
+      "got": 22.320914130189962,
       "expected": 22.320914130332774,
-      "log10_err": -11.19523489155624,
+      "log10_err": -11.193947322733253,
       "tol": 0.001,
       "passed": true,
       "kind": "rel"
+    },
+    {
+      "name": "DAE index-1 sigma_y2 = 1/2",
+      "got": "0.5",
+      "expected": "0.5",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "dae"
+    },
+    {
+      "name": "DAE index-1 h2_finite",
+      "got": "qz-dae-eliminated",
+      "expected": "True",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "dae"
+    },
+    {
+      "name": "DAE index-1 naive criterion would say inf",
+      "got": "inf (naive: B projects onto algebraic subspace) -> actual qz-dae-eliminated",
+      "expected": "documented",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "dae"
+    },
+    {
+      "name": "DAE index-1 high-freq |H| -> 0",
+      "got": "1e-06",
+      "expected": "<1e-4",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "dae"
+    },
+    {
+      "name": "DAE feedthrough control is inf",
+      "got": "inf",
+      "expected": "inf",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "dae"
+    },
+    {
+      "name": "DAE feedthrough |H| does not decay",
+      "got": "1",
+      "expected": "~1",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "dae"
+    },
+    {
+      "name": "DAE nilpotent (index-2) control is inf",
+      "got": "inf",
+      "expected": "inf",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "dae"
+    },
+    {
+      "name": "P0-G transformed DAE sigma_y2 = 1/2",
+      "got": "0.5",
+      "expected": "0.5",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "dae"
+    },
+    {
+      "name": "P0-G Z-left reduction wrong (regression trap)",
+      "got": "Z-left DC gain 0.7536",
+      "expected": "\u2260 -1",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "dae"
+    },
+    {
+      "name": "P0-G Q-left reduction exact",
+      "got": "Q-left DC gain -1",
+      "expected": "-1",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "dae"
+    },
+    {
+      "name": "P0-G stable_projection eigvals match selection",
+      "got": "[-1.+0.j]",
+      "expected": "[-1.+0.j]",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "dae"
+    },
+    {
+      "name": "P0-G freqresp integral sigma_y2",
+      "got": "0.499965",
+      "expected": "0.5",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "dae"
+    },
+    {
+      "name": "energy-metric Gamma ratio > 1 (metric matters)",
+      "got": "28.8 / 9.91 = 2.9",
+      "expected": "> 1",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "metric"
+    },
+    {
+      "name": "energy-metric Gamma matches brute force",
+      "got": "28.7624897947 vs 28.7624897947",
+      "expected": "equal",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "metric"
+    },
+    {
+      "name": "M=I metric equals bare Gamma",
+      "got": "9.91457251411 vs 9.91457251411",
+      "expected": "equal",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "metric"
     }
   ]
 }

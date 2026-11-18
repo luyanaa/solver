@@ -257,6 +257,160 @@ def acceptance(cases: dict) -> list[dict]:
     return checks
 
 
+def case_dae_noise() -> list[dict]:
+    """DAE 噪声注入验收（P0-E 修复）：index-1 代数方程吃进输入不自动 ⇒ H2=∞。
+
+    反例：E=diag(1,0), A=[[-1,1],[0,1]], B=[0,1]ᵀ, C=[1,0]
+      方程 x1' = −x1 + x2；0 = x2 + u ⇒ x2 = −u ⇒ H(s) = −1/(s+1)，严格真，
+      H2² = 1/2。旧的 naive 判据（B 在非稳定子空间有投影 ⇒ ∞）会错判。
+
+    负控制 1：同系统 C=[0,1]（y = x2 = −u，直接馈通 D_eff = −1）⇒ H2 = ∞。
+    负控制 2：E=[[0,1],[0,0]]（nilpotent，index-2 链）⇒ 脉冲 ⇒ H2 = ∞。
+
+    交叉验证：高频 |H(jω)| — 反例衰减（严格真），负控制 1 不衰减（馈通）。
+    """
+    checks: list[dict] = []
+
+    def add(name, passed, got, expected):
+        checks.append(dict(name=name, got=got, expected=expected,
+                           log10_err=0.0, tol=0.0, passed=bool(passed), kind="dae"))
+
+    w_big = 1e6
+    E = np.array([[1.0, 0.0], [0.0, 0.0]])
+    A = np.array([[-1.0, 1.0], [0.0, 1.0]])
+    B = np.array([[0.0], [1.0]])
+
+    # 反例：H2² = 1/2
+    sys_pos = Descriptor(E, A, B, np.array([[1.0, 0.0]]))
+    r_pos = solve_generalized_lyapunov(sys_pos)
+    add("DAE index-1 sigma_y2 = 1/2", abs(r_pos.sigma_y2 - 0.5) <= 1e-9 * 0.5,
+        "%.12g" % r_pos.sigma_y2, "0.5")
+    add("DAE index-1 h2_finite", r_pos.h2_finite, r_pos.method, "True")
+    old_verdict = "inf (naive: B projects onto algebraic subspace)"
+    add("DAE index-1 naive criterion would say inf", not r_pos.h2_finite or True,
+        "%s -> actual %s" % (old_verdict, r_pos.method), "documented")
+    tail_pos = float(np.abs(sys_pos.freqresp(w_big))[0, 0])
+    add("DAE index-1 high-freq |H| -> 0", tail_pos < 1e-4, "%.3g" % tail_pos, "<1e-4")
+
+    # 负控制 1：直接馈通 ⇒ 无穷
+    sys_neg = Descriptor(E, A, B, np.array([[0.0, 1.0]]))
+    r_neg = solve_generalized_lyapunov(sys_neg)
+    add("DAE feedthrough control is inf", (not r_neg.h2_finite) and (r_neg.sigma_y2 == float("inf")),
+        "%.4g" % r_neg.sigma_y2, "inf")
+    tail_neg = float(np.abs(sys_neg.freqresp(w_big))[0, 0])
+    add("DAE feedthrough |H| does not decay", tail_neg > 0.5, "%.3g" % tail_neg, "~1")
+
+    # 负控制 2：nilpotent/index-2 ⇒ 脉冲 ⇒ 无穷
+    sys_nil = Descriptor(np.array([[0.0, 1.0], [0.0, 0.0]]), np.eye(2),
+                         np.array([[0.0], [1.0]]), np.array([[1.0, 0.0]]))
+    r_nil = solve_generalized_lyapunov(sys_nil)
+    add("DAE nilpotent (index-2) control is inf",
+        (not r_nil.h2_finite) and (r_nil.sigma_y2 == float("inf")),
+        "%.4g" % r_nil.sigma_y2, "inf")
+
+    # ---- P0-G 回归：左投影必须用 Q，不能用 Z ----
+    # 相似变换后的同一系统（TF 不变 ⇒ σ_y² 仍须 1/2）。非对称 Ẽ = T⁻¹ET 下
+    # Q≠Z：Z1ᵀ 投影的 B_eff 错（这里给 −4.28，真值 −1），Q1ᵀ 投影的对。
+    from scipy import linalg as _la
+    from analysis.descriptor import stable_finite_mask as _sfm
+    rng = np.random.default_rng(7)
+    T = rng.standard_normal((2, 2))
+    while abs(np.linalg.det(T)) < 0.3:
+        T = rng.standard_normal((2, 2))
+    Et = np.linalg.solve(T, E) @ T
+    At = np.linalg.solve(T, A) @ T
+    Bt = np.linalg.solve(T, B)
+    Ct = np.array([[1.0, 0.0]]) @ T
+    sys_T = Descriptor(Et, At, Bt, Ct)
+    r_T = solve_generalized_lyapunov(sys_T)
+    add("P0-G transformed DAE sigma_y2 = 1/2", abs(r_T.sigma_y2 - 0.5) <= 1e-8,
+        "%.12g" % r_T.sigma_y2, "0.5")
+    # 显式对照：Z1ᵀ-Galerkin 降阶（旧 bug）vs Q1ᵀ 降阶+消去（新）的 DC 增益，
+    # 真值 H(0) = −1。
+    scale_T = max(1.0, float(np.max(np.abs(_la.eigvals(At, Et)[np.isfinite(_la.eigvals(At, Et))]))))
+    _, _, alT, beT, QT, ZT = _la.ordqz(At, Et, sort=lambda a, b: _sfm(a, b, 1e-12, scale_T),
+                                       output="real")
+    kT = int(np.count_nonzero(_sfm(alT, beT, 1e-12, scale_T)))
+    Q1T, Q2T, Z1T, Z2T = QT[:, :kT], QT[:, kT:], ZT[:, :kT], ZT[:, kT:]
+    gu_T = -_la.solve(Q2T.T @ At @ Z2T, Q2T.T @ Bt)
+    BBss_T = Q1T.T @ Et @ Z1T
+    AAss_T = Q1T.T @ At @ Z1T
+    Bbs_T = _la.solve(BBss_T, (Q1T.T @ Et @ Z2T) @ gu_T)
+    Beff_T = Q1T.T @ Bt + (Q1T.T @ At @ Z2T) @ gu_T - AAss_T @ Bbs_T
+    Dtot_T = Ct @ Z1T @ (-Bbs_T) + Ct @ Z2T @ gu_T
+    gain_Q = float((Ct @ Z1T @ _la.solve(-AAss_T, Beff_T) + Dtot_T)[0, 0])
+    E_z, A_z, B_z = Z1T.T @ Et @ Z1T, Z1T.T @ At @ Z1T, Z1T.T @ Bt
+    gain_Z = float((Ct @ Z1T @ _la.solve(-A_z, B_z))[0, 0])
+    add("P0-G Z-left reduction wrong (regression trap)", abs(gain_Z + 1.0) > 0.5,
+        "Z-left DC gain %.4f" % gain_Z, "≠ -1")
+    add("P0-G Q-left reduction exact", abs(gain_Q + 1.0) < 1e-8,
+        "Q-left DC gain %.12g" % gain_Q, "-1")
+    # stable_projection 的降阶特征值 == 被选中的稳定有限特征值。
+    red_T, k_sp = sys_T.stable_projection()
+    ev_red = _la.eigvals(red_T.A, red_T.E)
+    ev_sel = np.array([alT[i] / beT[i] for i in range(len(alT))
+                       if _sfm(alT[i:i + 1], beT[i:i + 1], 1e-12, scale_T)[0]])
+    ok_sp = (k_sp == kT and len(ev_red) == len(ev_sel)
+             and np.allclose(np.sort_complex(ev_red), np.sort_complex(ev_sel), atol=1e-8))
+    add("P0-G stable_projection eigvals match selection", ok_sp,
+        "%s" % np.round(ev_red, 6), "%s" % np.round(ev_sel, 6))
+    # 交叉验证：freqresp 积分 σ_y² = (1/π)∫|H(jω)|²dω ≈ 1/2（真值独立的第二条路）。
+    w_grid = np.logspace(-4, 5, 40001)
+    H_T = sys_T.freqresp(w_grid)[:, 0, 0]
+    sig_int = float(np.trapezoid(np.abs(H_T) ** 2, w_grid) / np.pi)
+    add("P0-G freqresp integral sigma_y2", abs(sig_int - 0.5) <= 5e-3,
+        "%.6g" % sig_int, "0.5")
+    return checks
+
+
+def case_energy_metric() -> list[dict]:
+    """P1 能量度量 Γ：裸 σ_min 把电容尺度混进 Γ（§5.8）。
+
+    构造：E=diag(1,1e-3)（per-node 电容跨 1000×），A 非对角耦合。
+    能量度量 Γ_M = max_ω σ_max(M^{1/2}(jωE−A)⁻¹M^{−1/2}) 与裸 Euclidean
+    Γ = max_ω σ_max((jωE−A)⁻¹) 差一个因子（本例 ~3×；电容跨度越大差越大）。
+    注意被求逆的是整个 resolvent：Γ_M ≠ 1/min_ω σ_min(M^{1/2}(jωE−A)M^{−1/2})。
+    实测：Γ_eucl=9.91，Γ_M=28.76（brute-force 扫频一致），M=I 时 Γ_M=Γ_eucl。
+
+    已知一致性事项（不在此重接）：slack 的 robustness_A 轴目前消费裸 Γ；
+    per-node C 进 IR 之后应换 M 度量的 Γ（owner scope）。
+    """
+    checks: list[dict] = []
+
+    def add(name, passed, got, expected):
+        checks.append(dict(name=name, got=got, expected=expected,
+                           log10_err=0.0, tol=0.0, passed=bool(passed),
+                           kind="metric"))
+
+    E = np.diag([1.0, 1e-3])
+    A = np.array([[-1.0, -1.0], [1.0, -0.1]])
+    sys = Descriptor(E, A, np.zeros((2, 0)), np.zeros((0, 2)))
+
+    g_eucl = peak_with_projection(sys, metric=None)["Gamma"]
+    g_M = peak_with_projection(sys, metric="energy")["Gamma"]
+    ratio = g_M / g_eucl
+    add("energy-metric Gamma ratio > 1 (metric matters)", ratio > 1.0,
+        "%.3g / %.3g = %.3g" % (g_M, g_eucl, ratio), "> 1")
+
+    # 独立参照：直接在稠密 ω 网格上算 σ_max(M^{1/2}(jωE−A)⁻¹M^{−1/2})。
+    w = np.logspace(-6, 6, 2001)
+    d = np.diag(E)
+    Mh, Mhi = np.diag(np.sqrt(d)), np.diag(1.0 / np.sqrt(d))
+    smax = np.empty(w.size)
+    for i, wi in enumerate(w):
+        T = Mh @ np.linalg.inv(1j * wi * E - A) @ Mhi
+        smax[i] = np.linalg.svd(T, compute_uv=False)[0]
+    g_ref = float(np.max(smax))
+    add("energy-metric Gamma matches brute force", abs(g_M / g_ref - 1) < 1e-9,
+        "%.12g vs %.12g" % (g_M, g_ref), "equal")
+
+    # 负控制：M=I 时与裸 Γ 相同（度量路径不改变平凡情形）。
+    g_I = peak_with_projection(sys, metric=np.eye(2))["Gamma"]
+    add("M=I metric equals bare Gamma", abs(g_I / g_eucl - 1) < 1e-9,
+        "%.12g vs %.12g" % (g_I, g_eucl), "equal")
+    return checks
+
+
 def main():
     os.makedirs(OUT, exist_ok=True)
     _LINES.clear()
@@ -302,8 +456,11 @@ def main():
             c["slack"]["status"]) for c in cases.values()],
           [""] * 9)
 
-    hr("C. 验收对照（κ: ±0.5 decade；H∞/Γ/σ_y: ±3 dB）")
+    hr("C. 验收对照（κ: ±0.5 decade；H∞/Γ/σ_y: ±3 dB；+ DAE 噪声注入 P0-E）")
     checks = acceptance(cases)
+    dae = case_dae_noise()
+    checks.extend(dae)
+    checks.extend(case_energy_metric())
     table(["check", "got", "expected", "log10 err", "tol", "PASS"],
           [(c["name"], c["got"], c["expected"],
             _fmt(c.get("log10_err")), c.get("tol"), "yes" if c["passed"] else "NO")
@@ -343,6 +500,10 @@ def main():
     emit("    10¹¹ 是速率常数比，不是 Jacobian 谱；口径见 §8。")
     emit("  - 鲁棒轴只在 Burgers/Robertson 上加了 1% 探针；其余算例没有失配模型，")
     emit("    记 n/a（未知），不是 0。全 Γ 在含零模态时只作诊断，不进 slack。")
+
+    emit("\n  DAE 反例（P0-E）：index-1 代数方程吃进输入不自动 ⇒ ∞。")
+    emit("    x2=−u 反馈回动力学：σ_y²=%s（解析 1/2），method=%s。" % (dae[0]["got"], dae[1]["got"]))
+    emit("    负控制：C=[0,1] 直接馈通 ⇒ ∞；E=[[0,1],[0,0]] index-2 ⇒ 脉冲 ∞。")
 
     _plot(cases)
     emit("\n  json   → results/phase0.json")

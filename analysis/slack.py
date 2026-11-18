@@ -1,12 +1,22 @@
 """六轴 slack 向量（DESIGN.md §1.2、§7 Phase 0）。
 
-    slack = (σ_y/σ_req, B_req/B_hw, κ_t/κ_hw, Γ_proj‖ΔA‖, ‖H‖∞‖Δu‖,
+    slack = (σ_y/σ_req, B_req/B_hw, κ_t/κ_hw, Γ_proj‖ΔA_cons‖, ‖H‖∞‖Δu‖,
              η_route, E_tail/tol_L2²)
 
-鲁棒轴拆成两个对象：Γ_proj‖ΔA‖ 是"离不稳定还有多远"（器件失配），
+鲁棒轴拆成两个对象：Γ_proj‖ΔA_cons‖ 是"离不稳定还有多远"（器件失配），
 ‖H‖∞‖Δu‖ 是"接口扰动被放大多少"（small-gain）。全 Γ 含守恒零模态的
 s=0 极点，只作诊断，不进 slack——否则 Burgers 这类守恒系统会被误判为
 "无限脆弱"。
+
+Γ_proj 的使用有一个硬前提（P0-D 合同）：ΔA 必须是**保守型**扰动，
+即保持守恒不变子空间（列和/行和结构）不变。验证方法：
+ΔA_conservative ⇒ A+dA 的零模态仍在机器精度内（列和仍为零）。
+一旦 ΔA 是**泄漏型**（两侧注入电流不相等，列和≠0，如电流镜失配
+映射到单条通量边），原来的零模态被激发成有限时间增益或慢漂移，
+Γ_proj 会把真正危险的误差排除。泄漏型扰动必须单独计算质量/电荷
+漂移率（如 coupling.py 的 dM/dt = (F_A_fv−F_A_spec)−(F_B_fv−F_B_spec)）
+或有限时间增益，不得用 Γ_proj‖ΔA‖ 判据。HardwareSpec.delta_A_norm
+的调用方负责声明扰动类型；本模块只按声明计算，不做守恒性检查。
 
 任一已评估轴 > 1 即不可行；inf 是"确定违规"，NaN 表示该轴没有输入
 （例如没有 PEX 就没有 η_route）。不把 NaN 当 0，也不把"未评估"当"可行"。
@@ -29,7 +39,7 @@ _REASONS = {
     "noise": "add C only on nodes with large ||H_i||₂ (σ² = αkT/C)",
     "bandwidth": "shift A_t or widen the hardware window",
     "stiffness": "delete modes (QSSA/CSP) or use multirate",
-    "robustness_A": "recondition the slow modes (Γ_proj), calibrate, or change basis",
+    "robustness_A": "conservative ΔA only: recondition slow modes, calibrate, or change basis; leakage ΔA needs drift budget, not Γ_proj",
     "robustness_io": "lower the interface disturbance or the closed-loop gain",
     "routing": "reduce parasitic or reconfigure the switch matrix",
     "representation": "switch basis or move the singular region to flux tiles",

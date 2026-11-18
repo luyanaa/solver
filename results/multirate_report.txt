@@ -1,0 +1,70 @@
+
+==============================================================================
+Phase 4.3 验收：多速率/分裂合法性（WR + replay + ZOH）
+==============================================================================
+
+==============================================================================
+A. 谱半径：ρ_sup（σ_max small-gain）vs ρ_eig_sup（实际逐频率）
+==============================================================================
+                   split  ρ_sup ρ_eig_sup  gap     peak ω   σ_dc       峰位
+      N_weak (N, c=0.15) 0.7379    0.7379 1.0× 5.04 rad/s 0.0300 interior
+    N_strong (N, c=0.30) 1.4757    1.4757 1.0× 5.04 rad/s 0.0600 interior
+    NN_weak (NN, c=0.15) 0.7379    0.1465 5.0× 5.04 rad/s 0.2346 interior
+  NN_strong (NN, c=1.10) 5.4111    1.0742 5.0× 5.04 rad/s 1.7202 interior
+      replay (N, c=0.08) 0.3935    0.3935 1.0× 5.04 rad/s 0.0160 interior
+  σ_max(G_WR) 沿 ω 有 interior peak；收敛判据是 ρ_sup<1，不是 σ_dc。
+  N（正规）：实测周期 WR 衰减率 0.7500/iter vs ρ_sup 0.7379 —— 合同公式在 G_WR 正规时严格成立。
+  NN（非正规）：实测 0.1482 vs ρ_eig_sup 0.1465 vs σ_max 0.7379 ——实际率由特征值谱半径决定，σ_max 证书保守 5.0×（方向：不漏报发散，可能错杀可收敛分裂）。
+  负控制：N_strong ρ_sup=1.48 发散 ×57.65；NN_strong(c=1.1) ρ_sup=5.41、ρ_eig=1.07 发散 ×2.29 —— 合同对两条都说 NO。
+  IVP 窗口诊断（零初值，因果 Volterra）：实测率 0.1636 ≤ ρ_sup 0.7379，误差 2.1029→3.13039e-07 单调下降 —— ρ_sup 界保守方向成立。
+
+==============================================================================
+B. replay 底噪：平台与 k_max
+==============================================================================
+              quantity     value
+                 ρ_sup    0.3935
+              ε_replay 3.177e-03
+                    e0 3.584e+00
+    R∞ tight (= ρ_sup)    0.3935
+  R∞ loose (resolvent)    4.9191
+            k_max (公式)         8
+             knee (观测)         8
+    plateau 预测 (tight) 2.061e-03
+    plateau 预测 (loose) 2.577e-02
+            plateau 实测 1.328e-03
+   late 迭代速率 (≈1 ⇒ 平台)    0.9982
+  超过 k_max 后误差进 ε_replay 平台——更多迭代不再降低误差。
+
+==============================================================================
+C. ZOH → route：同一套判定机器，不建新机制
+==============================================================================
+           field  zoh_edge manual PureDelay
+         latency 5.000e-07        5.000e-07
+  phase_delay@ωc 5.000e-07        5.000e-07
+       noise_rms   0.0e+00          0.0e+00
+         verdict      True             True
+   pass_absolute      True             True
+  H_ZOH=(1−e^{−sTs})/(sTs)≈e^{−sTs/2}：跨岛 S&H = PureDelay(T_s/2)；混叠是单独的 B_p noise 端口，不进 route 轴。
+
+==============================================================================
+D. 验收
+==============================================================================
+                                                   check                                 got                 expected PASS
+                                            N weak ρ_sup                     0.7379 @ ω=5.04                      < 1  yes
+                       N strong ρ_sup (negative control)                     1.4757 @ ω=5.04                 > 1 (NO)  yes
+                                   interior peak, not DC          σ_dc=0.030 ρ=0.738 @ω=5.04 interior & σ_dc<0.9ρ_sup  yes
+               N measured rate vs ρ_sup (normal ⇒ exact)            0.7500 vs 0.7379 (Δ1.6%)              within ±25%  yes
+                            N rate bracket [σ_dc, ρ_sup]                              0.7500 σ_dc ≤ rate ≤ 1.05·ρ_sup  yes
+                                       N strong diverges         ×57.65 per-iter diff growth                      > 1  yes
+         NN measured rate vs ρ_eig_sup (honest relation)            0.1482 vs 0.1465 (Δ1.2%)              within ±25%  yes
+                   NN σ_max bound conservative but valid rate=0.148 ≤ ρ_sup=0.738 (gap 5.0×)             rate ≤ ρ_sup  yes
+                              NN strong diverges (c=1.1)          ×2.29 per-iter diff growth                      > 1  yes
+  IVP window rate ≤ ρ_sup (Volterra faster, bound holds)              0.1636 vs ρ_sup=0.7379             ≤ 1.05·ρ_sup  yes
+                                 replay plateau vs bound      1.328e-03 vs 2.061e-03 (×0.64)                within ×3  yes
+                                   k_max formula vs knee                     pred 8 vs obs 8              within ±20%  yes
+              plateau stationary (more iters don't help)                     late rate 0.998                ≈1 (>0.9)  yes
+                                zoh_edge latency = T_s/2                         5.000e-07 s              5.000e-07 s  yes
+                  zoh closure ≡ manual PureDelay closure              verdict=True, abs=True          identical dicts  yes
+               zoh passes feedback absolute-delay budget         τ=5.00e-07 ≤ τ_max=1.39e-06            pass_absolute  yes
+
+  16/16 checks passed

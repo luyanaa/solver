@@ -168,20 +168,27 @@ class Descriptor:
     def stable_projection(self, zero_tol: float = 1e-12):
         """QZ 排序取稳定有限谱的 deflating subspace 上的降阶系统。
 
-        Z1 张成稳定有限模态；E_r = Z1ᵀEZ1、A_r = Z1ᵀAZ1、B_r = Z1ᵀB、C_r = CZ1。
+        左投影必须用 Q（不是 Z）：ordqz 返回 Qᵀ A Z = AA、Qᵀ E Z = BB（块上三角），
+        变换后的方程是 BB·ż = AA·z + QᵀB·u，状态坐标在 Z 里但方程行空间在 Q 里。
+        用 Z1ᵀ 当左投影只有 Q=Z（对称 pencil / E=I 且 A 对称）时才等价；
+        非对称奇异 DAE（如 P0-E 反例的推广）下会留下交叉项、给出错误的降阶系统。
+
+        Q1 = Q[:, :k] 张成稳定有限谱的左 deflating subspace：
+        E_r = Q1ᵀ E Z1、A_r = Q1ᵀ A Z1、B_r = Q1ᵀ B、C_r = C Z1。
+        P（状态协方差）回到全空间用 P = Z1 Pr Z1ᵀ（右子空间）。
         守恒零模态（以及不稳定/无限模态）被投影掉，降阶系统正则且严格稳定。
         返回 (Descriptor, k)；k=0 时返回 (None, 0)。
         """
         w = self.finite_eigs()
         scale = max(1.0, float(np.max(np.abs(w))) if w.size else 1.0)
         sort = lambda a, b: stable_finite_mask(a, b, zero_tol, scale)
-        _, _, alpha, beta, _, Z = linalg.ordqz(self.A, self.E, sort=sort, output="real")
+        _, _, alpha, beta, Q, Z = linalg.ordqz(self.A, self.E, sort=sort, output="real")
         k = int(np.count_nonzero(sort(alpha, beta)))
         if k == 0:
             return None, 0
-        Z1 = Z[:, :k]
-        red = Descriptor(Z1.T @ self.E @ Z1, Z1.T @ self.A @ Z1,
-                         Z1.T @ self.B, self.C @ Z1, self.D)
+        Q1, Z1 = Q[:, :k], Z[:, :k]
+        red = Descriptor(Q1.T @ self.E @ Z1, Q1.T @ self.A @ Z1,
+                         Q1.T @ self.B, self.C @ Z1, self.D)
         return red, k
 
     # ---- 频响 ----
