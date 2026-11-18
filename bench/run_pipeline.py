@@ -240,7 +240,7 @@ def reconcile_diffusion(rec, twin, cert, extra, bundle, checks, sigma_y):
                  if float(det_err) < sy else "out-of-band"))
 
 
-def reconcile_poisson(rec, twin, cert, extra, bundle, checks):
+def reconcile_poisson(rec, twin, cert, extra, bundle, checks, spec_p):
     """poisson-2d 对账：松弛孪生收敛到直接解；ε_c（对显式外部时标）违约
     → 证书 rejected；纯稳态走 deadline+residual 事实路径。"""
     from twin.constraint import (ConstraintMesh, residual, relax_time,
@@ -339,7 +339,7 @@ def reconcile_poisson(rec, twin, cert, extra, bundle, checks):
             big.verdict == "FAIL" and big.eps_c is not None and big.eps_c >= 0.01)
         # FAIL 必须到达证书：constraint 证据进 evaluate_sys → rejected，不再
         # "no violation on evaluated axes" 而 FAIL 埋在 side-record 里。
-        cert_neg = evaluate_sys(bundle_p.descriptor, spec_p, scaling=sc,
+        cert_neg = evaluate_sys(bundle.descriptor, spec_p, scaling=sc,
                                 gamma_M=float("inf"), constraint=big.as_dict())
         rec["constraint_big_c"]["cert_status"] = cert_neg.status
         rec["constraint_big_c"]["cert_feasible"] = bool(cert_neg.feasible)
@@ -360,7 +360,7 @@ def reconcile_poisson(rec, twin, cert, extra, bundle, checks):
         tau_ext_slow = tau_relax_big / 1e-3
         okc = solve_constraint(mesh, i_rhs, c_node=1e-6,
                                external_state_timescale=tau_ext_slow)
-        cert_ok = evaluate_sys(bundle_p.descriptor, spec_p, scaling=sc,
+        cert_ok = evaluate_sys(bundle.descriptor, spec_p, scaling=sc,
                                gamma_M=float("inf"), constraint=okc.as_dict())
         rec["constraint_coupled_pass"] = dict(
             eps_c=float(okc.eps_c), external_state_timescale=tau_ext_slow,
@@ -579,7 +579,7 @@ def main():
                           delta_A_norm=None, tol_l2=1e-2, eta_route=None)
     rec_p, twin_p, cert_p, extra_p = drive("poisson-2d", bundle_p, spec_p,
                                            checks, ctrl)
-    reconcile_poisson(rec_p, twin_p, cert_p, extra_p, bundle_p, checks)
+    reconcile_poisson(rec_p, twin_p, cert_p, extra_p, bundle_p, checks, spec_p)
     r0 = rec_p.setdefault("reconciliation", {})
     r0["cert_note"] = (
         "cert on P3 physical-time descriptor (eig=lambda/alpha): bandwidth "
