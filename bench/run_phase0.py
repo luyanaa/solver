@@ -21,11 +21,18 @@ import numpy as np
 from scipy.integrate import solve_ivp
 
 from analysis import (Descriptor, HardwareSpec, evaluate, hinf_norm,
-                      resolvent_peak, shock_sensor, solve_generalized_lyapunov)
+                      peak_with_projection, shock_sensor,
+                      solve_generalized_lyapunov)
 from bench.run_twin_experiments import burgers, face_flux
 
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results")
-HW = HardwareSpec(kappa_hw=1e6, B_hw=10e6, etail_req=1e-4)
+# 表示阈值由 tol_L2=1% 推出 1e-4。
+HW = HardwareSpec(kappa_hw=1e6, B_hw=10e6, tol_l2=1e-2)
+# 鲁棒轴探针：1% 的失配/接口预算，只加在有守恒零模态的两个算例上，
+# 用来验收 QZ 投影。其余算例没有失配模型，鲁棒轴记 NaN（未知），不是 0。
+HW_PROBE = HardwareSpec(kappa_hw=1e6, B_hw=10e6, tol_l2=1e-2,
+                        delta_A_norm=1e-2, delta_input_norm=1e-2)
+_PROBE = {"Burgers N=128", "Robertson t=1e4"}
 _LINES: list[str] = []
 
 
@@ -154,12 +161,13 @@ def diag_closed_form(sys: Descriptor):
 # ==========================================================================
 # 主流程
 # ==========================================================================
-def run_case(name: str, sys: Descriptor, meta: dict, reg=None):
+def run_case(name: str, sys: Descriptor, meta: dict, reg=None, spec: HardwareSpec = HW):
     chk = sys.check()
     lyap = diag_closed_form(sys) if sys.n > 512 else solve_generalized_lyapunov(sys)
     hi = hinf_norm(sys)
-    res = resolvent_peak(sys)
-    sl = evaluate(sys, HW, lyap=lyap, reg=reg, gamma=res["Gamma"])
+    res = peak_with_projection(sys)
+    sl = evaluate(sys, spec, lyap=lyap, reg=reg,
+                  gamma_proj=res["Gamma_proj"], hinf=hi["value"])
     out = dict(
         name=name, n=sys.n, meta=meta, check=chk,
         lyapunov=dict(sigma_y=float(lyap.sigma_y), sigma_y2=float(lyap.sigma_y2),
@@ -168,9 +176,18 @@ def run_case(name: str, sys: Descriptor, meta: dict, reg=None):
         hinf=dict(value=float(hi["value"]), method=hi["method"],
                   sweep=float(hi["sweep"]), rel_diff=float(hi["rel_diff"])),
         resolvent=dict(Gamma=float(res["Gamma"]), omega=float(res["omega"]),
-                       sigma_min=float(res["sigma_min"]), method=res["method"]),
+                       sigma_min=float(res["sigma_min"]), method=res["method"],
+                       Gamma_proj=float(res["Gamma_proj"]), n_proj=int(res["n_proj"]),
+                       projected=bool(res["projected"])),
         slack=sl.as_dict(),
     )
+    if res["projected"]:
+        # 投影后的 H∞ 用来验证：去掉不可控零模态不改变输入输出行为。
+        red, _ = sys.stable_projection()
+        if red is not None:
+            hp = hinf_norm(red)
+            out["projection"] = dict(n=int(res["n_proj"]), hinf=float(hp["value"]),
+                                     method=hp["method"], sweep=float(hp["sweep"]))
     if reg is not None:
         out["regularity"] = dict(p=float(reg["p"]), E_tail=float(reg["E_tail"]),
                                  representation=float(reg["representation"]),
@@ -221,6 +238,22 @@ def acceptance(cases: dict) -> list[dict]:
         ok = (not violated) if axis is None else (axis in violated)
         checks.append(dict(name="%s verdict" % name, got=",".join(violated) or "-",
                            expected=axis or "-", passed=bool(ok), kind="axis"))
+
+    # 鲁棒轴：投影后必须有限，且投影不改变输入输出行为。
+    for key in ("Burgers N=128", "Robertson t=1e4"):
+        c = cases[key]
+        v = c["slack"]["values"]
+        ok = bool(np.isfinite(v["robustness_A"]) and np.isfinite(v["robustness_io"]))
+        checks.append(dict(name="%s robustness finite" % key,
+                           got="%.3g/%.3g" % (v["robustness_A"], v["robustness_io"]),
+                           expected="finite", passed=ok, kind="finite"))
+        if "projection" in c:
+            # 同一扫频网格上比较：投影只去掉不可控零模态，传递函数应逐点一致。
+            hs, hp = c["hinf"]["sweep"], c["projection"]["sweep"]
+            rel = abs(hp - hs) / max(abs(hs), 1e-300)
+            checks.append(dict(name="%s H∞ sweep proj vs full" % key, got=hp, expected=hs,
+                               log10_err=float(np.log10(max(rel, 1e-16))),
+                               tol=1e-3, passed=bool(rel <= 1e-3), kind="rel"))
     return checks
 
 
@@ -244,27 +277,30 @@ def main():
         else:
             sys, meta = item
             reg = None
-        cases[name] = run_case(name, sys, meta, reg=reg)
+        cases[name] = run_case(name, sys, meta, reg=reg,
+                               spec=HW_PROBE if name in _PROBE else HW)
 
-    table(["system", "n", "kappa", "kappa/k_hw", "Gamma", "sigma_y", "B_req[Hz]",
-           "Hinf", "method", "violated"],
+    table(["system", "n", "kappa", "kappa/k_hw", "Gamma", "Gamma_proj", "sigma_y",
+           "B_req[Hz]", "Hinf", "method", "violated"],
           [(c["name"], c["n"], c["check"]["kappa"], c["slack"]["values"]["stiffness"],
-            c["resolvent"]["Gamma"], c["lyapunov"]["sigma_y"],
-            c["check"]["bandwidth_hz"], c["hinf"]["value"], c["hinf"]["method"],
+            c["resolvent"]["Gamma"], c["resolvent"]["Gamma_proj"],
+            c["lyapunov"]["sigma_y"], c["check"]["bandwidth_hz"],
+            c["hinf"]["value"], c["hinf"]["method"],
             ",".join(c["slack"]["violated"]) or "-") for c in cases.values()],
-          ["", "%d", "%.3e", "%.3f", "%.3e", "%.3e", "%.3e", "%.3e", "", ""])
+          ["", "%d", "%.3e", "%.3f", "%.3e", "%.3e", "%.3e", "%.3e", "%.3e", "", ""])
 
-    hr("B. 六轴 slack（1.0 为红线；n/a = 没有输入）")
-    table(["system", "noise", "bandwidth", "stiffness", "robustness", "routing",
-           "representation", "status"],
+    hr("B. 六轴 slack（1.0 为红线；n/a = 没有输入；鲁棒轴在两例上用 1% 探针）")
+    table(["system", "noise", "bandwidth", "stiffness", "robustness_A",
+           "robustness_io", "routing", "representation", "status"],
           [(c["name"], _fmt(c["slack"]["values"]["noise"]),
             _fmt(c["slack"]["values"]["bandwidth"]),
             _fmt(c["slack"]["values"]["stiffness"]),
-            _fmt(c["slack"]["values"]["robustness"]),
+            _fmt(c["slack"]["values"]["robustness_A"]),
+            _fmt(c["slack"]["values"]["robustness_io"]),
             _fmt(c["slack"]["values"]["routing"]),
             _fmt(c["slack"]["values"]["representation"]),
             c["slack"]["status"]) for c in cases.values()],
-          [""] * 8)
+          [""] * 9)
 
     hr("C. 验收对照（κ: ±0.5 decade；H∞/Γ/σ_y: ±3 dB）")
     checks = acceptance(cases)
@@ -287,18 +323,37 @@ def main():
          % (cases["Burgers N=128"]["meta"]["WENO_p"],
             cases["Burgers N=128"]["meta"]["WENO_E_tail"]))
     emit("    所以 representation 轴必须用物理状态算，不能用捕捉格式的输出算。")
-    emit("  - Burgers 的 Γ=∞ 是守恒零模态在 s=0 的极点（A 的 resolvent）；")
-    emit("    输入已投影到零均值，H∞ 仍是有限的 6.1——Γ 与 ‖H‖∞ 不是同一个对象。")
-    emit("  - Robertson 的 κ=%.2e（t=1e4，去掉守恒零模态），判定 stiffness；"
+    burg = cases["Burgers N=128"]
+    emit("  - Burgers 的全 Γ=∞ 是守恒零模态在 s=0 的极点，只作诊断，不进 slack；")
+    emit("    Γ_proj=%.2f（%d 个稳定模态），乘 1%% 失配预算得 robustness_A=%.2f。"
+         % (burg["resolvent"]["Gamma_proj"], burg["resolvent"]["n_proj"],
+            burg["slack"]["values"]["robustness_A"]))
+    emit("    输入已投影到零均值，H∞=%.2f 有限，robustness_io=%.2f——鲁棒轴不是失败轴。"
+         % (burg["hinf"]["value"], burg["slack"]["values"]["robustness_io"]))
+    emit("    表示轴（E_tail/tol_L2²=%.2f）才是。阈值不是魔数：tol_L2=1%% ⇒ 1e-4。"
+         % burg["slack"]["values"]["representation"])
+    emit("  - Robertson 的全 Γ=%.2e 是慢模态的低频尖峰（含零模态）；Γ_proj=%.2e。"
+         % (cases["Robertson t=1e4"]["resolvent"]["Gamma"],
+            cases["Robertson t=1e4"]["resolvent"]["Gamma_proj"]))
+    emit("    robustness_A=%.1f（1%% 失配）与 κ/κ_hw=%.1f 同量级——慢模态是同一根杠杆；"
+         % (cases["Robertson t=1e4"]["slack"]["values"]["robustness_A"],
+            cases["Robertson t=1e4"]["slack"]["values"]["stiffness"]))
+    emit("    κ=%.2e（t=1e4，去掉守恒零模态），判定 stiffness；"
          % cases["Robertson t=1e4"]["check"]["kappa"])
     emit("    10¹¹ 是速率常数比，不是 Jacobian 谱；口径见 §8。")
+    emit("  - 鲁棒轴只在 Burgers/Robertson 上加了 1% 探针；其余算例没有失配模型，")
+    emit("    记 n/a（未知），不是 0。全 Γ 在含零模态时只作诊断，不进 slack。")
 
     _plot(cases)
     emit("\n  json   → results/phase0.json")
     emit("  report → results/phase0_report.txt")
     with open(os.path.join(OUT, "phase0.json"), "w") as fh:
         json.dump(dict(hardware=dict(kappa_hw=HW.kappa_hw, B_hw=HW.B_hw,
-                                     etail_req=HW.etail_req),
+                                     tol_l2=HW.tol_l2, etail_req=HW.etail_req,
+                                     robustness_probe=dict(
+                                         delta_A_norm=HW_PROBE.delta_A_norm,
+                                         delta_input_norm=HW_PROBE.delta_input_norm,
+                                         cases=sorted(_PROBE))),
                        cases=cases, checks=checks), fh, indent=2, default=float)
     with open(os.path.join(OUT, "phase0_report.txt"), "w") as fh:
         fh.write("\n".join(_LINES) + "\n")
@@ -318,7 +373,8 @@ def _plot(cases):
     x = np.arange(len(names))
     series = [
         ("kappa", [cases[n]["check"]["kappa"] for n in names], 1e6, "κ_t", "κ_hw"),
-        ("Gamma", [cases[n]["resolvent"]["Gamma"] for n in names], None, "Γ", None),
+        ("Gamma", [cases[n]["resolvent"]["Gamma_proj"] for n in names], None,
+         "Γ_proj", None),
         ("sigma_y", [cases[n]["lyapunov"]["sigma_y"] for n in names], None, "σ_y", None),
         ("B_req", [cases[n]["check"]["bandwidth_hz"] for n in names], 10e6, "B_req [Hz]", "B_hw"),
     ]

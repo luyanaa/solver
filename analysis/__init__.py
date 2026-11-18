@@ -8,12 +8,12 @@ from .descriptor import Descriptor
 from .hinf import hinf_norm
 from .lyapunov import LyapunovResult, solve_generalized_lyapunov
 from .regularity import energy_tail, fourier_metrics, shock_sensor, tail_exponent
-from .resolvent import resolvent_peak
+from .resolvent import peak_with_projection, resolvent_peak
 from .slack import HardwareSpec, Slack, evaluate
 
 __all__ = [
     "Descriptor", "LyapunovResult", "solve_generalized_lyapunov",
-    "hinf_norm", "resolvent_peak",
+    "hinf_norm", "resolvent_peak", "peak_with_projection",
     "tail_exponent", "energy_tail", "fourier_metrics", "shock_sensor",
     "HardwareSpec", "Slack", "evaluate",
 ]

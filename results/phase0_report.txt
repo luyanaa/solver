@@ -6,48 +6,52 @@ Phase 0：可行性判定器验收
 ==============================================================================
 A. 汇总
 ==============================================================================
-            system    n     kappa kappa/k_hw     Gamma   sigma_y B_req[Hz]      Hinf      method       violated
-    diffusion N=64   64 4.096e+03      0.004 1.000e+03 2.236e+01 6.519e-01 1.000e+03 hamiltonian              -
-  diffusion N=1024 1024 1.049e+06      1.049 1.000e+03 2.236e+01 1.669e+02 1.000e+03       sweep      stiffness
-  biharmonic N=128  128 2.684e+08    268.435 1.000e+08 7.071e+03 4.272e-01 1.038e+08 hamiltonian      stiffness
-     Burgers N=128  128 2.222e+03      0.002       inf 3.632e+00 2.719e+01 6.125e+00       sweep representation
-   Robertson t=1e4    3 6.216e+07     62.162 1.711e+04 1.896e-01 1.425e+03 2.232e+01       sweep      stiffness
+            system    n     kappa kappa/k_hw     Gamma Gamma_proj   sigma_y B_req[Hz]      Hinf      method               violated
+    diffusion N=64   64 4.096e+03      0.004 1.000e+03  1.000e+03 2.236e+01 6.519e-01 1.000e+03 hamiltonian                      -
+  diffusion N=1024 1024 1.049e+06      1.049 1.000e+03  1.000e+03 2.236e+01 1.669e+02 1.000e+03       sweep              stiffness
+  biharmonic N=128  128 2.684e+08    268.435 1.000e+08  1.000e+08 7.071e+03 4.272e-01 1.038e+08 hamiltonian              stiffness
+     Burgers N=128  128 2.222e+03      0.002       inf  3.676e+01 3.632e+00 2.719e+01 6.125e+00       sweep         representation
+   Robertson t=1e4    3 6.216e+07     62.162 1.711e+04  6.193e+03 1.896e-01 1.425e+03 2.232e+01       sweep stiffness,robustness_A
 
 ==============================================================================
-B. 六轴 slack（1.0 为红线；n/a = 没有输入）
+B. 六轴 slack（1.0 为红线；n/a = 没有输入；鲁棒轴在两例上用 1% 探针）
 ==============================================================================
-            system noise bandwidth stiffness robustness routing representation                         status
-    diffusion N=64   n/a  6.52e-08    0.0041        n/a     n/a            n/a no violation on evaluated axes
-  diffusion N=1024   n/a  1.67e-05      1.05        n/a     n/a            n/a                     infeasible
-  biharmonic N=128   n/a  4.27e-08       268        n/a     n/a            n/a                     infeasible
-     Burgers N=128   n/a  2.72e-06   0.00222        n/a     n/a           2.57                     infeasible
-   Robertson t=1e4   n/a  0.000143      62.2        n/a     n/a            n/a                     infeasible
+            system noise bandwidth stiffness robustness_A robustness_io routing representation                         status
+    diffusion N=64   n/a  6.52e-08    0.0041          n/a           n/a     n/a            n/a no violation on evaluated axes
+  diffusion N=1024   n/a  1.67e-05      1.05          n/a           n/a     n/a            n/a                     infeasible
+  biharmonic N=128   n/a  4.27e-08       268          n/a           n/a     n/a            n/a                     infeasible
+     Burgers N=128   n/a  2.72e-06   0.00222        0.368        0.0612     n/a           2.57                     infeasible
+   Robertson t=1e4   n/a  0.000143      62.2         61.9         0.223     n/a            n/a                     infeasible
 
 ==============================================================================
 C. 验收对照（κ: ±0.5 decade；H∞/Γ/σ_y: ±3 dB）
 ==============================================================================
-                             check                  got           expected log10 err   tol PASS
-                  diffusion N=64 κ               4096.0             4096.0         0   0.5  yes
-                  diffusion N=64 Γ               1000.0             1000.0         0  0.15  yes
-                diffusion N=64 σ_y   22.360679774997898 22.360679774997898         0  0.15  yes
-                 diffusion N=64 H∞   1000.0009536742325             1000.0  4.14e-07  0.15  yes
-    diffusion N=64 H∞ ham-vs-sweep  9.5367431640633e-07                0.0     -6.02  0.15  yes
-                diffusion N=1024 κ            1048576.0          1048576.0         0   0.5  yes
-                diffusion N=1024 Γ               1000.0             1000.0         0  0.15  yes
-              diffusion N=1024 σ_y   22.360679774997898 22.360679774997898         0  0.15  yes
-                biharmonic N=128 κ          268435456.0        268435456.0         0   0.5  yes
-                biharmonic N=128 Γ          100000000.0        100000000.0         0  0.15  yes
-              biharmonic N=128 σ_y    7071.067811865475  7071.067811865475         0  0.15  yes
-               biharmonic N=128 H∞    103810108.8639365        100000000.0    0.0162  0.15  yes
-  biharmonic N=128 H∞ ham-vs-sweep 0.038475036621093715                0.0     -1.41  0.15  yes
-  diffusion N=64 Lyapunov residual                  0.0                0.0       -16 1e-10  yes
-            diffusion N=64 verdict                    -                  -       n/a  None  yes
-          diffusion N=1024 verdict            stiffness          stiffness       n/a  None  yes
-          biharmonic N=128 verdict            stiffness          stiffness       n/a  None  yes
-             Burgers N=128 verdict       representation     representation       n/a  None  yes
-           Robertson t=1e4 verdict            stiffness          stiffness       n/a  None  yes
+                                  check                    got           expected log10 err   tol PASS
+                       diffusion N=64 κ                 4096.0             4096.0         0   0.5  yes
+                       diffusion N=64 Γ                 1000.0             1000.0         0  0.15  yes
+                     diffusion N=64 σ_y     22.360679774997898 22.360679774997898         0  0.15  yes
+                      diffusion N=64 H∞     1000.0009536742325             1000.0  4.14e-07  0.15  yes
+         diffusion N=64 H∞ ham-vs-sweep    9.5367431640633e-07                0.0     -6.02  0.15  yes
+                     diffusion N=1024 κ              1048576.0          1048576.0         0   0.5  yes
+                     diffusion N=1024 Γ                 1000.0             1000.0         0  0.15  yes
+                   diffusion N=1024 σ_y     22.360679774997898 22.360679774997898         0  0.15  yes
+                     biharmonic N=128 κ            268435456.0        268435456.0         0   0.5  yes
+                     biharmonic N=128 Γ            100000000.0        100000000.0         0  0.15  yes
+                   biharmonic N=128 σ_y      7071.067811865475  7071.067811865475         0  0.15  yes
+                    biharmonic N=128 H∞      103810108.8639365        100000000.0    0.0162  0.15  yes
+       biharmonic N=128 H∞ ham-vs-sweep   0.038475036621093715                0.0     -1.41  0.15  yes
+       diffusion N=64 Lyapunov residual                    0.0                0.0       -16 1e-10  yes
+                 diffusion N=64 verdict                      -                  -       n/a  None  yes
+               diffusion N=1024 verdict              stiffness          stiffness       n/a  None  yes
+               biharmonic N=128 verdict              stiffness          stiffness       n/a  None  yes
+                  Burgers N=128 verdict         representation     representation       n/a  None  yes
+                Robertson t=1e4 verdict stiffness,robustness_A          stiffness       n/a  None  yes
+        Burgers N=128 robustness finite           0.368/0.0612             finite       n/a  None  yes
+    Burgers N=128 H∞ sweep proj vs full      6.124887251254349  6.124887252775304      -9.6 0.001  yes
+      Robertson t=1e4 robustness finite             61.9/0.223             finite       n/a  None  yes
+  Robertson t=1e4 H∞ sweep proj vs full     22.320914130190385 22.320914130332774     -11.2 0.001  yes
 
-  19/19 checks passed
+  23/23 checks passed
 
 ==============================================================================
 D. 读法
@@ -58,10 +62,16 @@ D. 读法
   - Burgers 的失败轴是 representation：p=1.44、E_tail=2.6e-04（精确解）。
     WENO 捕捉解把 p 抬到 7.28、E_tail 降到 4.4e-05，用 ν_num 换掉了谱尾——
     所以 representation 轴必须用物理状态算，不能用捕捉格式的输出算。
-  - Burgers 的 Γ=∞ 是守恒零模态在 s=0 的极点（A 的 resolvent）；
-    输入已投影到零均值，H∞ 仍是有限的 6.1——Γ 与 ‖H‖∞ 不是同一个对象。
-  - Robertson 的 κ=6.22e+07（t=1e4，去掉守恒零模态），判定 stiffness；
+  - Burgers 的全 Γ=∞ 是守恒零模态在 s=0 的极点，只作诊断，不进 slack；
+    Γ_proj=36.76（127 个稳定模态），乘 1% 失配预算得 robustness_A=0.37。
+    输入已投影到零均值，H∞=6.12 有限，robustness_io=0.06——鲁棒轴不是失败轴。
+    表示轴（E_tail/tol_L2²=2.57）才是。阈值不是魔数：tol_L2=1% ⇒ 1e-4。
+  - Robertson 的全 Γ=1.71e+04 是慢模态的低频尖峰（含零模态）；Γ_proj=6.19e+03。
+    robustness_A=61.9（1% 失配）与 κ/κ_hw=62.2 同量级——慢模态是同一根杠杆；
+    κ=6.22e+07（t=1e4，去掉守恒零模态），判定 stiffness；
     10¹¹ 是速率常数比，不是 Jacobian 谱；口径见 §8。
+  - 鲁棒轴只在 Burgers/Robertson 上加了 1% 探针；其余算例没有失配模型，
+    记 n/a（未知），不是 0。全 Γ 在含零模态时只作诊断，不进 slack。
 
   figure → results/phase0.png
 

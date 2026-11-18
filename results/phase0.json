@@ -2,7 +2,16 @@
   "hardware": {
     "kappa_hw": 1000000.0,
     "B_hw": 10000000.0,
-    "etail_req": 0.0001
+    "tol_l2": 0.01,
+    "etail_req": 0.0001,
+    "robustness_probe": {
+      "delta_A_norm": 0.01,
+      "delta_input_norm": 0.01,
+      "cases": [
+        "Burgers N=128",
+        "Robertson t=1e4"
+      ]
+    }
   },
   "cases": {
     "diffusion N=64": {
@@ -45,21 +54,26 @@
         "Gamma": 1000.0,
         "omega": 0.0,
         "sigma_min": 0.001,
-        "method": "diag"
+        "method": "diag",
+        "Gamma_proj": 1000.0,
+        "n_proj": 64,
+        "projected": false
       },
       "slack": {
         "values": {
           "noise": NaN,
           "bandwidth": 6.518986469044034e-08,
           "stiffness": 0.004096,
-          "robustness": NaN,
+          "robustness_A": NaN,
+          "robustness_io": NaN,
           "routing": NaN,
           "representation": NaN
         },
         "violated": [],
         "unknown": [
           "noise",
-          "robustness",
+          "robustness_A",
+          "robustness_io",
           "routing",
           "representation"
         ],
@@ -107,14 +121,18 @@
         "Gamma": 1000.0,
         "omega": 0.0,
         "sigma_min": 0.001,
-        "method": "diag"
+        "method": "diag",
+        "Gamma_proj": 1000.0,
+        "n_proj": 1024,
+        "projected": false
       },
       "slack": {
         "values": {
           "noise": NaN,
           "bandwidth": 1.6688605360752727e-05,
           "stiffness": 1.048576,
-          "robustness": NaN,
+          "robustness_A": NaN,
+          "robustness_io": NaN,
           "routing": NaN,
           "representation": NaN
         },
@@ -123,7 +141,8 @@
         ],
         "unknown": [
           "noise",
-          "robustness",
+          "robustness_A",
+          "robustness_io",
           "routing",
           "representation"
         ],
@@ -173,14 +192,18 @@
         "Gamma": 100000000.0,
         "omega": 0.0,
         "sigma_min": 1e-08,
-        "method": "diag"
+        "method": "diag",
+        "Gamma_proj": 100000000.0,
+        "n_proj": 128,
+        "projected": false
       },
       "slack": {
         "values": {
           "noise": NaN,
           "bandwidth": 4.272282972352698e-08,
           "stiffness": 268.435456,
-          "robustness": NaN,
+          "robustness_A": NaN,
+          "robustness_io": NaN,
           "routing": NaN,
           "representation": NaN
         },
@@ -189,7 +212,8 @@
         ],
         "unknown": [
           "noise",
-          "robustness",
+          "robustness_A",
+          "robustness_io",
           "routing",
           "representation"
         ],
@@ -243,14 +267,18 @@
         "Gamma": Infinity,
         "omega": 1.7082024275461442e-06,
         "sigma_min": 0.0,
-        "method": "sweep"
+        "method": "sweep",
+        "Gamma_proj": 36.76324217967588,
+        "n_proj": 127,
+        "projected": true
       },
       "slack": {
         "values": {
           "noise": NaN,
           "bandwidth": 2.7186886014554377e-06,
           "stiffness": 0.0022217215781996065,
-          "robustness": NaN,
+          "robustness_A": 0.36763242179675876,
+          "robustness_io": 0.06124887252775304,
           "routing": NaN,
           "representation": 2.5733990126494986
         },
@@ -259,13 +287,18 @@
         ],
         "unknown": [
           "noise",
-          "robustness",
           "routing"
         ],
         "reasons": {
           "representation": "switch basis or move the singular region to flux tiles"
         },
         "status": "infeasible"
+      },
+      "projection": {
+        "n": 127,
+        "hinf": 6.1248930924020115,
+        "method": "hamiltonian",
+        "sweep": 6.124887251254349
       },
       "regularity": {
         "p": 1.4385004176399947,
@@ -319,30 +352,41 @@
         "Gamma": 17107.910590832355,
         "omega": 8.955831772211581e-05,
         "sigma_min": 5.845249159391046e-05,
-        "method": "sweep"
+        "method": "sweep",
+        "Gamma_proj": 6192.569925783178,
+        "n_proj": 2,
+        "projected": true
       },
       "slack": {
         "values": {
           "noise": NaN,
           "bandwidth": 0.00014253648960469223,
           "stiffness": 62.16194957892448,
-          "robustness": NaN,
+          "robustness_A": 61.92569925783179,
+          "robustness_io": 0.22320914130332775,
           "routing": NaN,
           "representation": NaN
         },
         "violated": [
-          "stiffness"
+          "stiffness",
+          "robustness_A"
         ],
         "unknown": [
           "noise",
-          "robustness",
           "routing",
           "representation"
         ],
         "reasons": {
-          "stiffness": "delete modes (QSSA/CSP) or use multirate"
+          "stiffness": "delete modes (QSSA/CSP) or use multirate",
+          "robustness_A": "recondition the slow modes (\u0393_proj), calibrate, or change basis"
         },
         "status": "infeasible"
+      },
+      "projection": {
+        "n": 2,
+        "hinf": 22.36461610001354,
+        "method": "hamiltonian",
+        "sweep": 22.320914130190385
       }
     }
   },
@@ -503,10 +547,42 @@
     },
     {
       "name": "Robertson t=1e4 verdict",
-      "got": "stiffness",
+      "got": "stiffness,robustness_A",
       "expected": "stiffness",
       "passed": true,
       "kind": "axis"
+    },
+    {
+      "name": "Burgers N=128 robustness finite",
+      "got": "0.368/0.0612",
+      "expected": "finite",
+      "passed": true,
+      "kind": "finite"
+    },
+    {
+      "name": "Burgers N=128 H\u221e sweep proj vs full",
+      "got": 6.124887251254349,
+      "expected": 6.124887252775304,
+      "log10_err": -9.604981757220397,
+      "tol": 0.001,
+      "passed": true,
+      "kind": "rel"
+    },
+    {
+      "name": "Robertson t=1e4 robustness finite",
+      "got": "61.9/0.223",
+      "expected": "finite",
+      "passed": true,
+      "kind": "finite"
+    },
+    {
+      "name": "Robertson t=1e4 H\u221e sweep proj vs full",
+      "got": 22.320914130190385,
+      "expected": 22.320914130332774,
+      "log10_err": -11.19523489155624,
+      "tol": 0.001,
+      "passed": true,
+      "kind": "rel"
     }
   ]
 }

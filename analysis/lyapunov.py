@@ -17,7 +17,7 @@ from dataclasses import dataclass
 import numpy as np
 from scipy import linalg
 
-from .descriptor import Descriptor
+from .descriptor import Descriptor, stable_finite_mask
 
 __all__ = ["LyapunovResult", "solve_generalized_lyapunov"]
 
@@ -37,13 +37,6 @@ class LyapunovResult:
     @property
     def sigma_y(self) -> float:
         return float(np.sqrt(max(self.sigma_y2, 0.0)))
-
-
-def _stable_finite(alpha, beta, zero_tol: float, scale: float):
-    finite = np.abs(beta) > 1e-12 * (np.abs(alpha) + np.abs(beta) + 1e-300)
-    with np.errstate(divide="ignore", invalid="ignore"):
-        re = np.real(alpha / np.where(finite, beta, 1.0))
-    return finite & (re < -zero_tol * scale)
 
 
 def solve_generalized_lyapunov(
@@ -75,7 +68,7 @@ def solve_generalized_lyapunov(
     # 奇异/临界：QZ 排序，取稳定有限谱的 deflating subspace。
     w = sys.finite_eigs()
     scale = max(1.0, float(np.max(np.abs(w))) if w.size else 1.0)
-    sort = lambda a, b: _stable_finite(a, b, zero_tol, scale)
+    sort = lambda a, b: stable_finite_mask(a, b, zero_tol, scale)
     AA, BB, alpha, beta, Qz, Z = linalg.ordqz(sys.A, sys.E, sort=sort, output="real")
     k = int(np.count_nonzero(sort(alpha, beta)))
     Z1 = Z[:, :k]

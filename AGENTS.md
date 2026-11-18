@@ -13,7 +13,7 @@ Read `DESIGN.md` before touching code. It is ~620 lines and organized so each se
 Plain Python 3 (stdlib + numpy + scipy + matplotlib). No build step, no packaging, no linter config, no test suite. Run modules from the repo root.
 
     python3 -m bench.run_twin_experiments      # all five twin experiments, ~3 min
-    python3 -m bench.run_phase0                # Phase 0 verdicts, ~2 min, 19/19 checks
+    python3 -m bench.run_phase0                # Phase 0 verdicts, ~2 min, 23/23 checks
     python3 -m twin.spice.extract              # ngspice extraction, every PDK in the dict
     python3 -m twin.spice.extract sky130       # single PDK (~70 s: model loading dominates)
     python3 -m twin.spice.extract ihp-hbt
@@ -68,4 +68,4 @@ Three layers, separated so measurement code never contains a solver and solver c
 
 ## Where the numbers live
 
-`DESIGN.md §6.8` (twin experiments), `§6.9` (PDK extraction) and `§6.10` (Phase 0 analyzer) hold the quantitative record: ideal-mirror drift ~1e-15 (roundoff) versus 1.9e-5 at transistor level, the four-PDK lambda table (HBT 0.028, gf180 0.034, sky130 0.081, IHP MOS 0.970 /V), the drift-vs-lambda ratios (1.23 / 2.38 / 11.97) that confirm the leak mechanism, and the five Phase 0 verdicts (κ=N², κ=N⁴, Burgers → representation, Robertson → stiffness, 19/19 checks). Noise values in §6.9 are derived from `4kTγ/g_m`, not `.noise` output — do not describe them as measured. Cite these rather than re-deriving, and update them when a rerun changes a number.
+`DESIGN.md §6.8` (twin experiments), `§6.9` (PDK extraction) and `§6.10` (Phase 0 analyzer) hold the quantitative record: ideal-mirror drift ~1e-15 (roundoff) versus 1.9e-5 at transistor level, the four-PDK lambda table (HBT 0.028, gf180 0.034, sky130 0.081, IHP MOS 0.970 /V), the drift-vs-lambda ratios (1.23 / 2.38 / 11.97) that confirm the leak mechanism, and the five Phase 0 verdicts (κ=N², κ=N⁴, Burgers → representation, Robertson → stiffness, 23/23 checks). Noise values in §6.9 are derived from `4kTγ/g_m`, not `.noise` output — do not describe them as measured. Cite these rather than re-deriving, and update them when a rerun changes a number.

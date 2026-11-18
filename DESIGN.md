@@ -74,13 +74,19 @@ E 奇异不是缺陷而是特性：代数约束（QSSA 后的快流形、理想�
 
 ### 1.2 可行性不是布尔值，是 slack 向量
 
-编译输出**六个无量纲余量**（不是一维"难度分"）：
+编译输出**六个无量纲余量**（不是一维"难度分"）；其中鲁棒轴拆成失配与接口两路：
 
     slack = ( σ_y/σ_req ,  B_req/B_hw ,  κ_t/κ_hw ,
-              Γ‖Δ‖∞ ,      η_route ,    E_tail )
-              噪声         带宽         刚度        鲁棒   路由   表示
+              Γ_proj‖ΔA‖ ,  ‖H‖∞‖Δu‖ ,  η_route ,  E_tail/tol_L2² )
+              噪声         带宽         刚度
+              鲁棒(失配)    鲁棒(接口)    路由      表示
 
-任一 > 1 即不可行，且**告诉你该拉哪根杠杆**：κ 超 → 删模态；Γ‖Δ‖ 超 → 降 Q / 校准 / 换基；E_tail 超 → 换局部表示；σ_y 超 → 加 C（但只加在 ‖H_i‖₂ 大的节点上）。
+- **Γ_proj** 是 QZ 投影掉守恒零模态后的 resolvent 峰值；全 Γ 在 s=0 处有零模态极点，
+  只作诊断，不进 slack——否则 Burgers 这类守恒系统会被误判为"无限脆弱"。
+- **‖H‖∞‖Δu‖** 是接口扰动的小增益；它与失配轴是两个对象，不能用一个 Γ 代替。
+- **E_tail_req = tol_L2²**：tol_L2=1% 的 L2 表示误差对应 1e-4 的谱尾能量占比。
+
+任一 > 1 即不可行，且**告诉你该拉哪根杠杆**：κ 超 → 删模态；Γ_proj‖ΔA‖ 超 → 降 Q / 校准 / 换基；‖H‖∞‖Δu‖ 超 → 衰减接口扰动或降闭环增益；E_tail 超 → 换局部表示；σ_y 超 → 加 C（但只加在 ‖H_i‖₂ 大的节点上）。
 
 ---
 
@@ -123,7 +129,7 @@ N=64：4×10³（轻松）；N=1024：10⁶（贴边）；biharmonic N=128：2.7
 
     δω₀/ω₀ ~ Q · 2%     ⇒     误差 ~ 1/Q 级
 
-**规则：Q ≲ 50 才允许"免校准"；更高 Q 必须 trimming/校准，或分解为一阶节。** 这就是"2% 的 switch network 在高 Q 环里造成大 pole shift"的定量版，也是 §4 里 Γ‖Δ‖∞ < 1 的工程化形式。
+**规则：Q ≲ 50 才允许"免校准"；更高 Q 必须 trimming/校准，或分解为一阶节。** 这就是"2% 的 switch network 在高 Q 环里造成大 pole shift"的定量版，也是 §1.2 中 Γ_proj‖ΔA‖ < 1 的工程化形式。
 
 ---
 
@@ -236,7 +242,7 @@ R_on 与寄生 C 的冲突（做宽降 R_on、升 C）就体现在 G_c 与 C_c �
 ### 5.3 激波/跳变：三条硬事实
 
 1. 全局谱基遇跳变必然 Gibbs（过冲 ~9%），且指数收敛退化为代数收敛——**不是实现问题**。
-2. shock sensor 用谱尾：拟合 log|a_k| vs log k，指数衰减 → 光滑；代数衰减率 p → 正则性下降；同时看 E_tail = Σ_{k>N/2}|a_k|² / Σ|a_k|²。**必须区分"未解析的陡梯度"和"真激波"**（前者加分辨率，后者换表示）。
+2. shock sensor 用谱尾：拟合 log|a_k| vs log k，指数衰减 → 光滑；代数衰减率 p → 正则性下降；同时看 E_tail = Σ_{k>N/2}|a_k|² / Σ|a_k|²。阈值取 **E_tail_req = tol_L2²**（tol_L2=1% ⇒ 1e-4），它是验收参数，不是自然常数。**必须区分"未解析的陡梯度"和"真激波"**（前者加分辨率，后者换表示）。
 3. wavelet 也不是自动无 Gibbs；基与重构必须显式选，且切换要有**迟滞**，否则在阈值附近抖动，产生开关电荷注入噪声。
 
 ### 5.4 守恒律：flux tile 是最漂亮的模拟原语
@@ -472,29 +478,35 @@ compiler 的 selector 用两个数决定 fitting 还是 capturing：
 
 ### 6.10 Phase 0 判定器：五个验收算例（可复跑）
 
-    python3 -m bench.run_phase0        # ~2 min；19/19 checks passed
+    python3 -m bench.run_phase0        # ~2 min；23/23 checks passed
 
-| 算例 | n | κ_t | κ/κ_hw | Γ | σ_y | B_req | ‖H‖∞ | 方法 | 违规轴 |
-|---|---|---|---|---|---|---|---|---|---|
-| diffusion N=64 | 64 | 4.10e3 | 0.004 | 1.00e3 | 22.4 | 0.65 Hz | 1.00e3 | Hamiltonian | — |
-| diffusion N=1024 | 1024 | 1.05e6 | 1.049 | 1.00e3 | 22.4 | 167 Hz | 1.00e3 | 扫频 | stiffness |
-| biharmonic N=128 | 128 | 2.68e8 | 268 | 1.00e8 | 7.07e3 | 0.43 Hz | 1.04e8 | Hamiltonian | stiffness |
-| Burgers N=128 | 128 | 2.22e3 | 0.002 | ∞* | 3.63 | 27 Hz | 6.13 | 扫频 | representation |
-| Robertson t=1e4 | 3 | 6.22e7 | 62.2 | 1.71e4 | 0.190 | 1.43 kHz | 22.3 | 扫频 | stiffness |
+| 算例 | n | κ_t | κ/κ_hw | Γ | Γ_proj | σ_y | B_req | ‖H‖∞ | 方法 | 违规轴 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| diffusion N=64 | 64 | 4.10e3 | 0.004 | 1.00e3 | 1.00e3 | 22.4 | 0.65 Hz | 1.00e3 | Hamiltonian | — |
+| diffusion N=1024 | 1024 | 1.05e6 | 1.049 | 1.00e3 | 1.00e3 | 22.4 | 167 Hz | 1.00e3 | 扫频 | stiffness |
+| biharmonic N=128 | 128 | 2.68e8 | 268 | 1.00e8 | 1.00e8 | 7.07e3 | 0.43 Hz | 1.04e8 | Hamiltonian | stiffness |
+| Burgers N=128 | 128 | 2.22e3 | 0.002 | ∞* | 36.8 | 3.63 | 27 Hz | 6.13 | 扫频 | representation |
+| Robertson t=1e4 | 3 | 6.22e7 | 62.2 | 1.71e4 | 6.19e3 | 0.190 | 1.43 kHz | 22.3 | 扫频 | stiffness, robustness_A |
 
-\* Burgers 的 Γ=∞ 是守恒零模态在 s=0 的极点（A 的 resolvent）。输入已投影到零均值，所以 ‖H‖∞ 仍是有限的 6.13——Γ 与传递函数范数不是同一个对象。
+\* Burgers 的全 Γ=∞ 是守恒零模态在 s=0 的极点；QZ 投影掉它后 Γ_proj=36.8（127 个稳定模态）。Robertson 的 1.71e4 也是慢模态的低频尖峰，投影后 6.19e3。**全 Γ 只作诊断，进 slack 的是 Γ_proj**——否则守恒系统会被误判为无限脆弱。
 
 四条验收：
 
 1. **κ 与解析式一致（±0.5 decade）**：diffusion κ=N²（4096 / 1.048e6）、biharmonic κ=N⁴（2.684e8），三条全中，log10 误差 0。
 2. **H∞ 与解析值一致（±3 dB）**：diffusion 1/ν=1.00e3、biharmonic 1.00e8；Hamiltonian 与扫频的相对差 9.5e-7 / 3.8%（均 <3 dB）。n>256 只用扫频——2n×2n 稠密特征值不划算。
 3. **σ_y 与解析值一致（±3 dB）**：diffusion √(1/2ν)=22.36、biharmonic 7.07e3；广义 Lyapunov 的相对残差 0（direct 路径）与 6.4e-14（Burgers 的 QZ 路径，127 个稳定模态 + 1 个守恒零模态）。
-4. **判定落在正确的轴**：diffusion N=64 无违规；N=1024 在 κ_hw=1e6 下 1.049×（5% 越界，§2.4 的"贴边"）；biharmonic → stiffness；Burgers → representation；Robertson → stiffness。19/19 全过。
+4. **判定落在正确的轴**：diffusion N=64 无违规；N=1024 在 κ_hw=1e6 下 1.049×（5% 越界，§2.4 的"贴边"）；biharmonic → stiffness；Burgers → representation；Robertson → stiffness，且 robustness_A 同量级。23/23 全过（原 19 条 + 鲁棒轴有限性 2 条 + 投影前后 H∞ 扫频一致性 2 条）。
 
-两个口径决策，已经写进 `analysis/`：
+**鲁棒轴探针**（1% 失配/接口预算，只加在 Burgers/Robertson 上）：Burgers 的
+robustness_A = 36.8×1% = 0.37、robustness_io = 6.13×1% = 0.061，两轴都有限——鲁棒轴不是它的失败轴。
+Robertson 的 robustness_A = 6.19e3×1% = 61.9（与 κ/κ_hw=62.2 同量级，慢模态是同一根杠杆）、
+robustness_io = 22.3×1% = 0.22。其余三个算例没有失配模型，这两轴记 n/a（未知），不是 0。
+
+三个口径决策，已经写进 `analysis/`：
 
 - **κ 只去掉数值零模态**（|λ| < 1e-12·max|λ|），物理慢模态保留。Robertson 的 κ 随观测窗变化：t=1e-3 时 ~5e3、t=1e2 时 4.7e5、t=1e4 时 6.2e7、t=1e6 时 5.1e9；10¹¹ 是速率常数比，不是 Jacobian 谱（§8 已改）。
-- **Burgers 的表示轴必须用物理状态算**：精确解 p=1.44、E_tail=2.6e-4（representation=2.57）；WENO 捕捉解 p=7.28、E_tail=4.4e-5（representation=0.44）。捕捉格式用 ν_num 换掉了谱尾，所以它不能用来证明"表示轴可行"。
+- **鲁棒轴是两个轴**：Γ_proj‖ΔA‖（失配，离不稳定多远）与 ‖H‖∞‖Δu‖（接口，small-gain）。全 Γ 含零模态极点，只进诊断不进 slack；1% 预算只是投影验收的探针，没有失配模型时记 NaN。
+- **表示阈值 = tol_L2²**（默认 1% ⇒ 1e-4）。**Burgers 的表示轴必须用物理状态算**：精确解 p=1.44、E_tail=2.6e-4（representation=2.57）；WENO 捕捉解 p=7.28、E_tail=4.4e-5（representation=0.44）。捕捉格式用 ν_num 换掉了谱尾，所以它不能用来证明"表示轴可行"。
 
 ---
 
@@ -503,7 +515,7 @@ compiler 的 selector 用两个数决定 fitting 还是 capturing：
 ### Phase 0：数字孪生 + 可行性判定器（无硬件）—— 判定器已验收
 - descriptor + 广义 Lyapunov（QZ）+ Hamiltonian 二分：已实现于 `analysis/`，见 §6.10
 - 5 个验收算例 + 四张图：已跑通（`bench/run_phase0.py`）；§8 的 20 个 benchmark 仍待补齐
-- **验收**：diffusion(N=64/1024)、biharmonic(N=128)、Burgers、Robertson 的判定与解析对照 19/19 通过（±3 dB / ±0.5 decade）
+- **验收**：diffusion(N=64/1024)、biharmonic(N=128)、Burgers、Robertson 的判定与解析对照 23/23 通过（±3 dB / ±0.5 decade）
 
 ### Phase 1：单 island（4 积分器 + 1 小 MVM + 比较器）
 - **验收**：实测 σ² = α kT/C 与 σ²τ = α kT/g_m 各在 ±3 dB 内；实测 Q 容差规则（Q = 10/50/200 三档，验证 pole shift ∝ Q·Δ）
@@ -576,9 +588,9 @@ compiler 的 selector 用两个数决定 fitting 还是 capturing：
         ✅ descriptor.py  # E,A,B,C 容器 + 广义特征值 + 频响 + κ/带宽
         ✅ lyapunov.py    # 广义 Lyapunov (QZ) → P, tr(C P Cᵀ)，含残差自检
         ✅ hinf.py        # Hamiltonian 二分 + 扫频交叉验证
-        ✅ resolvent.py   # Γ = 1/min_ω σ_min(jωE−A)；pseudospectra 待补
+        ✅ resolvent.py   # Γ 与 Γ_proj（QZ 投影零模态）；pseudospectra 待补
         ✅ regularity.py  # 谱系数衰减拟合、E_tail、shock sensor
-        ✅ slack.py       # 六轴 slack 向量 + 不可行原因
+        ✅ slack.py       # 六轴 slack 向量（鲁棒拆失配/接口）+ 不可行原因
       lowering/
         split.py          # F = L + N，CSP/QSSA
         basis.py          # T 的候选集 + 条件数税
@@ -605,8 +617,10 @@ compiler 的 selector 用两个数决定 fitting 还是 capturing：
     sys  = Descriptor(E, A, B, C, D)
     ly   = solve_generalized_lyapunov(sys, Q)  # ly.P, ly.sigma_y, ly.rel_residual
     hi   = hinf_norm(sys)                      # hi["value"], hi["method"]
-    res  = resolvent_peak(sys)                 # res["Gamma"], res["omega"]
-    sl   = evaluate(sys, HardwareSpec(...))    # sl.values, sl.violated, sl.status
+    res  = peak_with_projection(sys)           # res["Gamma"], res["Gamma_proj"]
+    sl   = evaluate(sys, HardwareSpec(...),
+                    gamma_proj=res["Gamma_proj"], hinf=hi["value"])
+                                               # sl.values, sl.violated, sl.status
 
 ---
 

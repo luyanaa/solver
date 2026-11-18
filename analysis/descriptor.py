@@ -17,9 +17,17 @@ from dataclasses import dataclass
 import numpy as np
 from scipy import linalg
 
-__all__ = ["Descriptor"]
+__all__ = ["Descriptor", "stable_finite_mask"]
 
 _TINY = 1e-300
+
+
+def stable_finite_mask(alpha, beta, zero_tol: float, scale: float):
+    """QZ 的排序谓词：有限且 Re(λ) < −zero_tol·scale。"""
+    finite = np.abs(beta) > 1e-12 * (np.abs(alpha) + np.abs(beta) + _TINY)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        re = np.real(alpha / np.where(finite, beta, 1.0))
+    return finite & (re < -zero_tol * scale)
 
 
 @dataclass
@@ -156,6 +164,25 @@ class Descriptor:
     def spectral_radius(self) -> float:
         w = self.finite_eigs()
         return float(np.max(np.abs(w))) if w.size else 0.0
+
+    def stable_projection(self, zero_tol: float = 1e-12):
+        """QZ 排序取稳定有限谱的 deflating subspace 上的降阶系统。
+
+        Z1 张成稳定有限模态；E_r = Z1ᵀEZ1、A_r = Z1ᵀAZ1、B_r = Z1ᵀB、C_r = CZ1。
+        守恒零模态（以及不稳定/无限模态）被投影掉，降阶系统正则且严格稳定。
+        返回 (Descriptor, k)；k=0 时返回 (None, 0)。
+        """
+        w = self.finite_eigs()
+        scale = max(1.0, float(np.max(np.abs(w))) if w.size else 1.0)
+        sort = lambda a, b: stable_finite_mask(a, b, zero_tol, scale)
+        _, _, alpha, beta, _, Z = linalg.ordqz(self.A, self.E, sort=sort, output="real")
+        k = int(np.count_nonzero(sort(alpha, beta)))
+        if k == 0:
+            return None, 0
+        Z1 = Z[:, :k]
+        red = Descriptor(Z1.T @ self.E @ Z1, Z1.T @ self.A @ Z1,
+                         Z1.T @ self.B, self.C @ Z1, self.D)
+        return red, k
 
     # ---- 频响 ----
     def freqresp(self, omega) -> np.ndarray:
