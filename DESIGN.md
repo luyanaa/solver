@@ -1520,6 +1520,29 @@ Gamma 与 Bessel 的边界也按 §1.5 执行：Gamma 直接拒绝（native-only
 
 ---
 
+### Stage A 收尾：A4/A8/A9 closeout（`bench/run_stagea.py` + `bench/ledger.py`）
+
+Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆盖；本小节记录 4/5/7 的关闭证据（复跑 `python3 -m bench.run_stagea`，26/26，结果 `results/stagea.json`）：
+
+- **退出条件 4（负控制按预测原因失败）——三个新判定**：
+  - 非正规 shear（A=[[-1,10],[0,-2]]，§8 "非正规 shear + block Schur" 行）：Γ=5.123（与 `results/skew.json` 的 gamma_ideal 对账一致），谱本身良态（对角 Γ=1）——Γ≫1 是基/非正规性，不是谱。换基对照实测：Gramian 对角 scaling（P3 预条件）κ 不变（eig 缩 α 不变性 0.00e+00）；**特征向量基把 Γ 降到对角值 1.000，但 κ(Φ)=cond(V)=20.05，失配总预算 Γ·κ(Φ)=20.05 比原基 5.12 更差**——"禁止病态特征基、用块正交基"是定量结论不是偏好；正交 Schur 基（本例 A 已上三角，基=恒等）保留诚实 Γ。六轴证书下 shear 在已评估轴可行（robustness_A=Γ·ΔA=0.051<1）：Γ≫1 的瞬态增长风险在六轴之外，A8 判定签名照实记录，不判回退。
+  - Van der Pol（μ=1，平衡点线性化 λ=0.5±0.866j）：stable=False 是**预期**（同 Burgers anchor 的口径）；前端 reduce 归类 polynomial；RK4 证实极限环 max|x|≈2.009。六轴签名：不稳定极点使 κ_t 返回退化 inf ⇒ stiffness 轴"违规"——但语义是工点不稳定，不是删模态/多速率问题，判定必须是证书级数字回退/事件调度（§8 HH 行同款 hybrid）。环上工作点是时变（Floquet）线性化，不在判定器范围——记录的限制。
+  - Lorentzian 记忆粘弹性（§8 带核粘弹性行）：Maxwell/SLS 内变量 Markov 嵌入，n = 2 + m（m 个弛豫模态，m=4 时 n=6，≤64 保持有限维）；力→应变频响与解析柔量 J(s)=1/(Ms²+G_e+Σ g_k s/(τ_k s+1)) 对到 4.5e-16；Γ(m=4)=14.3 有限；模态跨度 3 decades 时 κ 从 100 涨到 1e4（极点跨度是代价，与 §5.9 pole-spread 同型）。幂律核 t^{-1/2} **没有有限 Markov 嵌入**（Hölder 奇异，同 Gamma 的拒绝口径）：只能用 Lorentzian 和逼近（相对 L2 误差 m=4→12：0.181→0.013，"辅助状态数 vs 精度"），这是已记录的限制，不是隐藏失败。
+- **退出条件 5（数字回退率已测）**：tally 覆盖 phase0 五系统 + 3 anchors（`results/phase0.json`/`pipeline.json`）+ shear/VdP/viscoelastic 共 11 个 workload，规则 = certificate infeasible/rejected ⇒ 回退（"no violation on evaluated axes" 记模拟，证书只覆盖已评估轴）。**原始 6/11 = 54.5% ⇒ 按 §9 风险 4 的口径，这批语料上机器是"加速器而非求解器"；剔除故意不可行探针（biharmonic、两个 Burgers 激波探针、VdP 平衡点探针）后 2/7 = 28.6%。** 两个数字都报告——语料偏向失败模式探针，不挑好看的那个。真实 workload 的回退原因集中在 stiffness（diffusion N=1024、Robertson）与 representation（Burgers），正是 §8 表预测的绑定轴。
+- **退出条件 7（假设账本已建）**：`bench/ledger.py` 七项假设，每项 = {nominal, sensitivity, sensitivity_definition, source, falsification_observation}，敏感度数字全部现场算自既有机制或引用 results/*.json（不新增拟合），输出 `results/ledger.json`：
+
+  | 假设 | nominal | 敏感度 | 来源/证伪观察 |
+  |---|---|---|---|
+  | kappa_hw | 1e6 | 4.86%（−Δκ_hw 即翻判 diffusion N=1024） | phase0.json；§9 风险 1：实测窗口可能 1e4 |
+  | alpha_B_hw | 10 MHz | 贴在 margin=0.8 ⇒ B_hw 缩 20% 翻判 | scaling.py margin + pipeline.json（0.08→0.8） |
+  | noise_psd | B_noise/B_req=10 | 0.63%/unit ratio（r=10 处亏损实测 6.69%、预测 6.35%） | sde.json A_bandwidth + bandwidth_drop_factor |
+  | mismatch | ε_dev=1% | floor 线性（2%/1%=2.000），0.052 per 1%；1/λ_min 放大 | constraint.mismatch_floor 现场 + constraint.json |
+  | parasitics | 3° 预算 | 2.86°/buffer 级（depth4 11.45° ⇒ 1 级余量） | route.json buffers |
+  | calibration_residual | 2% | isometry ≈17/unit 残差（0.342@2%，标定后 3.46e-15） | transform.json gram + §6.16 |
+  | excess_noise_gamma | α≈1 | d log σ_y/d log α = 1/2（公式精确）；γ_eff 5–10× ⇒ SNR 乐观 7–10 dB | §1.2(B) + §9 风险 3 |
+
+
+
 ## 8. Benchmark 集（每个针对一条尺度律或一条 QoI）
 
 | 系统 | 针对 | 预期判定 |
@@ -1529,10 +1552,10 @@ Gamma 与 Bessel 的边界也按 §1.5 执行：Gamma 直接拒绝（native-only
 | Burgers（激波） | Gibbs + flux tile | 需 basis switching |
 | 线性对流 | 离散守恒 | flux tile 必须 |
 | Robertson | κ ~ 10⁶–10⁹（Jacobian 谱，随 T_obs）/ 10¹¹（速率常数比） | 必须 QSSA/多速率 |
-| 非正规 shear | Γ ≫ 1 | 换基或数字回退 |
-| Van der Pol（stiff 版） | κ + 极限环 | 边界 |
+| 非正规 shear | Γ ≫ 1 | 换基或数字回退（实测 Γ=5.123；特征向量基 Γ=1 但 κ(Φ)=20，总预算更差——run_stagea） |
+| Van der Pol（stiff 版） | κ + 极限环 | 边界（run_stagea：平衡点不稳定 ⇒ 回退/事件调度；reduce=poly；环幅≈2） |
 | HH 神经元 | 事件原语 | 必须 hybrid |
-| 带核的粘弹性 | Lorentzian 展开 | 辅助状态数 vs 精度 |
+| 带核的粘弹性 | Lorentzian 展开 | 辅助状态数 vs 精度（run_stagea：n=2+m 有限 Markov 嵌入，柔量对到 4.5e-16；幂律核无有限嵌入，Lorentzian 和逼近 m=4→12 误差 0.181→0.013） |
 | 分数阶扩散 | s^α 有理逼近 | 同上 |
 | 跨声速翼型（Euler, NACA0012, M≈0.8） | x_s、ν_num、wave drag | fitting 优先，否则窄 capturing |
 | 高超声速 bow shock（驻定） | post-shock T/p/ρ 的 L2 | sharp shock + 高阶后方 |
@@ -1719,6 +1742,16 @@ Gamma 与 Bessel 的边界也按 §1.5 执行：Gamma 直接拒绝（native-only
         ✅ run_compiler.py          # P6 证书聚合层验收（22/22）
         ✅ run_constraint.py        # T10 KCL 松弛孪生验收（44/44）
         ✅ run_pipeline.py          # 3 锚定基准 e2e（符号→证书→孪生核对）（30/30）
+        ✅ run_stagea.py            # A4/A8/A9 收尾：shear 换基判定（Γ 5.12 /
+                                    # scaled / eigvec=1+κ(Φ)=20 税）/ VdP
+                                    # （不稳定工点 ⇒ 回退，reduce=poly）/
+                                    # Lorentzian 粘弹性（n=2+m 有限嵌入）+
+                                    # 数字回退率 tally（6/11=54.5%，剔探针
+                                    # 2/7=28.6%）+ 假设账本（26/26）
+        ✅ ledger.py                # 七项假设敏感度账本 → results/ledger.json
+                                    # （κ_hw 4.86% 翻判 / B_hw margin 0.8 /
+                                    # 噪声 0.63%/unit / 失配线性 / 2.86°/级 /
+                                    # isometry 17·resid / γ_eff log-sens 1/2）
         diffusion.py biharmonic.py burgers.py robertson.py shear.py hh.py
         airfoil.py bore.py front.py   # 20 个 benchmark 待补；3 anchors in bench/problems.py；当前模型在 run_phase0.py 内
       results/                    # report.txt / twin_experiments.json /
@@ -1729,7 +1762,9 @@ Gamma 与 Bessel 的边界也按 §1.5 执行：Gamma 直接拒绝（native-only
                                   # route_report.txt / png / 提取日志 /
                                   # transform.json / transform_report.txt（Phase 4.5）/
                                   # sde.json / sde_report.txt（Phase 6）/
-                                  # substrate.json / substrate_report.txt（A7 异构介质）
+                                  # substrate.json / substrate_report.txt（A7 异构介质）/
+                                  # stagea.json / stagea_report.txt（A4/A8/A9 收尾）/
+                                  # ledger.json（七项假设账本）
 
 关键 API（✅ 已实现；SDE 三行是 Phase 6 的目标接口）：
 

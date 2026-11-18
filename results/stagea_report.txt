@@ -1,0 +1,111 @@
+
+==============================================================================
+Stage A 收尾回归（A4/A8/A9 closeout）
+==============================================================================
+
+==============================================================================
+CASE 1  非正规 shear：Γ vs 换基（scaled / 特征向量 / 块正交 Schur）
+==============================================================================
+  原基 Γ = 5.1225（method=sweep）——瞬态增长来自非对角耦合 10，
+  谱本身良态（λ=-1,-2，对角 Γ=1）：Γ≫1 是基/非正规性，不是谱。
+  (a) scaled 基：Γ=3.98e-08（α=3.98e-08, method=rms3sigma），κ_scaled/κ=1
+      eig(scaled)=eig(sys)/α：max dev=0.00e+00
+  (b) 特征向量基：Γ=1.0000（=1/min|λ| 对角值），κ(Φ)=cond(V)=20.05
+      失配总预算 Γ·κ(Φ)=20.05  vs  原基 Γ=5.12 —— 特征向量基更差。
+  (c) 块正交 Schur 基：A 已上三角 ⇒ 基=恒等，Γ=5.1225（契约口径）。
+  证书（HW_PROBE）：status=no violation on evaluated axes，binding=robustness_A，robustness_A=0.0512
+
+==============================================================================
+CASE 2  Van der Pol：不稳定工点 + 极限环（不强行判可行）
+==============================================================================
+  平衡点线性化：eig = [0.5+0.866j 0.5-0.866j]（不稳定螺旋，Re>0），stable=False
+  κ_t = inf（不稳定极点 ⇒ κ=inf 的退化值），B_req = 0.159 Hz
+  reduce: kind=polynomial（None）
+  slack（六轴）: status=infeasible, violated=['stiffness'], stiffness=inf
+  ⇒ 判定：unstable operating point → 数字回退/事件调度（§8 HH 行同款：
+    极限环系统必须 hybrid；模拟 fabric 只跑环上分段线性化，工点由 supervisor 换。
+    环上工作点是时变（Floquet）线性化，不在本判定器范围——记录的限制。
+  RK4 t∈[50,60] 上 max|x| = 2.009（经典值 ≈ 2，与 mu 无关的一阶）。
+
+==============================================================================
+CASE 3  Lorentzian 记忆粘弹性：有限维 Markov 嵌入（§8 粘弹性行）
+==============================================================================
+  n(m=1) = 3, n(m=4) = 6 —— 描述符按弛豫模态数线性增长，保持有限维。
+  力→应变频响 vs 解析柔量 J(s)=1/(Ms²+G_e+Σ g_k s/(τ_k s+1))：max rel err = 4.54e-16
+  Γ(m=4) = 14.28 @ω=9.78e-08（resolvent sweep）
+  κ_t(m=4) = 100.1，B_req = 1.55 Hz
+  模态跨度 3 decades（τ∈[0.01,100]）：κ_t = 1e+04（vs 100.1 @ 2 decades）
+  t^{-1/2} 核用 Lorentzian 和逼近的相对 L2 误差：m=4: 0.181, m=8: 0.012, m=12: 0.013
+  ⇒ 幂律核没有有限 Markov 嵌入（Hölder 奇异，同 Gamma 的拒绝口径）：
+    这是已记录的限制（模态数换精度），不是隐藏失败。
+  证书（m=4, HW）：status=no violation on evaluated axes，binding=stiffness
+
+==============================================================================
+CASE 4  数字回退率 tally（Stage-A 退出条件 5）
+==============================================================================
+                       workload            source                         status fallback                binding
+                 diffusion N=64            phase0 no violation on evaluated axes        -                      -
+               diffusion N=1024            phase0                     infeasible      YES              stiffness
+               biharmonic N=128            phase0                     infeasible      YES              stiffness
+                  Burgers N=128            phase0                     infeasible      YES         representation
+                Robertson t=1e4            phase0                     infeasible      YES stiffness,robustness_A
+                   diffusion-1d          pipeline no violation on evaluated axes        -              bandwidth
+                     poisson-2d          pipeline no violation on evaluated axes        -              bandwidth
+                     burgers-1d          pipeline                     infeasible      YES         representation
+               non-normal shear run_stagea (live) no violation on evaluated axes        -           robustness_A
+      Van der Pol (equilibrium) run_stagea (live)       unstable operating point      YES                      -
+  viscoelastic Lorentzian (m=4) run_stagea (live) no violation on evaluated axes        -              stiffness
+
+  原始率：6/11 = 54.5% ⇒ verdict=accelerator-not-solver（§9 风险 4 口径）
+  剔除故意不可行探针（Burgers N=128, Van der Pol (equilibrium), biharmonic N=128, burgers-1d）后：2/7 = 28.6%
+  说明：语料偏向失败模式探针；两个数字都报告，不挑好看的那个。
+
+==============================================================================
+CASE 5  七项假设敏感度账本（bench/ledger.py）
+==============================================================================
+
+  七项假设账本（nominal → sensitivity）：
+    kappa_hw               nominal=1e+06     sens=0.04858  [slack_stiffness = κ_t/κ_hw linear in 1/κ_hw; κ(diffusion N=1024)=1.049e+...]
+    alpha_B_hw             nominal=1e+07     sens=0.8  [scaled bandwidth axis sits at margin=0.8 of the window (raw 0.08 → post-...]
+    noise_psd              nominal=10        sens=0.006303  [variance deficit d/dr[1−(2/π)arctan r] = 0.006303 per unit B_noise/B_req...]
+    mismatch               nominal=0.01      sens=5.221  [mismatch floor linear in ε_dev: floor(2%)/floor(1%)=2.000, floor=0.0522 ...]
+    parasitics             nominal=3         sens=2.862  [route phase error 2.86°/buffer level (depth1 2.86°, depth4 11.45° vs 3° ...]
+    calibration_residual   nominal=0.02      sens=17.1  [isometry after right-Gram 3.46e-15; at 2% calibration residual 0.342 (§6...]
+    excess_noise_gamma     nominal=1         sens=0.5  [σ_y² = α·kT/C linear in α, σ_y ∝ √α → d log σ_y/d log α = 1/2 (exact, fo...]
+
+  wrote results/ledger.json
+
+==============================================================================
+VERDICT
+==============================================================================
+                                                             check                                         got                                   expected pass
+                                shear Γ matches run_skew reference                            5.1225 vs 5.1225                                        ±2%  yes
+                         shear Γ ≫ 1 (non-normal, diag value is 1)                                      5.1225                                        > 2  yes
+      scaled basis: κ invariant (preconditioning, not unit change)                                           1                                        1.0  yes
+                                         scaled basis: eig = eig/α                                    0.00e+00                                     < 1e-9  yes
+                           eigenvector basis drops Γ to diag value                                    1.000000                            1.0 (=1/min|λ|)  yes
+                           eigenvector basis tax κ(Φ)=cond(V) > 10                                        20.0                                       > 10  yes
+                  eigvec basis worse overall (Γ·κ(Φ) > Γ_original)                                20.0 vs 5.12                                     bigger  yes
+                 Schur/orthonormal basis keeps honest Γ (contract)                                      5.1225                               = Γ_original  yes
+     shear certificate on evaluated axes (robustness_A = Γ·ΔA < 1)                                      0.0512                                        < 1  yes
+  VdP linearization unstable at equilibrium (expected, documented)                                       False                                      False  yes
+                                  VdP reduce classifies polynomial                                  polynomial                                 polynomial  yes
+      VdP slack flags instability only as degenerate stiffness=inf       violated=['stiffness'], stiffness=inf stiffness=inf, no dedicated stability axis  yes
+                                     VdP limit cycle amplitude ≈ 2                                       2.009                                    2 ± 0.6  yes
+                                     embedding dimension n = 2 + m                              n(1)=3, n(4)=6                                      3 / 6  yes
+                                  embedding stable for m=1 and m=4                                 True / True                                True / True  yes
+                        embedding reproduces Lorentzian compliance                                    4.54e-16                                     < 1e-8  yes
+                         Gamma finite (memory fits the descriptor)                                        14.3                                     finite  yes
+                                      kappa grows with mode spread                                1e+04 vs 100                     3-decade spread larger  yes
+             more Lorentzian modes fit the power-law kernel better                    m=12: 0.013 < m=4: 0.181                                   monotone  yes
+  power-law kernel declared non-embeddable (documented limitation) power-law t^-a: no finite Markovian embe...                                   declared  yes
+                                         tally covers 11 workloads                                          11                                         11  yes
+                                      rate recomputes from entries                                      0.5455                                     0.5455  yes
+                                    verdict follows the >50%% rule                      accelerator-not-solver                     accelerator-not-solver  yes
+                        both rates reported (raw + probe-excluded)                               54.5% / 28.6%                                two numbers  yes
+                                          ledger has 7 assumptions                                           7                                          7  yes
+              every entry has sensitivity + source + falsification                                         all                                      all 7  yes
+
+  26/26 checks passed
+  fallback rate: 6/11 = 54.5% (accelerator-not-solver); excluding probes: 28.6%
+  shear: Γ=5.12, scaled=3.98e-08, eigvec=1 (κ(Φ)=20.0, budget 20.0)

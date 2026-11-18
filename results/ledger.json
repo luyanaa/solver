@@ -1,0 +1,69 @@
+{
+ "n_assumptions": 7,
+ "rule": "sensitivity numbers computed from existing machinery or cited from results/*.json acceptance records; no new fits",
+ "assumptions": [
+  {
+   "name": "kappa_hw",
+   "display": "\u03ba_hw \u9891\u7a97\u5bbd\u5ea6",
+   "nominal_value": 1000000.0,
+   "sensitivity": 0.04857599999999995,
+   "sensitivity_definition": "slack_stiffness = \u03ba_t/\u03ba_hw linear in 1/\u03ba_hw; \u03ba(diffusion N=1024)=1.049e+06 @ \u03ba_hw=1e+06 \u2192 flips verdict at \u0394\u03ba_hw = \u22124.86%",
+   "source": "results/phase0.json (diffusion N=1024 \u03ba=1.0486e6)",
+   "falsification_observation": "measure \u03ba_hw on silicon (\u03c4_min parasitic, \u03c4_max leakage/1f): \u00a79 risk 1 \u2014 real window may be 1e4, halving the feasible PDE set; a workload flips at \u22124.86%"
+  },
+  {
+   "name": "alpha_B_hw",
+   "display": "\u03b1 \u65f6\u95f4\u7f29\u653e / B_hw \u9891\u7a97\u4f4d\u7f6e",
+   "nominal_value": 10000000.0,
+   "sensitivity": 0.8,
+   "sensitivity_definition": "scaled bandwidth axis sits at margin=0.8 of the window (raw 0.08 \u2192 post-scaling 0.8\u00b7B_hw/B_hw); a 20% B_hw reduction flips the verdict",
+   "source": "lowering/scaling.py margin=0.8 + results/pipeline.json (bandwidth 0.08 raw \u2192 0.8 post-scaling)",
+   "falsification_observation": "\u00a76.15 PhysicalScaling verdict flip: comparing raw model bandwidth to B_hw without \u03b1 is the error; 20% B_hw shrink flips every \u03b1-scaled workload"
+  },
+  {
+   "name": "noise_psd",
+   "display": "\u566a\u58f0 PSD / B_noise \u5e26\u5bbd",
+   "nominal_value": 10.0,
+   "sensitivity": 0.00630316606304536,
+   "sensitivity_definition": "variance deficit d/dr[1\u2212(2/\u03c0)arctan r] = 0.006303 per unit B_noise/B_req at r=10 (measured 669.33% deficit at r=10, predicted 634.51%)",
+   "source": "results/sde.json A_bandwidth + twin/noise.bandwidth_drop_factor",
+   "falsification_observation": "\u00a79 risk 8: B_noise insufficient \u21d2 OU variance systematically low \u22656% at B_noise/B_req=10 \u2014 a bias, not noise; PSD convention (two-sided) mix-up is a 3 dB error (\u00a71.3)"
+  },
+  {
+   "name": "mismatch",
+   "display": "\u5668\u4ef6\u5931\u914d \u03b5_dev\uff08Pelgrom\uff09",
+   "nominal_value": 0.01,
+   "sensitivity": 5.221127008273597,
+   "sensitivity_definition": "mismatch floor linear in \u03b5_dev: floor(2%)/floor(1%)=2.000, floor=0.0522 per 1% \u03b5_dev; amplified 1/\u03bb_min (N=128/32 floor ratio 8.61, results/constraint.json)",
+   "source": "twin/constraint.mismatch_floor (live) + results/constraint.json",
+   "falsification_observation": "P0-D contract: \u0393_proj\u2016\u0394A\u2016 is only valid for conservative \u0394A; leakage mismatch must be budgeted by drift (\u221d1/\u03bb_min), else the robustness axis silently under-reports"
+  },
+  {
+   "name": "parasitics",
+   "display": "\u5bc4\u751f / \u8def\u7531\u76f8\u4f4d\u9884\u7b97",
+   "nominal_value": 3.0,
+   "sensitivity": 2.86240522611175,
+   "sensitivity_definition": "route phase error 2.86\u00b0/buffer level (depth1 2.86\u00b0, depth4 11.45\u00b0 vs 3\u00b0 budget \u2192 1-level margin); \u03b7_route per level 4.99%",
+   "source": "results/route.json buffers (2.86\u00b0/level) + crosstalk floor 9.09% (1 mV/V C_m budget)",
+   "falsification_observation": "per-edge passes but the loop fails (\u00a76.15: deskew 3e-7 ps yet 2.15\u00b0 absolute delay violates a 1\u00b0 reserve) \u2014 per-edge contracts are necessary, not sufficient"
+  },
+  {
+   "name": "calibration_residual",
+   "display": "\u6821\u51c6\u6b8b\u5dee\uff08Gram \u6807\u5b9a\uff09",
+   "nominal_value": 0.02,
+   "sensitivity": 17.1,
+   "sensitivity_definition": "isometry after right-Gram 3.46e-15; at 2% calibration residual 0.342 (\u00a76.16 measured) \u2192 d(isometry)/d(residual)\u224817/unit; left-multiply trap: naive isometry 0.032",
+   "source": "results/transform.json gram case + DESIGN \u00a76.16 measured 0.342@2%",
+   "falsification_observation": "\u00a79 risk 2: \u03b8(t) drifts with temperature \u21d2 \u0394A time-varying, H2/H\u221e need periodic recompute; wrong left-Gram multiplication leaves isometry at 0.032 silently"
+  },
+  {
+   "name": "excess_noise_gamma",
+   "display": "\u8fc7\u5269\u566a\u58f0\u56e0\u5b50 \u03b3_eff / \u03b1",
+   "nominal_value": 1.0,
+   "sensitivity": 0.5,
+   "sensitivity_definition": "\u03c3_y\u00b2 = \u03b1\u00b7kT/C linear in \u03b1, \u03c3_y \u221d \u221a\u03b1 \u2192 d log \u03c3_y/d log \u03b1 = 1/2 (exact, formula-derived \u00a71.2(B)); \u00a79 risk 3: real \u03b3_eff 5\u201310\u00d7 nominal \u21d2 SNR budget optimistic by 7\u201310 dB",
+   "source": "\u00a71.2 (B) \u03c3\u00b2=\u03b1kT/C formula (exact log-sensitivity 1/2) + \u00a79 risk 3",
+   "falsification_observation": "real OTA \u03b3_eff and excess noise 5\u201310\u00d7 nominal \u21d2 every \u03c3_y in the certificates is optimistic by 7\u201310 dB; re-measure per-primitive (\u00a7C1), never reuse nominal"
+  }
+ ]
+}

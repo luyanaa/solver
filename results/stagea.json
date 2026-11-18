@@ -1,0 +1,585 @@
+{
+ "cases": {
+  "shear": {
+   "A": [
+    [
+     -1.0,
+     10.0
+    ],
+    [
+     0.0,
+     -2.0
+    ]
+   ],
+   "gamma": 5.1225455325078935,
+   "gamma_scaled": 3.978873577297383e-08,
+   "gamma_eigvec": 1.0,
+   "cond_V": 20.049875621120893,
+   "gamma_eigvec_budget": 20.049875621120893,
+   "gamma_schur": 5.1225455325078935,
+   "alpha": 3.978873577297383e-08,
+   "method": "rms3sigma",
+   "kappa_scaled_over": 1.0,
+   "cert": {
+    "feasible": 0,
+    "status": "no violation on evaluated axes",
+    "slack": {
+     "values": {
+      "noise": "-inf",
+      "bandwidth": 3.183098861837907e-08,
+      "stiffness": 2e-06,
+      "robustness_A": 0.05122545532507894,
+      "robustness_io": 0.010000009536743164,
+      "routing": "-inf",
+      "representation": "-inf"
+     },
+     "violated": [],
+     "unknown": [
+      "noise",
+      "routing",
+      "representation"
+     ],
+     "reasons": {},
+     "status": "no violation on evaluated axes"
+    },
+    "items": {
+     "slack": {
+      "value": {
+       "noise": "-inf",
+       "bandwidth": 3.183098861837907e-08,
+       "stiffness": 2e-06,
+       "robustness_A": 0.05122545532507894,
+       "robustness_io": 0.010000009536743164,
+       "routing": "-inf",
+       "representation": "-inf"
+      },
+      "verdict": "no violation on evaluated axes",
+      "detail": "violated=-, unknown=['noise', 'routing', 'representation']"
+     },
+     "resolvent": {
+      "value": {
+       "Gamma": 5.1225455325078935,
+       "Gamma_proj": 5.1225455325078935,
+       "method": "sweep",
+       "projected": 0
+      },
+      "verdict": "pass",
+      "detail": "\u0393_proj=5.123"
+     },
+     "hinf": {
+      "value": 1.0000009536743164,
+      "verdict": "pass",
+      "detail": "\u2016H\u2016\u221e"
+     },
+     "lyapunov": {
+      "value": {
+       "sigma_y": 0.7071067811865476,
+       "sigma_y2": 0.5,
+       "h2_finite": 1,
+       "method": "direct"
+      },
+      "verdict": "pass",
+      "detail": "\u03c3_y=0.7071 (direct)"
+     }
+    },
+    "binding_axis": "robustness_A",
+    "rejection_reasons": [],
+    "assumptions": [
+     "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+     "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
+    ]
+   }
+  },
+  "vanderpol": {
+   "mu": 1.0,
+   "eig": [
+    {
+     "re": 0.5,
+     "im": 0.8660254037844386
+    },
+    {
+     "re": 0.5,
+     "im": -0.8660254037844386
+    }
+   ],
+   "kappa": "inf",
+   "bandwidth_hz": 0.15915494309189535,
+   "stable": 0,
+   "reduce_kind": "polynomial",
+   "slack": {
+    "values": {
+     "noise": "-inf",
+     "bandwidth": 1.5915494309189534e-08,
+     "stiffness": "inf",
+     "robustness_A": "-inf",
+     "robustness_io": "-inf",
+     "routing": "-inf",
+     "representation": "-inf"
+    },
+    "violated": [
+     "stiffness"
+    ],
+    "unknown": [
+     "noise",
+     "robustness_A",
+     "robustness_io",
+     "routing",
+     "representation"
+    ],
+    "reasons": {
+     "stiffness": "delete modes (QSSA/CSP) or use multirate"
+    },
+    "status": "infeasible"
+   },
+   "limit_cycle_amp": 2.008614543853692,
+   "fallback_reason": "unstable operating point (equilibrium linearization); slack flags it only as degenerate stiffness=inf \u2014 no dedicated stability axis, verdict is certificate-level fallback"
+  },
+  "viscoelastic": {
+   "n_m1": 3,
+   "n_m4": 6,
+   "stable": 1,
+   "compliance_rel_err": 4.544099904795848e-16,
+   "gamma_m4": 14.27729340422163,
+   "kappa_m4": 100.10866376098598,
+   "kappa_spread": 10000.068937299688,
+   "kernel_fit_errs": {
+    "4": 0.18079880806758628,
+    "8": 0.01179940917006309,
+    "12": 0.012759011844063396
+   },
+   "embeddable": "lorentzian-sum: finite (n=2+m)",
+   "non_embeddable": "power-law t^-a: no finite Markovian embedding (documented limitation; Lorentzian-sum is the approximation)",
+   "cert": {
+    "feasible": 0,
+    "status": "no violation on evaluated axes",
+    "slack": {
+     "values": {
+      "noise": "-inf",
+      "bandwidth": 1.5515084830771523e-07,
+      "stiffness": 0.00010010866376098598,
+      "robustness_A": "-inf",
+      "robustness_io": "-inf",
+      "routing": "-inf",
+      "representation": "-inf"
+     },
+     "violated": [],
+     "unknown": [
+      "noise",
+      "robustness_A",
+      "robustness_io",
+      "routing",
+      "representation"
+     ],
+     "reasons": {},
+     "status": "no violation on evaluated axes"
+    },
+    "items": {
+     "slack": {
+      "value": {
+       "noise": "-inf",
+       "bandwidth": 1.5515084830771523e-07,
+       "stiffness": 0.00010010866376098598,
+       "robustness_A": "-inf",
+       "robustness_io": "-inf",
+       "routing": "-inf",
+       "representation": "-inf"
+      },
+      "verdict": "no violation on evaluated axes",
+      "detail": "violated=-, unknown=['noise', 'robustness_A', 'robustness_io', 'routing', 'representation']"
+     },
+     "resolvent": {
+      "value": {
+       "Gamma": 14.27729340422163,
+       "Gamma_proj": 14.27729340422163,
+       "method": "sweep",
+       "projected": 0
+      },
+      "verdict": "pass",
+      "detail": "\u0393_proj=14.28"
+     },
+     "hinf": {
+      "value": 1.8682900257974704,
+      "verdict": "pass",
+      "detail": "\u2016H\u2016\u221e"
+     },
+     "lyapunov": {
+      "value": {
+       "sigma_y": 0.9649804923936295,
+       "sigma_y2": 0.9311873507002517,
+       "h2_finite": 1,
+       "method": "direct"
+      },
+      "verdict": "pass",
+      "detail": "\u03c3_y=0.965 (direct)"
+     }
+    },
+    "binding_axis": "stiffness",
+    "rejection_reasons": [],
+    "assumptions": [
+     "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+     "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
+    ]
+   }
+  },
+  "fallback_rate": {
+   "entries": [
+    {
+     "name": "diffusion N=64",
+     "source": "results/phase0.json",
+     "status": "no violation on evaluated axes",
+     "fallback": 0,
+     "binding_axis": null,
+     "note": null
+    },
+    {
+     "name": "diffusion N=1024",
+     "source": "results/phase0.json",
+     "status": "infeasible",
+     "fallback": 1,
+     "binding_axis": "stiffness",
+     "note": null
+    },
+    {
+     "name": "biharmonic N=128",
+     "source": "results/phase0.json",
+     "status": "infeasible",
+     "fallback": 1,
+     "binding_axis": "stiffness",
+     "note": null
+    },
+    {
+     "name": "Burgers N=128",
+     "source": "results/phase0.json",
+     "status": "infeasible",
+     "fallback": 1,
+     "binding_axis": "representation",
+     "note": null
+    },
+    {
+     "name": "Robertson t=1e4",
+     "source": "results/phase0.json",
+     "status": "infeasible",
+     "fallback": 1,
+     "binding_axis": "stiffness,robustness_A",
+     "note": null
+    },
+    {
+     "name": "diffusion-1d",
+     "source": "results/pipeline.json",
+     "status": "no violation on evaluated axes",
+     "fallback": 0,
+     "binding_axis": "bandwidth",
+     "note": null
+    },
+    {
+     "name": "poisson-2d",
+     "source": "results/pipeline.json",
+     "status": "no violation on evaluated axes",
+     "fallback": 0,
+     "binding_axis": "bandwidth",
+     "note": "poisson-2d: feasible after P3 \u03b1-scaling (cert_note)"
+    },
+    {
+     "name": "burgers-1d",
+     "source": "results/pipeline.json",
+     "status": "infeasible",
+     "fallback": 1,
+     "binding_axis": "representation",
+     "note": null
+    },
+    {
+     "name": "non-normal shear",
+     "source": "run_stagea (live)",
+     "status": "no violation on evaluated axes",
+     "fallback": 0,
+     "binding_axis": "robustness_A",
+     "note": "\u0393=5.12 \u7684\u77ac\u6001\u589e\u957f\u5728\u516d\u8f74\u4e4b\u5916\uff1b\u5757\u6b63\u4ea4\u57fa\u53ef\u89e3\uff0c\u4e0d\u5224\u56de\u9000"
+    },
+    {
+     "name": "Van der Pol (equilibrium)",
+     "source": "run_stagea (live)",
+     "status": "unstable operating point",
+     "fallback": 1,
+     "binding_axis": null,
+     "note": "\u5de5\u70b9\u4e0d\u7a33\u5b9a \u21d2 \u6570\u5b57\u56de\u9000/\u4e8b\u4ef6\u8c03\u5ea6\uff08hybrid\uff09"
+    },
+    {
+     "name": "viscoelastic Lorentzian (m=4)",
+     "source": "run_stagea (live)",
+     "status": "no violation on evaluated axes",
+     "fallback": 0,
+     "binding_axis": "stiffness",
+     "note": null
+    }
+   ],
+   "total": 11,
+   "n_fallback": 6,
+   "rate": 0.5454545454545454,
+   "verdict": "accelerator-not-solver",
+   "n_probe_excluded": 4,
+   "rate_excluding_probes": 0.2857142857142857,
+   "rule": "fallback = certificate infeasible or rejected; 'no violation on evaluated axes' = analog (covers evaluated axes only)"
+  },
+  "ledger": {
+   "n_assumptions": 7,
+   "rule": "sensitivity numbers computed from existing machinery or cited from results/*.json acceptance records; no new fits",
+   "assumptions": [
+    {
+     "name": "kappa_hw",
+     "display": "\u03ba_hw \u9891\u7a97\u5bbd\u5ea6",
+     "nominal_value": 1000000.0,
+     "sensitivity": 0.04857599999999995,
+     "sensitivity_definition": "slack_stiffness = \u03ba_t/\u03ba_hw linear in 1/\u03ba_hw; \u03ba(diffusion N=1024)=1.049e+06 @ \u03ba_hw=1e+06 \u2192 flips verdict at \u0394\u03ba_hw = \u22124.86%",
+     "source": "results/phase0.json (diffusion N=1024 \u03ba=1.0486e6)",
+     "falsification_observation": "measure \u03ba_hw on silicon (\u03c4_min parasitic, \u03c4_max leakage/1f): \u00a79 risk 1 \u2014 real window may be 1e4, halving the feasible PDE set; a workload flips at \u22124.86%"
+    },
+    {
+     "name": "alpha_B_hw",
+     "display": "\u03b1 \u65f6\u95f4\u7f29\u653e / B_hw \u9891\u7a97\u4f4d\u7f6e",
+     "nominal_value": 10000000.0,
+     "sensitivity": 0.8,
+     "sensitivity_definition": "scaled bandwidth axis sits at margin=0.8 of the window (raw 0.08 \u2192 post-scaling 0.8\u00b7B_hw/B_hw); a 20% B_hw reduction flips the verdict",
+     "source": "lowering/scaling.py margin=0.8 + results/pipeline.json (bandwidth 0.08 raw \u2192 0.8 post-scaling)",
+     "falsification_observation": "\u00a76.15 PhysicalScaling verdict flip: comparing raw model bandwidth to B_hw without \u03b1 is the error; 20% B_hw shrink flips every \u03b1-scaled workload"
+    },
+    {
+     "name": "noise_psd",
+     "display": "\u566a\u58f0 PSD / B_noise \u5e26\u5bbd",
+     "nominal_value": 10.0,
+     "sensitivity": 0.00630316606304536,
+     "sensitivity_definition": "variance deficit d/dr[1\u2212(2/\u03c0)arctan r] = 0.006303 per unit B_noise/B_req at r=10 (measured 669.33% deficit at r=10, predicted 634.51%)",
+     "source": "results/sde.json A_bandwidth + twin/noise.bandwidth_drop_factor",
+     "falsification_observation": "\u00a79 risk 8: B_noise insufficient \u21d2 OU variance systematically low \u22656% at B_noise/B_req=10 \u2014 a bias, not noise; PSD convention (two-sided) mix-up is a 3 dB error (\u00a71.3)"
+    },
+    {
+     "name": "mismatch",
+     "display": "\u5668\u4ef6\u5931\u914d \u03b5_dev\uff08Pelgrom\uff09",
+     "nominal_value": 0.01,
+     "sensitivity": 5.221127008273597,
+     "sensitivity_definition": "mismatch floor linear in \u03b5_dev: floor(2%)/floor(1%)=2.000, floor=0.0522 per 1% \u03b5_dev; amplified 1/\u03bb_min (N=128/32 floor ratio 8.61, results/constraint.json)",
+     "source": "twin/constraint.mismatch_floor (live) + results/constraint.json",
+     "falsification_observation": "P0-D contract: \u0393_proj\u2016\u0394A\u2016 is only valid for conservative \u0394A; leakage mismatch must be budgeted by drift (\u221d1/\u03bb_min), else the robustness axis silently under-reports"
+    },
+    {
+     "name": "parasitics",
+     "display": "\u5bc4\u751f / \u8def\u7531\u76f8\u4f4d\u9884\u7b97",
+     "nominal_value": 3.0,
+     "sensitivity": 2.86240522611175,
+     "sensitivity_definition": "route phase error 2.86\u00b0/buffer level (depth1 2.86\u00b0, depth4 11.45\u00b0 vs 3\u00b0 budget \u2192 1-level margin); \u03b7_route per level 4.99%",
+     "source": "results/route.json buffers (2.86\u00b0/level) + crosstalk floor 9.09% (1 mV/V C_m budget)",
+     "falsification_observation": "per-edge passes but the loop fails (\u00a76.15: deskew 3e-7 ps yet 2.15\u00b0 absolute delay violates a 1\u00b0 reserve) \u2014 per-edge contracts are necessary, not sufficient"
+    },
+    {
+     "name": "calibration_residual",
+     "display": "\u6821\u51c6\u6b8b\u5dee\uff08Gram \u6807\u5b9a\uff09",
+     "nominal_value": 0.02,
+     "sensitivity": 17.1,
+     "sensitivity_definition": "isometry after right-Gram 3.46e-15; at 2% calibration residual 0.342 (\u00a76.16 measured) \u2192 d(isometry)/d(residual)\u224817/unit; left-multiply trap: naive isometry 0.032",
+     "source": "results/transform.json gram case + DESIGN \u00a76.16 measured 0.342@2%",
+     "falsification_observation": "\u00a79 risk 2: \u03b8(t) drifts with temperature \u21d2 \u0394A time-varying, H2/H\u221e need periodic recompute; wrong left-Gram multiplication leaves isometry at 0.032 silently"
+    },
+    {
+     "name": "excess_noise_gamma",
+     "display": "\u8fc7\u5269\u566a\u58f0\u56e0\u5b50 \u03b3_eff / \u03b1",
+     "nominal_value": 1.0,
+     "sensitivity": 0.5,
+     "sensitivity_definition": "\u03c3_y\u00b2 = \u03b1\u00b7kT/C linear in \u03b1, \u03c3_y \u221d \u221a\u03b1 \u2192 d log \u03c3_y/d log \u03b1 = 1/2 (exact, formula-derived \u00a71.2(B)); \u00a79 risk 3: real \u03b3_eff 5\u201310\u00d7 nominal \u21d2 SNR budget optimistic by 7\u201310 dB",
+     "source": "\u00a71.2 (B) \u03c3\u00b2=\u03b1kT/C formula (exact log-sensitivity 1/2) + \u00a79 risk 3",
+     "falsification_observation": "real OTA \u03b3_eff and excess noise 5\u201310\u00d7 nominal \u21d2 every \u03c3_y in the certificates is optimistic by 7\u201310 dB; re-measure per-primitive (\u00a7C1), never reuse nominal"
+    }
+   ]
+  }
+ },
+ "checks": [
+  {
+   "name": "shear \u0393 matches run_skew reference",
+   "got": "5.1225 vs 5.1225",
+   "expected": "\u00b12%",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "shear \u0393 \u226b 1 (non-normal, diag value is 1)",
+   "got": "5.1225",
+   "expected": "> 2",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "scaled basis: \u03ba invariant (preconditioning, not unit change)",
+   "got": "1",
+   "expected": "1.0",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "scaled basis: eig = eig/\u03b1",
+   "got": "0.00e+00",
+   "expected": "< 1e-9",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "eigenvector basis drops \u0393 to diag value",
+   "got": "1.000000",
+   "expected": "1.0 (=1/min|\u03bb|)",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "eigenvector basis tax \u03ba(\u03a6)=cond(V) > 10",
+   "got": "20.0",
+   "expected": "> 10",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "eigvec basis worse overall (\u0393\u00b7\u03ba(\u03a6) > \u0393_original)",
+   "got": "20.0 vs 5.12",
+   "expected": "bigger",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "Schur/orthonormal basis keeps honest \u0393 (contract)",
+   "got": "5.1225",
+   "expected": "= \u0393_original",
+   "passed": 1,
+   "kind": "stagea",
+   "note": "\u00a78: \u7981\u6b62\u75c5\u6001\u7279\u5f81\u57fa\uff1b\u0393 \u7684\u6536\u76ca\u4e0d\u80fd\u7528 cond(V) \u7a0e\u6362"
+  },
+  {
+   "name": "shear certificate on evaluated axes (robustness_A = \u0393\u00b7\u0394A < 1)",
+   "got": "0.0512",
+   "expected": "< 1",
+   "passed": 1,
+   "kind": "stagea",
+   "note": "\u0393\u226b1 \u7684\u98ce\u9669\u5728\u516d\u8f74\u4e4b\u5916\uff08\u77ac\u6001\u589e\u957f\uff09\uff0cA8 \u5224\u5b9a\u7b7e\u540d\u7167\u5b9e\u8bb0\u5f55"
+  },
+  {
+   "name": "VdP linearization unstable at equilibrium (expected, documented)",
+   "got": "False",
+   "expected": "False",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "VdP reduce classifies polynomial",
+   "got": "polynomial",
+   "expected": "polynomial",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "VdP slack flags instability only as degenerate stiffness=inf",
+   "got": "violated=['stiffness'], stiffness=inf",
+   "expected": "stiffness=inf, no dedicated stability axis",
+   "passed": 1,
+   "kind": "stagea",
+   "note": "\u03ba_t \u5bf9\u6b63\u5b9e\u90e8\u8fd4\u56de inf \u662f\u9000\u5316\u503c\uff1a\u8bed\u4e49\u662f\u5de5\u70b9\u4e0d\u7a33\u5b9a\uff0c\u4e0d\u662f\u5220\u6a21\u6001/\u591a\u901f\u7387\uff1b\u5224\u5b9a\u5fc5\u987b\u662f\u8bc1\u4e66\u7ea7\u56de\u9000"
+  },
+  {
+   "name": "VdP limit cycle amplitude \u2248 2",
+   "got": "2.009",
+   "expected": "2 \u00b1 0.6",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "embedding dimension n = 2 + m",
+   "got": "n(1)=3, n(4)=6",
+   "expected": "3 / 6",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "embedding stable for m=1 and m=4",
+   "got": "True / True",
+   "expected": "True / True",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "embedding reproduces Lorentzian compliance",
+   "got": "4.54e-16",
+   "expected": "< 1e-8",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "Gamma finite (memory fits the descriptor)",
+   "got": "14.3",
+   "expected": "finite",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "kappa grows with mode spread",
+   "got": "1e+04 vs 100",
+   "expected": "3-decade spread larger",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "more Lorentzian modes fit the power-law kernel better",
+   "got": "m=12: 0.013 < m=4: 0.181",
+   "expected": "monotone",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "power-law kernel declared non-embeddable (documented limitation)",
+   "got": "power-law t^-a: no finite Markovian embe...",
+   "expected": "declared",
+   "passed": 1,
+   "kind": "stagea",
+   "note": "\u8bb0\u5f55\u4e3a\u9650\u5236\uff1bLorentzian \u548c\u662f\u6709\u9650\u7ef4\u8fd1\u4f3c"
+  },
+  {
+   "name": "tally covers 11 workloads",
+   "got": "11",
+   "expected": "11",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "rate recomputes from entries",
+   "got": "0.5455",
+   "expected": "0.5455",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "verdict follows the >50%% rule",
+   "got": "accelerator-not-solver",
+   "expected": "accelerator-not-solver",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "both rates reported (raw + probe-excluded)",
+   "got": "54.5% / 28.6%",
+   "expected": "two numbers",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "ledger has 7 assumptions",
+   "got": "7",
+   "expected": "7",
+   "passed": 1,
+   "kind": "stagea"
+  },
+  {
+   "name": "every entry has sensitivity + source + falsification",
+   "got": "all",
+   "expected": "all 7",
+   "passed": 1,
+   "kind": "stagea"
+  }
+ ],
+ "summary": {
+  "n_checks": 26,
+  "n_passed": 26
+ }
+}

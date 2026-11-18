@@ -27,6 +27,7 @@ Plain Python 3 (stdlib + numpy + scipy + matplotlib). No build step, no packagin
     python3 -m bench.run_constraint            # T10 KCL 松弛孪生, ~4 s, 44/44 checks
     python3 -m bench.run_pipeline              # 3-anchor e2e (spec→cert→twin), ~5 min on this box, 30/30 checks
     python3 -m bench.run_substrate             # A7 MEMS/photonic substrate, ~1.5 min CPU on this box (RK4-heavy), 40/40 checks
+    python3 -m bench.run_stagea                # A4/A8/A9 closeout (shear basis change / VdP / Lorentzian viscoelastic + fallback rate + ledger), ~11 s, 26/26 checks
 
 In the Trae agent shell, prefix ngspice with `env -u LD_LIBRARY_PATH`. The agent
 injects a libstdc++ that ngspice cannot load (`GLIBCXX_3.4.32` missing). A normal
