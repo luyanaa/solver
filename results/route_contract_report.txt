@@ -1,0 +1,62 @@
+B1 per-edge route contracts 验收：route_contract.py + p7.py 集成（DESIGN.md §3.2/§6.15 四判据 → P7 编译输出）
+
+==============================================================================
+EDGE  3-node 链 + feedback 边：per-edge 契约（需求 + verdict + 敏感度）
+==============================================================================
+
+==============================================================================
+P7  generate_config 集成：diffusion-1d 锚点 + 3-node 链
+==============================================================================
+
+==============================================================================
+VIOL  强制长线：verdict 翻 False + pad_can_fix 诚实
+==============================================================================
+
+==============================================================================
+NEG  负控制：纯对角 / 无描述符 / defective 边
+==============================================================================
+
+==============================================================================
+VERDICT
+==============================================================================
+                                                                                                           check                                                                              got                         expected pass
+                                                                edge: one contract per nonzero off-diagonal A_ij                                                                                4                                4  yes
+                                                       edge: exactly two feedback-critical edges (the 0↔1 cycle)                                                                                2                                2  yes
+                                                                       edge: edge set matches A off-diagonal nnz                                                 [(0, 1), (0, 3), (1, 0), (2, 1)]        [(0,1),(0,3),(1,0),(2,1)]  yes
+                                                                  edge: feedback edges are exactly {(0,1),(1,0)}                                                                 [(0, 1), (1, 0)]                    [(0,1),(1,0)]  yes
+                                                                                      edge: weights match |A_ij|                                         (200000.0, 300000.0, 400000.0, 500000.0) (200000, 300000, 400000, 500000)  yes
+                                                                      edge: feedback omega_c finite and positive                                                                        1.058e+06                              > 0  yes
+                                                    edge: feedback tau_max_abs = phase_budget(omega_c) (NOT inf)                                                                      8.246e-08 s                      8.246e-08 s  yes
+  edge: candidate short wire meets absolute budget (deskew-vs-absolute: common delay doesn't rescue a violation)                                                      pd 2.06e-08 <= tau 8.25e-08               pass_absolute True  yes
+                                                           edge: phase_delay_at(omega_c) <= tau_max on candidate                                                                         2.06e-08                      <= 8.25e-08  yes
+                                                  edge: non-feedback edges trivially absolute_ok with inf budget                                                                     (True, True)                         all True  yes
+                                                   edge: all candidate edges pass gain/phase/noise on short wire ((True, True, True), (True, True, True), (True, True, True), (True, True, True))                         all True  yes
+                                          edge: eta_route within the spec budget (phase+gain, <= rad(eps_phase))                                                                         2.18e-02                        <= 0.0524  yes
+                                                               edge: latency class recorded and in the valid set                                                                     ('L0', 'L4')                 subset of L0..L4  yes
+                               edge: 1/|A_ij| sensitivity ordering (hf_tau_tol ascending with |A_ij| descending)                                     1.05e-07 -> 1.31e-07 -> 1.75e-07 -> 2.62e-07                         monotone  yes
+                                                                      edge: hf_tau_tol == eps_phi/|A_ij| exactly                                                                         1.05e-07                         1.05e-07  yes
+                                        edge: resolvent pair identity tau_tol * S_tau == eps_phi (exact inverse)                                                                        0.0523599                        0.0523599  yes
+                                                                    edge: S_tau = omega*|A_ij|*||resolvent|| > 0                                                                         2.83e+05                              > 0  yes
+                                                             edge: report round-trips through JSON (4 contracts)                                                                                4                                4  yes
+                                                                        p7: Config carries route_contracts field                                                                             list                             list  yes
+                     p7: contract count == off-diagonal nnz of A (diffusion: diagonal => 0, a true 'no routing')                                                                                0                                0  yes
+                                                p7: aggregate 'route-edges' ElementConfig kept (backward compat)                                                                             True                          present  yes
+                                                         p7: Config JSON round-trip includes route_contracts key                                                                             True                             True  yes
+                                                                  p7: chain => 4 contracts, 1 feedback in Config                                                                           (4, 2)                           (4, 2)  yes
+                                                    p7: contract names carry state names from discretized.states                                                                           x1->x0                      state names  yes
+                                                                              p7: source records contract counts                                                                           (4, 2)                           (4, 2)  yes
+                                                         p7: each contract carries the four closure verdict keys                       ('pass_absolute', 'pass_gain', 'pass_noise', 'pass_phase')        gain/noise/phase/absolute  yes
+                                                          viol: forced long wire flips feedback verdict to False                                                                            False                            False  yes
+                            viol: failure is the absolute-delay criterion (phase_delay >> tau_max), not invented                                                       pd 2.18e-06 > tau 8.25e-08              pass_absolute False  yes
+              viol: pad_can_fix=False on feedback edge (deskew negative control: matched delay != instantaneous)                                                                            False                            False  yes
+                                                             viol: non-feedback long wire still pad_can_fix=True                                                                     (True, True)                         all True  yes
+                                                          viol: contract-level verdict property reflects failure                                                     (False, False, False, False)                     not all True  yes
+                                                        viol: non-feedback failure lands in pad-fixable criteria                                                                                2                                2  yes
+                                        neg: diagonal A => empty contract list (true 'no routing', not an error)                                                                                0                                0  yes
+                                      neg: burgers (descriptor=None, no explicit edges) => empty, not fabricated                                                                                0                                0  yes
+                                                 neg: NaN edge flagged, finite edge NOT flagged (per-edge scope)                                                                        (2, 1, 1)                        (2, 1, 1)  yes
+                                          neg: flagged contract carries a defective reason; verdict not all True                                                      defective edge: |A_ij| n...                        defective  yes
+                                                      neg: inf edge flagged with reason; finite edge passes spec                                              (1, 'defective edge: |A_ij|...', 1)                       >0 flagged  yes
+                                                     neg: derive_coupling_edges returns [] + J for diagonal desc                                                                        (0, True)                        (0, True)  yes
+
+  38/38 checks passed

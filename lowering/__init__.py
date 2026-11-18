@@ -20,6 +20,8 @@ from .scaling import (ScalingResult, alpha_for_bandwidth, gramian_scaling,
                       state_scale_from_ranges)
 from .closure import ClosureResult, fourier_project_field, project_spectral
 from .split import GAP_MIN, SplitResult, cvsplit, qssa_reduce
+from .route_contract import (EdgeRouteContract, RouteContractReport,
+                            derive_coupling_edges, emit_route_contracts)
 from .p7 import CalibPlan, Config, ElementConfig, generate_config
 
 __all__ = [
@@ -33,6 +35,8 @@ __all__ = [
     "ScalingResult", "gramian_scaling", "alpha_for_bandwidth",
     "state_scale_from_ranges",
     "ElementConfig", "CalibPlan", "Config", "generate_config",
+    "EdgeRouteContract", "RouteContractReport",
+    "derive_coupling_edges", "emit_route_contracts",
     "ClosureResult", "project_spectral", "fourier_project_field",
     "SplitResult", "cvsplit", "qssa_reduce", "GAP_MIN",
     "BasisCandidate", "BasisResult", "select_basis", "DEFAULT_CANDIDATES",

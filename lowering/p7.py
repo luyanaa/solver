@@ -87,11 +87,15 @@ class Config:
     plan: CalibPlan
     flags: list = field(default_factory=list)
     source: dict = field(default_factory=dict)   # 证据对象的溯源摘要
+    route_contracts: list = field(default_factory=list)  # per-edge 路由契约
+    # （route_contract.RouteContractReport；as_dict 已展开。聚合的
+    #  "route-edges" ElementConfig 保留为向后兼容的摘要——真实记录在这里。）
 
     def as_dict(self) -> dict:
         return dict(elements=[e.as_dict() for e in self.elements],
                     plan=self.plan.as_dict(), flags=list(self.flags),
-                    source=dict(self.source))
+                    source=dict(self.source),
+                    route_contracts=[c.as_dict() for c in self.route_contracts])
 
 
 # ---------------------------------------------------------------------------
@@ -236,7 +240,17 @@ def generate_config(discretized, cert, scaling,
     src = dict(alpha=alpha, lam_max=lam_max,
                cert_status=status, binding_axis=binding,
                n_states=len(states), C_bank=float(C_bank))
-    return Config(elements=elements, plan=plan, flags=flags, source=src)
+
+    # ---- per-edge route contracts（§3.2/§6.15 四判据进编译输出）----
+    # 惰性导入：保持 lowering → twin 只出现在调用期。聚合的
+    # "route-edges" ElementConfig 保留（向后兼容），真实记录在这里。
+    from lowering.route_contract import emit_route_contracts
+    report = emit_route_contracts(discretized, scaling=scaling)
+    src["n_route_contracts"] = report.n_edges
+    src["n_route_feedback"] = report.n_feedback
+
+    return Config(elements=elements, plan=plan, flags=flags, source=src,
+                  route_contracts=report.contracts)
 
 
 def _finite(v) -> bool:

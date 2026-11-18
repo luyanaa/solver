@@ -1538,7 +1538,7 @@ P0–P6 全链在三锚上跑通（`python3 -m bench.run_pipeline`，30/30，记
 - **calibration-in-the-loop**：SPICE 给出 g_m/C，pilot 测量，DAC 更新，再测；报告 post-calibration 分布，不是 raw。
 - **第一颗芯片是 Characterization Vehicle，不是 processor**：primitive bank + 不同长度/扇出/模式的 route + C bank + 器件 bank + replica/温度/噪声/loopback + 同一 cell 的 32 份不同位置。目标是把“PDK model → measured primitive → calibration residual → system error”闭环跑通，而不是跑 CFD。
 
-**已实现（B1，`twin/calib.py` + `lowering/p7.py`，验收 `bench/run_calib.py` 43/43，`results/calib.json`）**：前台标定残差 = **测量噪声底**（合同：不低于底；FSM IDLE→STIMULATE→MEASURE→CORRECT→VERIFY）；后台标定残差 = `rate·interval/(1+loop_gain) + 底`（与 A7 `gm_c_calibrate` 同语义；间隔加倍 ⇒ 漂移残差加倍——诚实的调度权衡）；温漂孪生更新 `drift_update(p, ΔT, tempco)` 把当前这颗芯片的实测参数交给 compiler（不是 TT_25C）。P7 把 (Discretized, Certificate, ScalingResult, CalibratedTwin) 编成 per-element 配置（`target_gm_over_c = max|λ|/alpha`、`S_x`/`alpha` 直取 ScalingResult、噪声 σ_scale 不自造裕度）+ 校准计划（foreground 清单含 Gram `G_T=T̃^*T̃` 右标定；background reference = replica/MEMS ω_ref；`residual_budget = floor/noise_axis`——噪声轴 ≤1 才承诺预算，>1 置 None；证书判 infeasible 的量 **flagged，不悄悄计划**）。仍是 plan，不是 netlist；per-edge route-contract 未含。
+**已实现（B1，`twin/calib.py` + `lowering/p7.py`，验收 `bench/run_calib.py` 43/43，`results/calib.json`）**：前台标定残差 = **测量噪声底**（合同：不低于底；FSM IDLE→STIMULATE→MEASURE→CORRECT→VERIFY）；后台标定残差 = `rate·interval/(1+loop_gain) + 底`（与 A7 `gm_c_calibrate` 同语义；间隔加倍 ⇒ 漂移残差加倍——诚实的调度权衡）；温漂孪生更新 `drift_update(p, ΔT, tempco)` 把当前这颗芯片的实测参数交给 compiler（不是 TT_25C）。P7 把 (Discretized, Certificate, ScalingResult, CalibratedTwin) 编成 per-element 配置（`target_gm_over_c = max|λ|/alpha`、`S_x`/`alpha` 直取 ScalingResult、噪声 σ_scale 不自造裕度）+ 校准计划（foreground 清单含 Gram `G_T=T̃^*T̃` 右标定；background reference = replica/MEMS ω_ref；`residual_budget = floor/noise_axis`——噪声轴 ≤1 才承诺预算，>1 置 None；证书判 infeasible 的量 **flagged，不悄悄计划**）。仍是 plan，不是 netlist；per-edge route-contract 已含（`lowering/route_contract.py`，验收 `bench/run_route_contract.py` 38/38，`results/route_contract.json`）：`Config.route_contracts` 逐边携带四判据契约——需求（omega_max=max|λ|/alpha 物理带宽；feedback 边 omega_c + tau_max_abs=phase_budget(ωc, φ_reserve)，有限非 inf）+ 代表性 candidate 分布式 RC 线的 `route_closure` verdict（强制长线 ⇒ verdict False，pad_can_fix 在 feedback 边诚实为 False——deskew 负控制的编译层重演：matched 延迟 ≠ instantaneous）+ `edge_sensitivity` 的 1/|A_ij| 延迟预算排序；纯对角/无描述符 ⇒ 空契约表（真"无布线"），NaN/inf 边 flagged 不静默。契约是**需求+代表性可行性**，不是布线结果（那是 P5/B2）；聚合 "route-edges" ElementConfig 保留为向后兼容摘要。
 
 **投入顺序**：behavioral → primitive SPICE → PEX/EM/substrate/thermal → calibration loop → 小规模 test chip → 完整 VLSI。分立器件 PCB 原型只验证 compiler/time scaling/校准流程，不验证片上 mismatch、kT/C、switch 寄生和 substrate coupling。
 
@@ -1797,6 +1797,17 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                           # target_gm_over_c=max|λ|/alpha, S_x, alpha,
                           # noise_setting} + plan（foreground/background/
                           # residual_budget=floor/noise轴，不可行 ⇒ flag）
+        ✅ route_contract.py # per-edge 路由契约（四判据 + feedback ωc）：
+                          # 耦合图 = A 非对角非零元；每边 REQUIREMENT
+                          # （omega_max=max|λ|/alpha 物理带宽；feedback 边
+                          # omega_c + tau_max_abs=phase_budget(ωc,φ_reserve)
+                          # 有限非 inf）+ 代表性 candidate 线的
+                          # route_closure 四判据 verdict（pad_can_fix 诚实：
+                          # feedback 边 False——deskew 负控制的编译层版）+
+                          # edge_sensitivity S_τ/τ_tol 排序； defective 边
+                          # flag 不静默；契约是需求+代表性可行性，
+                          # 不是布线结果（那是 P5/B2）（38 项验收
+                          # in run_route_contract）
       twin/
         ✅ spice/extract.py  # 真实 PDK 提取：ngspice 电流镜 → λ, g_m/I_D, r_o, ratio
         ✅ noise.py        # OU 滤波色噪声 + replay + ρ_ij 相关矩阵；色噪声/白噪声极限
@@ -1863,6 +1874,14 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                                     # 光滑 capture 免费 / 单源合约 dM/dt=0
                                     # （coupling.py 实跑 drift 2.2e-16 vs
                                     # mismatch 泄漏 8.5e-3）/ ν_num 翻转（31/31）
+        ✅ run_route_contract.py    # B1 per-edge 路由契约：耦合图=A 非对角
+                                    # 非零 → 每边契约（feedback 边 ωc+τ_max=
+                                    # phase_budget 有限；非 feedback 绝对判据
+                                    # 平凡 True）；candidate 短线四判据全过；
+                                    # 1/|A_ij| 敏感度排序；强制长线 ⇒ verdict
+                                    # False + pad_can_fix 诚实（feedback False/
+                                    # 非 feedback True）；负对照：纯对角/burgers
+                                    # ⇒ 空表、NaN/inf 边 flagged（38/38）
         ✅ ledger.py                # 七项假设敏感度账本 → results/ledger.json
                                     # （κ_hw 4.86% 翻判 / B_hw margin 0.8 /
                                     # 噪声 0.63%/unit / 失配线性 / 2.86°/级 /
@@ -1882,6 +1901,8 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                                   # closure_split.json / closure_split_report.txt
                                   # （B1 closure+split）/
                                   # calib.json / calib_report.txt（B1 校准+P7）/
+                                  # route_contract.json / route_contract_report.txt
+                                  # （B1 per-edge 路由契约）/
                                   # ledger.json（七项假设账本）
 
 关键 API（✅ 已实现；SDE 三行是 Phase 6 的目标接口）：
