@@ -1,0 +1,46 @@
+B1 P7 系数图 + 行为级网表 round-trip 验收（P0-3）
+
+==============================================================================
+D2  diag(-1,-100)：逐元素有效系数 + round-trip
+==============================================================================
+
+==============================================================================
+DENSE  4x4 稠密系统：满系数图 + round-trip
+==============================================================================
+
+==============================================================================
+DIFF  diffusion-1d：64 模态逐元素系数 + tile 速度 spec
+==============================================================================
+
+==============================================================================
+VERDICT
+==============================================================================
+                                                                          check                          got                                     expected pass
+                   d2: two integrators emit TWO DISTINCT effective coefficients  5.027e+04 / 5.027e+06 rad/s ratio 100 (not one global max|lambda|/alpha)  yes
+                      d2: a_ii signed and equals scaled A diagonal (a_ii/alpha) ('-5.027e+04', '-5.027e+06')                 ('-5.027e+04', '-5.027e+06')  yes
+                                      d2: target_gm_over_c = |a_ii| per element                           ok                                           ok  yes
+                           d2: diagonal system => zero off-diagonal coeff edges                            0                                            0  yes
+                             d2: B input graph emitted (2 ports, one per state)                            2                                            2  yes
+                                  d2: each b_port gain matches B_v[i,0] exactly                           ok                                           ok  yes
+                                    d2: C taps emitted (1 tap, gain = C_v[0,0])                        2.121                                        2.121  yes
+                      d2: round-trip eig error (reconstructed vs scaled) < 1e-9                     0.00e+00                                      <= 1e-9  yes
+                    d2: coupled system emits the off-diagonal edge (j=1 -> i=0)            (1, ('x1', 'x0'))                1 edge, src=state1 dst=state0  yes
+                    d2: edge gain = physical A_v[0,1] (alpha^-1 S A S^-1 entry)                         2501                                         2501  yes
+                 d2: coeff edge consumes an existing route contract (i,j match)            ('contract 0', 1)                            linked, (i=0,j=1)  yes
+                                        d2: coupled round-trip eig error < 1e-9                     0.00e+00                                      <= 1e-9  yes
+                          d2: route contracts present in Config.route_contracts                            1                                         >= 1  yes
+                           dense: every off-diagonal nonzero emitted as an edge                           12                                           12  yes
+                           dense: every edge gain equals the physical A_v entry                           ok                                           ok  yes
+                                          dense: B/C graphs emitted elementwise                       (8, 8)                                       (8, 8)  yes
+                             dense: effective_B/effective_C reconstruct B_v/C_v       ('0.0e+00', '0.0e+00')                                     <= 1e-12  yes
+                                             dense: round-trip eig error < 1e-8                     1.30e-15                                      <= 1e-8  yes
+                              dense: BehavioralNetlist round-trips through JSON                      (4, 12)                                      (4, 12)  yes
+             dense: cal_bindings bind every unflagged integrator to a reference                            8                       >= 2*4 unflagged fg+bg  yes
+  diff: per-element coefficients distinct across 64 modes (spread = n^2 = 4096)                       4096.0                                         4096  yes
+   diff: element k targets its OWN mode speed nu*k^2/alpha (not the global max)        ('1227', '5.027e+06')            min != max; max = tile_speed_spec  yes
+                     diff: tile_speed_spec kept in source (= max|lambda|/alpha)                    5.027e+06                                    5.027e+06  yes
+                    diff: coeff graph encoded flag is True (descriptor present)                         True                                         True  yes
+                                   diff: round-trip eig error < 1e-9 (64 modes)                     1.85e-16                                      <= 1e-9  yes
+                        diff: C_code selects nearest bank entry and is recorded                 (1, '1e-12')               index of nearest to C_bank=1pF  yes
+
+  26/26 checks passed

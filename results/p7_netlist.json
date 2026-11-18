@@ -1,0 +1,283 @@
+{
+ "d2": {
+  "checks": [
+   {
+    "name": "d2: two integrators emit TWO DISTINCT effective coefficients",
+    "got": "5.027e+04 / 5.027e+06 rad/s",
+    "expected": "ratio 100 (not one global max|lambda|/alpha)",
+    "passed": true,
+    "kind": "p7net-d2",
+    "note": null
+   },
+   {
+    "name": "d2: a_ii signed and equals scaled A diagonal (a_ii/alpha)",
+    "got": [
+     "-5.027e+04",
+     "-5.027e+06"
+    ],
+    "expected": [
+     "-5.027e+04",
+     "-5.027e+06"
+    ],
+    "passed": true,
+    "kind": "p7net-d2",
+    "note": null
+   },
+   {
+    "name": "d2: target_gm_over_c = |a_ii| per element",
+    "got": "ok",
+    "expected": "ok",
+    "passed": true,
+    "kind": "p7net-d2",
+    "note": null
+   },
+   {
+    "name": "d2: diagonal system => zero off-diagonal coeff edges",
+    "got": 0,
+    "expected": 0,
+    "passed": true,
+    "kind": "p7net-d2",
+    "note": null
+   },
+   {
+    "name": "d2: B input graph emitted (2 ports, one per state)",
+    "got": 2,
+    "expected": 2,
+    "passed": true,
+    "kind": "p7net-d2",
+    "note": null
+   },
+   {
+    "name": "d2: each b_port gain matches B_v[i,0] exactly",
+    "got": "ok",
+    "expected": "ok",
+    "passed": true,
+    "kind": "p7net-d2",
+    "note": null
+   },
+   {
+    "name": "d2: C taps emitted (1 tap, gain = C_v[0,0])",
+    "got": "2.121",
+    "expected": "2.121",
+    "passed": true,
+    "kind": "p7net-d2",
+    "note": null
+   },
+   {
+    "name": "d2: round-trip eig error (reconstructed vs scaled) < 1e-9",
+    "got": "0.00e+00",
+    "expected": "<= 1e-9",
+    "passed": true,
+    "kind": "p7net-d2",
+    "note": null
+   },
+   {
+    "name": "d2: coupled system emits the off-diagonal edge (j=1 -> i=0)",
+    "got": [
+     1,
+     [
+      "x1",
+      "x0"
+     ]
+    ],
+    "expected": "1 edge, src=state1 dst=state0",
+    "passed": true,
+    "kind": "p7net-d2",
+    "note": null
+   },
+   {
+    "name": "d2: edge gain = physical A_v[0,1] (alpha^-1 S A S^-1 entry)",
+    "got": "2501",
+    "expected": "2501",
+    "passed": true,
+    "kind": "p7net-d2",
+    "note": null
+   },
+   {
+    "name": "d2: coeff edge consumes an existing route contract (i,j match)",
+    "got": [
+     "contract 0",
+     1
+    ],
+    "expected": "linked, (i=0,j=1)",
+    "passed": true,
+    "kind": "p7net-d2",
+    "note": null
+   },
+   {
+    "name": "d2: coupled round-trip eig error < 1e-9",
+    "got": "0.00e+00",
+    "expected": "<= 1e-9",
+    "passed": true,
+    "kind": "p7net-d2",
+    "note": null
+   },
+   {
+    "name": "d2: route contracts present in Config.route_contracts",
+    "got": 1,
+    "expected": ">= 1",
+    "passed": true,
+    "kind": "p7net-d2",
+    "note": null
+   }
+  ],
+  "summary": {
+   "a_ii": [
+    -50265.48245743669,
+    -5026548.245743669
+   ],
+   "coeff_spread": 100.0,
+   "eig_err_diag": 0.0,
+   "eig_err_coupled": 0.0,
+   "alpha": 1.989436788648692e-05
+  }
+ },
+ "dense": {
+  "checks": [
+   {
+    "name": "dense: every off-diagonal nonzero emitted as an edge",
+    "got": 12,
+    "expected": 12,
+    "passed": true,
+    "kind": "p7net-dense",
+    "note": null
+   },
+   {
+    "name": "dense: every edge gain equals the physical A_v entry",
+    "got": "ok",
+    "expected": "ok",
+    "passed": true,
+    "kind": "p7net-dense",
+    "note": null
+   },
+   {
+    "name": "dense: B/C graphs emitted elementwise",
+    "got": [
+     8,
+     8
+    ],
+    "expected": [
+     8,
+     8
+    ],
+    "passed": true,
+    "kind": "p7net-dense",
+    "note": null
+   },
+   {
+    "name": "dense: effective_B/effective_C reconstruct B_v/C_v",
+    "got": [
+     "0.0e+00",
+     "0.0e+00"
+    ],
+    "expected": "<= 1e-12",
+    "passed": true,
+    "kind": "p7net-dense",
+    "note": null
+   },
+   {
+    "name": "dense: round-trip eig error < 1e-8",
+    "got": "1.30e-15",
+    "expected": "<= 1e-8",
+    "passed": true,
+    "kind": "p7net-dense",
+    "note": null
+   },
+   {
+    "name": "dense: BehavioralNetlist round-trips through JSON",
+    "got": [
+     4,
+     12
+    ],
+    "expected": [
+     4,
+     12
+    ],
+    "passed": true,
+    "kind": "p7net-dense",
+    "note": null
+   },
+   {
+    "name": "dense: cal_bindings bind every unflagged integrator to a reference",
+    "got": 8,
+    "expected": ">= 2*4 unflagged fg+bg",
+    "passed": true,
+    "kind": "p7net-dense",
+    "note": null
+   }
+  ],
+  "summary": {
+   "n_edges": 12,
+   "eig_err": 1.296965174427335e-15,
+   "alpha": 1.9894367886486934e-06
+  }
+ },
+ "diff": {
+  "checks": [
+   {
+    "name": "diff: per-element coefficients distinct across 64 modes (spread = n^2 = 4096)",
+    "got": "4096.0",
+    "expected": "4096",
+    "passed": true,
+    "kind": "p7net-diff",
+    "note": null
+   },
+   {
+    "name": "diff: element k targets its OWN mode speed nu*k^2/alpha (not the global max)",
+    "got": [
+     "1227",
+     "5.027e+06"
+    ],
+    "expected": "min != max; max = tile_speed_spec",
+    "passed": true,
+    "kind": "p7net-diff",
+    "note": null
+   },
+   {
+    "name": "diff: tile_speed_spec kept in source (= max|lambda|/alpha)",
+    "got": "5.027e+06",
+    "expected": "5.027e+06",
+    "passed": true,
+    "kind": "p7net-diff",
+    "note": null
+   },
+   {
+    "name": "diff: coeff graph encoded flag is True (descriptor present)",
+    "got": true,
+    "expected": true,
+    "passed": true,
+    "kind": "p7net-diff",
+    "note": null
+   },
+   {
+    "name": "diff: round-trip eig error < 1e-9 (64 modes)",
+    "got": "1.85e-16",
+    "expected": "<= 1e-9",
+    "passed": true,
+    "kind": "p7net-diff",
+    "note": null
+   },
+   {
+    "name": "diff: C_code selects nearest bank entry and is recorded",
+    "got": [
+     1,
+     "1e-12"
+    ],
+    "expected": "index of nearest to C_bank=1pF",
+    "passed": true,
+    "kind": "p7net-diff",
+    "note": null
+   }
+  ],
+  "summary": {
+   "spread": 4095.999999999999,
+   "eig_err": 1.8528073920390493e-16,
+   "tile_speed": 5026548.245743669,
+   "alpha": 8.148733086305042e-07
+  }
+ },
+ "summary": {
+  "n_checks": 26,
+  "n_passed": 26
+ }
+}
