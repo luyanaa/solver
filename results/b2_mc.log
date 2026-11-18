@@ -1,0 +1,629 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+OPROW 0.949132 1.59032E-12 0.000309252 0.0138533 1.30717 0.745446 1.37709E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 1.0068 0.0141589 1.30733 0.745577
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  1.00000e-03
+ Reference value :  4.00000e-03
+No. of Data Rows : 11
+MCGN -3.67939
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.000151503 1.35505E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 1.03363 0.00639663 1.30344 0.745464
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -3.00000e-03
+ Reference value :  0.00000e+00
+ Reference value :  3.00000e-03
+No. of Data Rows : 11
+MCGN -3.68554
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.000151583 1.32109E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 0.961207 0.0189261 1.30969 0.745401
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  1.00000e-03
+ Reference value :  4.00000e-03
+No. of Data Rows : 11
+MCGN -3.67209
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.000143839 1.55508E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 1.05516 -0.00133592 1.29957 0.745405
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  1.00000e-03
+ Reference value :  4.00000e-03
+No. of Data Rows : 11
+MCGN -3.68148
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.000152369 1.32368E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 0.97534 -0.00675656 1.29688 0.745506
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  1.00000e-03
+ Reference value :  3.00000e-03
+No. of Data Rows : 11
+MCGN -3.68515
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.000153229 1.29082E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 1.00762 -0.0143298 1.2931 0.745438
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  0.00000e+00
+ Reference value :  3.00000e-03
+No. of Data Rows : 11
+MCGN -3.68067
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.000151189 1.35438E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 0.942891 0.0118446 1.30618 0.745392
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  0.00000e+00
+ Reference value :  3.00000e-03
+No. of Data Rows : 11
+MCGN -3.68474
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.000153305 1.25492E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 1.05298 -0.00335689 1.29857 0.745517
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  1.00000e-03
+ Reference value :  3.00000e-03
+No. of Data Rows : 11
+MCGN -3.68177
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.000147654 1.45437E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 0.984148 0.00782909 1.30415 0.745415
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  1.00000e-03
+ Reference value :  4.00000e-03
+No. of Data Rows : 11
+MCGN -3.68944
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.00015012 1.37427E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 0.959122 0.001589 1.30103 0.745534
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  1.00000e-03
+ Reference value :  4.00000e-03
+No. of Data Rows : 11
+MCGN -3.68441
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.00015083 1.37551E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 1.01324 -0.00743789 1.29658 0.745484
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  1.00000e-03
+ Reference value :  4.00000e-03
+No. of Data Rows : 11
+MCGN -3.68161
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.000148516 1.43972E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 0.899144 0.0164149 1.30843 0.745498
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  1.00000e-03
+ Reference value :  4.00000e-03
+No. of Data Rows : 11
+MCGN -3.6817
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.00014834 1.4464E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 0.997359 -0.00708844 1.29669 0.745511
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -3.00000e-03
+ Reference value :  0.00000e+00
+ Reference value :  3.00000e-03
+No. of Data Rows : 11
+MCGN -3.68516
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.000149626 1.41061E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 1.04808 -0.00597954 1.29721 0.745631
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  1.00000e-03
+ Reference value :  4.00000e-03
+No. of Data Rows : 11
+MCGN -3.68198
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.000149162 1.40232E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 0.940061 0.0101178 1.3053 0.745425
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  0.00000e+00
+ Reference value :  3.00000e-03
+No. of Data Rows : 11
+MCGN -3.68344
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+ Reference value :  3.93700e-01
+No. of Data Rows : 3
+MCGM 0.00015196 1.34932E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 1.00201 0.00703287 1.30376 0.745556
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  1.00000e-03
+ Reference value :  4.00000e-03
+No. of Data Rows : 11
+MCGN -3.681
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+ Reference value :  3.93700e-01
+No. of Data Rows : 3
+MCGM 0.000149226 1.43057E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 1.00703 -0.0115944 1.29445 0.745413
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  1.00000e-03
+ Reference value :  4.00000e-03
+No. of Data Rows : 11
+MCGN -3.68166
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.000146703 1.49363E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 1.12287 0.00847625 1.30444 0.745387
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -3.00000e-03
+ Reference value : -1.00000e-03
+ Reference value :  2.00000e-03
+ Reference value :  5.00000e-03
+No. of Data Rows : 11
+MCGN -3.68286
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.00015236 1.33934E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 0.982643 -0.00262035 1.29888 0.745504
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -3.00000e-03
+ Reference value :  0.00000e+00
+ Reference value :  2.00000e-03
+ Reference value :  5.00000e-03
+No. of Data Rows : 11
+MCGN -3.68767
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.000151528 1.33597E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 1.03509 0.00866027 1.30452 0.745549
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -3.00000e-03
+ Reference value :  0.00000e+00
+ Reference value :  2.00000e-03
+ Reference value :  5.00000e-03
+No. of Data Rows : 11
+MCGN -3.68551
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.00015062 1.37552E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 1.05524 0.0191891 1.30982 0.745574
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  1.00000e-03
+ Reference value :  3.00000e-03
+No. of Data Rows : 11
+MCGN -3.67752
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.000149973 1.3689E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 0.933973 -0.00124706 1.29963 0.745404
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  0.00000e+00
+ Reference value :  2.00000e-03
+ Reference value :  4.00000e-03
+No. of Data Rows : 11
+MCGN -3.68061
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.000148389 1.43531E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 1.09465 0.0263786 1.31343 0.745411
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  1.00000e-03
+ Reference value :  4.00000e-03
+No. of Data Rows : 11
+MCGN -3.66679
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.000152427 1.33053E-05
+
+Circuit: * b2 primitives: hbt diff/mirror, lv mos gm-cell x2, transmission gate
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  0.00000e+00
+No. of Data Rows : 1
+MCOP 1.09193 0.00849424 1.30447 0.745482
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value : -5.00000e-03
+ Reference value : -2.00000e-03
+ Reference value :  1.00000e-03
+ Reference value :  4.00000e-03
+No. of Data Rows : 11
+MCGN -3.68008
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+ Reference value :  3.73700e-01
+No. of Data Rows : 3
+MCGM 0.00014812 1.47117E-05
+Note: Simulation executed from .control section 
+Error opening osdi lib "/home/yanlu/.ciel/ciel/ihp-sg13/versions/89d42ee6d2fd9b50b86a1aada6fee6673c3e6008/ihp-sg13g2/libs.tech/ngspice/osdi/cap_cmomi.osdi": No such file or directory!
+Error: Library /home/yanlu/.ciel/ciel/ihp-sg13/versions/89d42ee6d2fd9b50b86a1aada6fee6673c3e6008/ihp-sg13g2/libs.tech/ngspice/osdi/cap_cmomi.osdi couldn't be loaded!
+Error opening osdi lib "/home/yanlu/.ciel/ciel/ihp-sg13/versions/89d42ee6d2fd9b50b86a1aada6fee6673c3e6008/ihp-sg13g2/libs.tech/ngspice/osdi/cap_cmomf.osdi": No such file or directory!
+Error: Library /home/yanlu/.ciel/ciel/ihp-sg13/versions/89d42ee6d2fd9b50b86a1aada6fee6673c3e6008/ihp-sg13g2/libs.tech/ngspice/osdi/cap_cmomf.osdi couldn't be loaded!
+
+
+The temperature limiting function received NaN.
+Please check your power dissipation and improve your heat sink Rth!
+    This message will be shown only once.
+
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
+Note: Starting dynamic gmin stepping
+Note: Dynamic gmin stepping completed
