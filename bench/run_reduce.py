@@ -33,11 +33,12 @@ from scipy.special import jv, jvp
 from lowering.reduce import (C, System, V, add, besselj, complete_env, cos,
                              div, eval_expr, eval_system, exp, first_order,
                              gamma, mul, pow, reduce_system,
-                             reduce_with_primitives, sub)
+                             reduce_with_primitives, sub, tanh)
 
 OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "results")
 _LINES: list[str] = []
 CASES: dict[str, dict] = {}
+REDS: dict[str, object] = {}       # Reduced 对象（domain 检查要看原始 aug dict）
 
 
 def emit(s: str = ""):
@@ -470,6 +471,22 @@ def acceptance() -> list[dict]:
     add_check("Lorenz/Duffing share polynomial IR", "polynomial",
               "polynomial", shared)
 
+    tanh_c = CASES["Tanh"]
+    add_check("Tanh kind", tanh_c["kind"], "polynomial",
+              tanh_c["kind"] == "polynomial")
+    # 域证书检查直接看 red.augmentations（run_case 只保留 kind/arg/states）。
+    dom_tanh = [a.get("domain") for a in REDS["Tanh"].augmentations if a["kind"] == "tanh"]
+    add_check("Tanh augmentation records domain (h, −1, 1)",
+              "%s" % (dom_tanh,), "[('h1', -1.0, 1.0)]",
+              dom_tanh == [("h1", -1.0, 1.0)])
+    dom_exp = [a.get("domain") for a in REDS["HH"].augmentations if a["kind"] == "exp"]
+    add_check("HH exp augmentations record domain (e_k, 0, None)",
+              "%d × %s" % (len(dom_exp), dom_exp[0] if dom_exp else "-"),
+              "6 × (e_k, 0.0, None)",
+              len(dom_exp) == 6 and all(
+                  isinstance(d, tuple) and len(d) == 3 and d[1] == 0.0
+                  and d[2] is None for d in dom_exp))
+
     return checks
 
 
@@ -477,6 +494,7 @@ def main():
     os.makedirs(OUT, exist_ok=True)
     _LINES.clear()
     CASES.clear()
+    REDS.clear()
 
     hr("Phase 1 前端验收：方程 → canonical IR")
 
@@ -507,7 +525,16 @@ def main():
 
     CASES["SharedDen"] = shared_denominator()
 
+    # ---- P1-domain：增广状态的域证书（硬件映射提示，review 修复）。
+    # tanh 增广 h 满足 ḣ=(1−h²)u̇：|h|>1 时系数反号，负反馈变正反馈——
+    # 硬件 offset/噪声会让增广状态逃逸。augmentation dict 必须记录
+    # domain=(h, −1, 1)；exp 记 (e, 0, None)；sin/cos 的域由不变流形蕴含。
+    red_tanh = reduce_system(System(["x"], {"x": tanh(V("x"))}))
+    CASES["Tanh"] = run_case("Tanh", red_tanh)
+    REDS["Tanh"] = red_tanh
+
     red_h = hh()
+    REDS["HH"] = red_h
     CASES["HH"] = run_case("HH", red_h)
     env = complete_env(red_h, {"V": -60.0, "m": 0.05, "h": 0.6, "n": 0.32})
     got = eval_system(red_h.system, env)

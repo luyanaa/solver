@@ -693,6 +693,42 @@
       "kind": "dae"
     },
     {
+      "name": "sys.D=1 stable SISO is inf (direct path)",
+      "got": "inf",
+      "expected": "inf",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "dae"
+    },
+    {
+      "name": "sys.D=1 high-freq |H| does not decay",
+      "got": "1",
+      "expected": "~1",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "dae"
+    },
+    {
+      "name": "sys.D=1 DAE QZ path is inf",
+      "got": "inf (direct-feedthrough (sys.D\u22600, \u2016D\u2016=1.00e+00))",
+      "expected": "inf",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "dae"
+    },
+    {
+      "name": "DAE index-1 sigma_y2 unchanged with default D=0",
+      "got": "0.5",
+      "expected": "0.5",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "dae"
+    },
+    {
       "name": "energy-metric Gamma ratio > 1 (metric matters)",
       "got": "28.8 / 9.91 = 2.9",
       "expected": "> 1",
@@ -713,6 +749,33 @@
     {
       "name": "M=I metric equals bare Gamma",
       "got": "9.91457251411 vs 9.91457251411",
+      "expected": "equal",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "metric"
+    },
+    {
+      "name": "projected M-metric runs on conservation system",
+      "got": "n_proj=5, Gamma_proj=2",
+      "expected": "projected, finite",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "metric"
+    },
+    {
+      "name": "Gamma_proj: metric matters post-projection",
+      "got": "M/bare = 0.9627",
+      "expected": "\u2260 1",
+      "log10_err": 0.0,
+      "tol": 0.0,
+      "passed": true,
+      "kind": "metric"
+    },
+    {
+      "name": "projected 'energy' shorthand == explicit M",
+      "got": "2 vs 2",
       "expected": "equal",
       "log10_err": 0.0,
       "tol": 0.0,

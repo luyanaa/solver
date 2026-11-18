@@ -26,47 +26,54 @@ B. 六轴 slack（1.0 为红线；n/a = 没有输入；鲁棒轴在两例上用 
 ==============================================================================
 C. 验收对照（κ: ±0.5 decade；H∞/Γ/σ_y: ±3 dB；+ DAE 噪声注入 P0-E）
 ==============================================================================
-                                           check                                                                         got           expected log10 err   tol PASS
-                                diffusion N=64 κ                                                                      4096.0             4096.0         0   0.5  yes
-                                diffusion N=64 Γ                                                                      1000.0             1000.0         0  0.15  yes
-                              diffusion N=64 σ_y                                                          22.360679774997898 22.360679774997898         0  0.15  yes
-                               diffusion N=64 H∞                                                          1000.0009536742325             1000.0  4.14e-07  0.15  yes
-                  diffusion N=64 H∞ ham-vs-sweep                                                         9.5367431640633e-07                0.0     -6.02  0.15  yes
-                              diffusion N=1024 κ                                                                   1048576.0          1048576.0         0   0.5  yes
-                              diffusion N=1024 Γ                                                                      1000.0             1000.0         0  0.15  yes
-                            diffusion N=1024 σ_y                                                          22.360679774997898 22.360679774997898         0  0.15  yes
-                              biharmonic N=128 κ                                                                 268435456.0        268435456.0         0   0.5  yes
-                              biharmonic N=128 Γ                                                                 100000000.0        100000000.0         0  0.15  yes
-                            biharmonic N=128 σ_y                                                           7071.067811865475  7071.067811865475         0  0.15  yes
-                             biharmonic N=128 H∞                                                           103810108.8639365        100000000.0    0.0162  0.15  yes
-                biharmonic N=128 H∞ ham-vs-sweep                                                        0.038475036621093715                0.0     -1.41  0.15  yes
-                diffusion N=64 Lyapunov residual                                                                         0.0                0.0       -16 1e-10  yes
-                          diffusion N=64 verdict                                                                           -                  -       n/a  None  yes
-                        diffusion N=1024 verdict                                                                   stiffness          stiffness       n/a  None  yes
-                        biharmonic N=128 verdict                                                                   stiffness          stiffness       n/a  None  yes
-                           Burgers N=128 verdict                                                              representation     representation       n/a  None  yes
-                         Robertson t=1e4 verdict                                                      stiffness,robustness_A          stiffness       n/a  None  yes
-                 Burgers N=128 robustness finite                                                                0.368/0.0612             finite       n/a  None  yes
-             Burgers N=128 H∞ sweep proj vs full                                                           6.124887260485313  6.124887252775304      -8.9 0.001  yes
-               Robertson t=1e4 robustness finite                                                                  61.9/0.223             finite       n/a  None  yes
-           Robertson t=1e4 H∞ sweep proj vs full                                                          22.320914130189962 22.320914130332774     -11.2 0.001  yes
-                      DAE index-1 sigma_y2 = 1/2                                                                         0.5                0.5         0   0.0  yes
-                           DAE index-1 h2_finite                                                           qz-dae-eliminated               True         0   0.0  yes
-       DAE index-1 naive criterion would say inf inf (naive: B projects onto algebraic subspace) -> actual qz-dae-eliminated         documented         0   0.0  yes
-                  DAE index-1 high-freq |H| -> 0                                                                       1e-06              <1e-4         0   0.0  yes
-                  DAE feedthrough control is inf                                                                         inf                inf         0   0.0  yes
-              DAE feedthrough |H| does not decay                                                                           1                 ~1         0   0.0  yes
-          DAE nilpotent (index-2) control is inf                                                                         inf                inf         0   0.0  yes
-             P0-G transformed DAE sigma_y2 = 1/2                                                                         0.5                0.5         0   0.0  yes
-   P0-G Z-left reduction wrong (regression trap)                                                       Z-left DC gain 0.7536               ≠ -1         0   0.0  yes
-                     P0-G Q-left reduction exact                                                           Q-left DC gain -1                 -1         0   0.0  yes
-  P0-G stable_projection eigvals match selection                                                                   [-1.+0.j]          [-1.+0.j]         0   0.0  yes
-                 P0-G freqresp integral sigma_y2                                                                    0.499965                0.5         0   0.0  yes
-  energy-metric Gamma ratio > 1 (metric matters)                                                           28.8 / 9.91 = 2.9                > 1         0   0.0  yes
-         energy-metric Gamma matches brute force                                              28.7624897947 vs 28.7624897947              equal         0   0.0  yes
-                    M=I metric equals bare Gamma                                              9.91457251411 vs 9.91457251411              equal         0   0.0  yes
+                                            check                                                                         got           expected log10 err   tol PASS
+                                 diffusion N=64 κ                                                                      4096.0             4096.0         0   0.5  yes
+                                 diffusion N=64 Γ                                                                      1000.0             1000.0         0  0.15  yes
+                               diffusion N=64 σ_y                                                          22.360679774997898 22.360679774997898         0  0.15  yes
+                                diffusion N=64 H∞                                                          1000.0009536742325             1000.0  4.14e-07  0.15  yes
+                   diffusion N=64 H∞ ham-vs-sweep                                                         9.5367431640633e-07                0.0     -6.02  0.15  yes
+                               diffusion N=1024 κ                                                                   1048576.0          1048576.0         0   0.5  yes
+                               diffusion N=1024 Γ                                                                      1000.0             1000.0         0  0.15  yes
+                             diffusion N=1024 σ_y                                                          22.360679774997898 22.360679774997898         0  0.15  yes
+                               biharmonic N=128 κ                                                                 268435456.0        268435456.0         0   0.5  yes
+                               biharmonic N=128 Γ                                                                 100000000.0        100000000.0         0  0.15  yes
+                             biharmonic N=128 σ_y                                                           7071.067811865475  7071.067811865475         0  0.15  yes
+                              biharmonic N=128 H∞                                                           103810108.8639365        100000000.0    0.0162  0.15  yes
+                 biharmonic N=128 H∞ ham-vs-sweep                                                        0.038475036621093715                0.0     -1.41  0.15  yes
+                 diffusion N=64 Lyapunov residual                                                                         0.0                0.0       -16 1e-10  yes
+                           diffusion N=64 verdict                                                                           -                  -       n/a  None  yes
+                         diffusion N=1024 verdict                                                                   stiffness          stiffness       n/a  None  yes
+                         biharmonic N=128 verdict                                                                   stiffness          stiffness       n/a  None  yes
+                            Burgers N=128 verdict                                                              representation     representation       n/a  None  yes
+                          Robertson t=1e4 verdict                                                      stiffness,robustness_A          stiffness       n/a  None  yes
+                  Burgers N=128 robustness finite                                                                0.368/0.0612             finite       n/a  None  yes
+              Burgers N=128 H∞ sweep proj vs full                                                           6.124887260485313  6.124887252775304      -8.9 0.001  yes
+                Robertson t=1e4 robustness finite                                                                  61.9/0.223             finite       n/a  None  yes
+            Robertson t=1e4 H∞ sweep proj vs full                                                          22.320914130189962 22.320914130332774     -11.2 0.001  yes
+                       DAE index-1 sigma_y2 = 1/2                                                                         0.5                0.5         0   0.0  yes
+                            DAE index-1 h2_finite                                                           qz-dae-eliminated               True         0   0.0  yes
+        DAE index-1 naive criterion would say inf inf (naive: B projects onto algebraic subspace) -> actual qz-dae-eliminated         documented         0   0.0  yes
+                   DAE index-1 high-freq |H| -> 0                                                                       1e-06              <1e-4         0   0.0  yes
+                   DAE feedthrough control is inf                                                                         inf                inf         0   0.0  yes
+               DAE feedthrough |H| does not decay                                                                           1                 ~1         0   0.0  yes
+           DAE nilpotent (index-2) control is inf                                                                         inf                inf         0   0.0  yes
+              P0-G transformed DAE sigma_y2 = 1/2                                                                         0.5                0.5         0   0.0  yes
+    P0-G Z-left reduction wrong (regression trap)                                                       Z-left DC gain 0.7536               ≠ -1         0   0.0  yes
+                      P0-G Q-left reduction exact                                                           Q-left DC gain -1                 -1         0   0.0  yes
+   P0-G stable_projection eigvals match selection                                                                   [-1.+0.j]          [-1.+0.j]         0   0.0  yes
+                  P0-G freqresp integral sigma_y2                                                                    0.499965                0.5         0   0.0  yes
+         sys.D=1 stable SISO is inf (direct path)                                                                         inf                inf         0   0.0  yes
+             sys.D=1 high-freq |H| does not decay                                                                           1                 ~1         0   0.0  yes
+                       sys.D=1 DAE QZ path is inf                            inf (direct-feedthrough (sys.D≠0, ‖D‖=1.00e+00))                inf         0   0.0  yes
+  DAE index-1 sigma_y2 unchanged with default D=0                                                                         0.5                0.5         0   0.0  yes
+   energy-metric Gamma ratio > 1 (metric matters)                                                           28.8 / 9.91 = 2.9                > 1         0   0.0  yes
+          energy-metric Gamma matches brute force                                              28.7624897947 vs 28.7624897947              equal         0   0.0  yes
+                     M=I metric equals bare Gamma                                              9.91457251411 vs 9.91457251411              equal         0   0.0  yes
+   projected M-metric runs on conservation system                                                      n_proj=5, Gamma_proj=2  projected, finite         0   0.0  yes
+       Gamma_proj: metric matters post-projection                                                             M/bare = 0.9627                ≠ 1         0   0.0  yes
+       projected 'energy' shorthand == explicit M                                                                      2 vs 2              equal         0   0.0  yes
 
-  38/38 checks passed
+  45/45 checks passed
 
 ==============================================================================
 D. 读法

@@ -360,6 +360,29 @@ def case_dae_noise() -> list[dict]:
     sig_int = float(np.trapezoid(np.abs(H_T) ** 2, w_grid) / np.pi)
     add("P0-G freqresp integral sigma_y2", abs(sig_int - 0.5) <= 5e-3,
         "%.6g" % sig_int, "0.5")
+
+    # ---- sys.D 显式直接馈通（review 修复）：旧实现静默忽略 sys.D ——
+    # D=1 的稳定 SISO 错报 σ_y²=0.5，真值 H2 = ∞（白噪声直达输出）。
+    # 覆盖两条路径：direct（稳定良态 E）和 DAE QZ 消去路径。
+    sys_d_direct = Descriptor(np.eye(2), -np.eye(2), np.ones((2, 1)),
+                              np.ones((1, 2)), np.array([[1.0]]))
+    r_d_direct = solve_generalized_lyapunov(sys_d_direct)
+    add("sys.D=1 stable SISO is inf (direct path)",
+        (not r_d_direct.h2_finite) and (r_d_direct.sigma_y2 == float("inf")),
+        "%.4g" % r_d_direct.sigma_y2, "inf")
+    tail_d = float(np.abs(sys_d_direct.freqresp(w_big)).max())
+    add("sys.D=1 high-freq |H| does not decay", tail_d > 0.5,
+        "%.3g" % tail_d, "~1")
+    sys_d_dae = Descriptor(E, A, B, np.array([[1.0, 0.0]]), np.array([[1.0]]))
+    r_d_dae = solve_generalized_lyapunov(sys_d_dae)
+    add("sys.D=1 DAE QZ path is inf",
+        (not r_d_dae.h2_finite) and (r_d_dae.sigma_y2 == float("inf"))
+        and "feedthrough" in r_d_dae.method,
+        "%.4g (%s)" % (r_d_dae.sigma_y2, r_d_dae.method), "inf")
+    # 回归守卫：同一系统 D=0（缺省）仍给 σ_y²=1/2（旧正确行为不变）。
+    add("DAE index-1 sigma_y2 unchanged with default D=0",
+        abs(r_pos.sigma_y2 - 0.5) <= 1e-9 * 0.5,
+        "%.12g" % r_pos.sigma_y2, "0.5")
     return checks
 
 
@@ -408,6 +431,38 @@ def case_energy_metric() -> list[dict]:
     g_I = peak_with_projection(sys, metric=np.eye(2))["Gamma"]
     add("M=I metric equals bare Gamma", abs(g_I / g_eucl - 1) < 1e-9,
         "%.12g vs %.12g" % (g_I, g_eucl), "equal")
+
+    # ---- 投影 + 度量组合（review 修复）：守恒系统（各向异性 E + 零模态）
+    # 投影到 k<n 后 M 度量必须先在全系统求 M、再用 Z1ᵀ M Z1 投影。
+    # 修复前：metric="energy" 透传到 k×k 非对角的降阶 E 上抛 ValueError
+    # （对角占优检查），全维 M 透传抛形状不匹配。
+    Ec = np.diag([1.0, 1e-2, 1.0, 1.0, 1.0, 1.0])
+    n6 = Ec.shape[0]
+    D2 = np.zeros((n6, n6))
+    for i in range(n6):
+        D2[i, (i - 1) % n6] += -1.0
+        D2[i, (i + 1) % n6] += -1.0
+        D2[i, i] += 2.0
+    sysc = Descriptor(Ec, -0.5 * D2, np.zeros((n6, 0)), np.zeros((0, n6)))
+    assert sysc.has_imaginary()          # 零模态 ⇒ 必须走投影路径
+    k6 = sysc.stable_projection()[1]
+    assert 0 < k6 < n6
+    pc_bare = peak_with_projection(sysc)
+    pc_e = peak_with_projection(sysc, metric="energy")
+    pc_M = peak_with_projection(sysc, metric=np.diag(np.diag(Ec)))
+    add("projected M-metric runs on conservation system",
+        pc_e["projected"] and pc_e["n_proj"] == k6
+        and np.isfinite(pc_e["Gamma_proj"]),
+        "n_proj=%s, Gamma_proj=%.4g" % (pc_e["n_proj"], pc_e["Gamma_proj"]),
+        "projected, finite")
+    add("Gamma_proj: metric matters post-projection",
+        abs(pc_e["Gamma_proj"] / pc_bare["Gamma_proj"] - 1.0) > 1e-6,
+        "M/bare = %.4g" % (pc_e["Gamma_proj"] / pc_bare["Gamma_proj"]),
+        "≠ 1")
+    add("projected 'energy' shorthand == explicit M",
+        abs(pc_e["Gamma_proj"] / pc_M["Gamma_proj"] - 1.0) < 1e-9,
+        "%.12g vs %.12g" % (pc_e["Gamma_proj"], pc_M["Gamma_proj"]),
+        "equal")
     return checks
 
 

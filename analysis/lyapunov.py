@@ -93,6 +93,17 @@ def solve_generalized_lyapunov(
     W = sys.B @ Q @ sys.B.T
     n = sys.n
 
+    # sys.D（显式直接馈通）在任何路径上都必须判 H2 = ∞：白噪声经 D 直达输出，
+    # H2 积分发散。旧实现只在 QZ 路径通过 D_total 间接看到 C 侧的馈通，
+    # sys.D 本身被静默忽略（D=1 的稳定 SISO 错报 σ_y²=0.5）。
+    d_sys = float(np.linalg.norm(sys.D))
+    tol_sys_d = 1e-12 * max(1.0, float(np.linalg.norm(sys.C)) * float(np.linalg.norm(sys.B)))
+    if d_sys > tol_sys_d:
+        return LyapunovResult(np.zeros((n, n)), float("inf"), 0.0, 0.0, False,
+                              0, n, 0.0,
+                              "direct-feedthrough (sys.D≠0, ‖D‖=%.2e)" % d_sys,
+                              0, d_sys)
+
     # 严格稳定且 E 良态：直接降为 (E⁻¹A, E⁻¹B)，精度最好。
     use_direct = sys.is_stable() and np.linalg.cond(sys.E) < 1e10
     if use_direct:
@@ -255,9 +266,9 @@ def solve_generalized_lyapunov(
         AA_sI = Qs.T @ sys.A @ Zi
         Bbs_s = linalg.solve(BB_ss, BB_sI @ g_u)
         B_eff = Qs.T @ sys.B + AA_sI @ g_u - AA_ss @ Bbs_s
-        D_total = sys.C @ Zs @ (-Bbs_s) + C_i @ g_u
+        D_total = sys.C @ Zs @ (-Bbs_s) + C_i @ g_u + sys.D
     else:
-        B_eff, D_total = None, C_i @ g_u
+        B_eff, D_total = None, C_i @ g_u + sys.D
     d_norm = float(np.linalg.norm(D_total))
     tol_d = 1e-9 * max(1.0, float(np.linalg.norm(sys.C)) * float(np.linalg.norm(g_u)))
     if k == 0:

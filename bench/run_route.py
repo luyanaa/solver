@@ -31,7 +31,7 @@ import numpy as np
 from scipy.linalg import eig, solve_banded
 
 from analysis.skew import delay_mass_matrix, scalar_dde_root, uniform_tau_crit
-from twin.route import (AllPass, CoupledNets, PhysicalScaling, PureDelay,
+from twin.route import (AllPass, Buffer, CoupledNets, PhysicalScaling, PureDelay,
                         RouteEdge, RouteSpec, Wire, buffer_chain, coupled_nets,
                         deskew, edge_metrics, group_delay, j_h, j_tau,
                         j_tau_group, latency_class, loop_margins, phase_delay_at,
@@ -492,6 +492,19 @@ def case_phase_delay():
     diverg = max(abs(c["phase_delay_omega_c"] / c["latency"] - 1.0)
                  for c in closures)
 
+    # 反相 buffer（gain<0，DC 相位 ±π）：反相是符号翻转，不是延迟。
+    # 修复前 unwrap 从 p[0]=±π 出发，−p[-1]/ω 把 DC 反相计成巨大伪延迟
+    # （数百到数千 ps 量级，随 ωc 反比缩放）。修复：减去起始相位。
+    e_inv = RouteEdge((Buffer(gain=-1.0, f_p=5e9),), "inv")
+    e_ninv = RouteEdge((Buffer(gain=1.0, f_p=5e9),), "ninv")
+    pd_inv = phase_delay_at(e_inv, wc)
+    pd_ninv = phase_delay_at(e_ninv, wc)
+    # 旧实现（不减起始相位）的值，作对照守卫。
+    n_m = int(np.ceil(12.0 * np.log(10.0) / np.log(1.02)))
+    wg_m = wc * np.power(1.02, np.arange(-n_m, 1))
+    p_m = np.unwrap(np.angle(e_inv.H(1j * wg_m)))
+    pd_inv_old = float(-p_m[-1] / wc)
+
     CASES["phase_delay"] = dict(
         pd_pure=c_pd["phase_delay_omega_c"], lat_pure=e_pd.latency,
         pass_pure=c_pd["pass_absolute"],
@@ -501,6 +514,8 @@ def case_phase_delay():
         pd_oob=pd_oob, lat_oob=e_oob.latency,
         diverg_deskew=diverg,
         pass_deskew=[c["pass_absolute"] for c in closures],
+        pd_inverting=pd_inv, pd_noninverting=pd_ninv,
+        pd_inverting_old=pd_inv_old,
     )
 
 
@@ -743,6 +758,16 @@ def acceptance():
         % (M["diverg_deskew"], M["pass_deskew"]),
         "< 1e-3, all True (criterion change keeps verdicts)",
         M["diverg_deskew"] < 1e-3 and all(M["pass_deskew"]))
+    # 反相 buffer：DC 反相是符号翻转，不是延迟。修复前 unwrap 从 ±π 出发，
+    # 会把反相计成 −π/ωc 量级的伪延迟（本例 ~ −500 ps @1 GHz）。
+    add("inverting buffer phase delay ≈ non-inverting", "%.2f vs %.2f ps"
+        % (M["pd_inverting"] * 1e12, M["pd_noninverting"] * 1e12),
+        "within 5%",
+        abs(M["pd_inverting"] / M["pd_noninverting"] - 1.0) < 0.05)
+    add("old impl would report huge inverting delay (guard)",
+        "%.1f ps" % (M["pd_inverting_old"] * 1e12),
+        "|old| > 10× fixed",
+        abs(M["pd_inverting_old"]) > 10.0 * abs(M["pd_inverting"]))
 
     return checks
 

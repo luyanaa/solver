@@ -10,6 +10,7 @@ A. 分类与 canonical IR
      Lorenz polynomial     0  3      2         7    10    0.233         0                                      
     Duffing polynomial     0  4      3         7    35     0.05         0                                      
   SharedDen polynomial     0  3      -         -     -      n/a         0                                      
+       Tanh polynomial     0  2      3         3    10     0.15         0                                      
          HH   rational     1 10      6        65  8008 0.000812         3                                      
      Bessel   rational     1  4      2         6    15      0.1         1                                      
       Gamma   rejected     2  1      -         -     -      n/a         0 Gamma 是 differentially transcendenta…
@@ -76,8 +77,11 @@ C. 验收
                                         Bessel J0 rel err                                4.965708545124035e-15                                        < 1e-6  yes
                                    Bessel at x=0 rejected                                             rejected                                      rejected  yes
                        Lorenz/Duffing share polynomial IR                                           polynomial                                    polynomial  yes
+                                                Tanh kind                                           polynomial                                    polynomial  yes
+              Tanh augmentation records domain (h, −1, 1)                                  [('h1', -1.0, 1.0)]                           [('h1', -1.0, 1.0)]  yes
+        HH exp augmentations record domain (e_k, 0, None)                                6 × ('e1', 0.0, None)                          6 × (e_k, 0.0, None)  yes
 
-  41/41 checks passed
+  44/44 checks passed
 
 ==============================================================================
 D. 读法

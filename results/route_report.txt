@@ -247,5 +247,7 @@ J. 验收
                              verdict uses unwrapped phase delay      τ_max=60.0 ps, pd=132.8, naive=32.8, lat=205.0                                     FAIL (naive-angle impl would pass)  yes
                                  out-of-band pads: pd ≈ latency                             8.999987 vs 9.000000 ps                                                         ratio 1 ± 1e-3  yes
                      deskewed case-D set: divergence & verdicts             diverg=2.5e-04, pass=[True, True, True]                     < 1e-3, all True (criterion change keeps verdicts)  yes
+                   inverting buffer phase delay ≈ non-inverting                                   31.42 vs 31.42 ps                                                              within 5%  yes
+             old impl would report huge inverting delay (guard)                                           -468.6 ps                                                      |old| > 10× fixed  yes
 
-  73/73 checks passed
+  75/75 checks passed

@@ -727,7 +727,7 @@ P0 之前先做这套规范化，顺序不能反：
    合同（review 第三支柱，待 `twin/multirate.py` 实现）：
    - 线性化分裂 Eẋ−A_diag x = A_off x_prev + Bu 的频域迭代算子 G_WR(jω)=(jωE−A_diag)⁻¹A_off；收敛条件是 sup_ω σ_max(G_WR(jω)) = ρ_sup < 1，不是只看 DC 值。
    - 硬件波形重放每次叠加 DAC 量化 + 重构滤波误差 ε_replay，k 次迭代后的误差界是 ‖e^(k)‖ ≤ ρ_sup^k·‖e^(0)‖ + (1−ρ_sup^k)/(1−ρ_sup)·‖(jωE−A_diag)⁻¹‖∞·ε_replay。第二项给出**有效迭代次数上限 k_max**：超过后重放底噪主导，继续迭代不再降误差。k_max 是编译器必须输出的数，不是仿真里试出来的。
-   - 验收（`bench/run_multirate.py`，16/16）：正规分裂实测每迭代衰减率 = ρ_sup ±1.6%；非正规分裂 σ_max 证书保守（×5 gap，实测率 = sup|λ(G_WR)|——σ_max 充分不必要），IVP 因果窗口比界更快（Volterra 结构）；replay 平台实测 1.33e-3 vs 界 2.06e-3（×0.64，界有效），k_max 公式 8 vs 观测拐点 8；强耦合负控制实测发散。k_max 是编译器必须输出的数，不是仿真里试出来的。
+   - 验收（`bench/run_multirate.py`，16/16）：正规分裂实测每迭代衰减率 = ρ_sup ±1.6%；非正规分裂 σ_max 证书保守（×5 gap，实测率 = sup|λ(G_WR)|——σ_max 充分不必要），IVP 因果窗口比界更快（Volterra 结构）；replay 平台实测 1.33e-3 vs 界 2.06e-3（×0.64，界有效），k_max 公式 8 vs 观测拐点 8；强耦合负控制实测发散。k_max 是编译器必须输出的数，不是仿真里试出来的。注意平台落在界之下（0.64×）的原因：`wr_error_bound` 的 (1−ρ) 求和是确定性最坏情形的范数叠加，而独立零均值 replay 噪声按方差以 1/√(1−ρ²) 叠加——界作为最坏情形是正确的，√ 解释了这个 gap。
 2. **S&H 同步**：每次交换付 kT/C + 孔径抖动，误差进 B_p；必须验证 ‖G_loop·Δ_sync‖∞ < 1。
    ZOH 的等效传递 H_ZOH(s)=(1−e^{−sTs})/(sTs)≈e^{−sTs/2}：把跨岛 S&H 直接并入 `twin/route.py` 的 `PureDelay(T_s/2)` + 折叠噪声端口，复用同一套 slack 判定，不建新机制。
 
@@ -1472,7 +1472,7 @@ Gamma 与 Bessel 的边界也按 §1.5 执行：Gamma 直接拒绝（native-only
 - 拓扑事件：生成 / 合并 / 消失各触发一次，验证 reset map 与事件后重初始化（这里最容易崩）
 - 同 QoI 对比 Phase 3 的 capturing：验证"M_int 小、T_int 长时，fitting 用更少状态达到同等 W_d"
 
-### Phase 6：随机动力学与反问题（SDE 扩展）—— 正问题已验收 19/19
+### Phase 6：随机动力学与反问题（SDE 扩展）—— 正问题已验收 27/27
 
 `analysis/sde.py`（二阶矩 Sylvester + 均方稳定 + Itô↔Stratonovich 修正 + `noise_realizability`）、`twin/noise.py`（OU 滤波色噪声 + replay + ρ_ij）、`bench/run_sde.py`（OU/GBM/双势阱/CRN-moment 参数恢复），见 §6.11。
 

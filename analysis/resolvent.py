@@ -122,18 +122,26 @@ def peak_with_projection(sys: Descriptor, n_grid: int = 1600,
     守恒零模态（E=I、A 奇异）让全 Γ 在 s=0 处发散，但它通常是不可观测/
     不可控的；把 B、C 投影到稳定有限子空间后再算 Γ，才是失配鲁棒性的度量。
     没有虚轴模态时两者相同，不付 QZ 的代价。metric 透传给两处 resolvent_peak；
-    注意：slack 的 robustness_A 轴目前仍消费裸 Γ，M 度量的接入是已知
+    投影路径的 metric 先在全系统上求 M，再用 Z1ᵀ M Z1 投到降阶子空间：
+    直接把全维 M 传给降阶系统会形状不匹配（k×k 的 E），把 "energy" 透传则会
+    在 k×k 非对角的降阶 E 上触发对角占优检查错误。注意：slack 的
+    robustness_A 轴目前仍消费裸 Γ，M 度量的接入是已知
     一致性事项（per-node C 进 IR 之后，owner scope）。
     """
     out = dict(resolvent_peak(sys, n_grid, metric))
     out.update(Gamma_proj=out["Gamma"], n_proj=sys.n, projected=False)
     if not sys.has_imaginary():
         return out
-    red, k = sys.stable_projection()
+    red, k, Z1 = sys._stable_projection_z1()
     if red is None:
         out.update(Gamma_proj=float("nan"), n_proj=0, projected=True)
         return out
-    pj = resolvent_peak(red, n_grid, metric)
+    metric_red = metric
+    if metric is not None:
+        # 度量随子空间投影：M_red = Z1ᵀ M Z1（Z1 列正交 ⇒ M_red 仍对称正定）。
+        M = _metric_matrix(sys, metric)
+        metric_red = Z1.T @ M @ Z1
+    pj = resolvent_peak(red, n_grid, metric_red)
     out.update(Gamma_proj=pj["Gamma"], omega_proj=pj["omega"],
                sigma_min_proj=pj["sigma_min"], n_proj=k, projected=True)
     return out

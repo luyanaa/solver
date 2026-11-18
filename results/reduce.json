@@ -321,6 +321,91 @@
       },
       "ok": true
     },
+    "Tanh": {
+      "name": "Tanh",
+      "kind": "polynomial",
+      "level": 0,
+      "ok": true,
+      "reason": null,
+      "n": 2,
+      "states": [
+        "x",
+        "h1"
+      ],
+      "augmentations": [
+        [
+          "tanh",
+          "x",
+          [
+            "h1"
+          ]
+        ]
+      ],
+      "domain": {},
+      "degree": 3,
+      "n_monomials": 3,
+      "dense_monomials": 10,
+      "sparsity": 0.15,
+      "divisions": [],
+      "invariants": [],
+      "canonical": {
+        "states": [
+          "x",
+          "h1"
+        ],
+        "kind": "polynomial",
+        "degree": 3,
+        "n_monomials": 3,
+        "dense_monomials": 10,
+        "sparsity": 0.15,
+        "divisions": [],
+        "invariants": [],
+        "numerator": [
+          {
+            "state": "x",
+            "powers": [
+              0,
+              1
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "h1",
+            "powers": [
+              0,
+              1
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "h1",
+            "powers": [
+              0,
+              3
+            ],
+            "coeff": -1.0
+          }
+        ],
+        "denominator": [
+          {
+            "state": "x",
+            "powers": [
+              0,
+              0
+            ],
+            "coeff": 1.0
+          },
+          {
+            "state": "h1",
+            "powers": [
+              0,
+              0
+            ],
+            "coeff": 1.0
+          }
+        ]
+      }
+    },
     "HH": {
       "name": "HH",
       "kind": "rational",
@@ -2133,10 +2218,31 @@
       "expected": "polynomial",
       "passed": true,
       "kind": "value"
+    },
+    {
+      "name": "Tanh kind",
+      "got": "polynomial",
+      "expected": "polynomial",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "Tanh augmentation records domain (h, \u22121, 1)",
+      "got": "[('h1', -1.0, 1.0)]",
+      "expected": "[('h1', -1.0, 1.0)]",
+      "passed": true,
+      "kind": "value"
+    },
+    {
+      "name": "HH exp augmentations record domain (e_k, 0, None)",
+      "got": "6 \u00d7 ('e1', 0.0, None)",
+      "expected": "6 \u00d7 (e_k, 0.0, None)",
+      "passed": true,
+      "kind": "value"
     }
   ],
   "summary": {
-    "n_checks": 41,
-    "n_passed": 41
+    "n_checks": 44,
+    "n_passed": 44
   }
 }

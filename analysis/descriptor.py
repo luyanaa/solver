@@ -179,17 +179,27 @@ class Descriptor:
         守恒零模态（以及不稳定/无限模态）被投影掉，降阶系统正则且严格稳定。
         返回 (Descriptor, k)；k=0 时返回 (None, 0)。
         """
+        red, k, _ = self._stable_projection_z1(zero_tol)
+        return red, k
+
+    def _stable_projection_z1(self, zero_tol: float = 1e-12):
+        """stable_projection 的私有变体：额外返回右 deflating subspace Z1。
+
+        Z1 的列是稳定有限谱子空间的坐标基（x = Z1·z）。resolvent 的度量
+        投影需要它：M_red = Z1ᵀ M Z1 才能把能量度量带到降阶系统上
+        （peak_with_projection 用）。公开签名保持 (red, k) 不变。
+        """
         w = self.finite_eigs()
         scale = max(1.0, float(np.max(np.abs(w))) if w.size else 1.0)
         sort = lambda a, b: stable_finite_mask(a, b, zero_tol, scale)
         _, _, alpha, beta, Q, Z = linalg.ordqz(self.A, self.E, sort=sort, output="real")
         k = int(np.count_nonzero(sort(alpha, beta)))
         if k == 0:
-            return None, 0
+            return None, 0, None
         Q1, Z1 = Q[:, :k], Z[:, :k]
         red = Descriptor(Q1.T @ self.E @ Z1, Q1.T @ self.A @ Z1,
                          Q1.T @ self.B, self.C @ Z1, self.D)
-        return red, k
+        return red, k, Z1
 
     # ---- 频响 ----
     def freqresp(self, omega) -> np.ndarray:

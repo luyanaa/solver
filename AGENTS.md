@@ -21,7 +21,8 @@ Plain Python 3 (stdlib + numpy + scipy + matplotlib). No build step, no packagin
     python3 -m twin.spice.extract              # ngspice extraction, every PDK in the dict
     python3 -m twin.spice.extract sky130       # single PDK (~70 s: model loading dominates)
     python3 -m twin.spice.extract ihp-hbt
-    python3 -m bench.run_sde                   # Phase 6 SDE 正/反问题, ~55 s, 19/19 checks
+    python3 -m bench.run_sde                   # Phase 6 SDE 正/反问题, ~55 s, 27/27 checks
+    python3 -m bench.run_multirate             # Phase 4.3 WR/S&H 合法性, ~50 s, 16/16 checks
 
 In the Trae agent shell, prefix ngspice with `env -u LD_LIBRARY_PATH`. The agent
 injects a libstdc++ that ngspice cannot load (`GLIBCXX_3.4.32` missing). A normal

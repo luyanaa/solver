@@ -16,7 +16,7 @@
       "1": {
         "name": "depth1",
         "latency": 7.957747154594768e-11,
-        "phase_delay_omega_c": 7.951125628088188e-11,
+        "phase_delay_omega_c": 7.951125628080336e-11,
         "latency_class": "L2",
         "noise_rms": 1e-05,
         "tau_max_abs": Infinity,
@@ -39,7 +39,7 @@
       "4": {
         "name": "depth4",
         "latency": 3.183098861837907e-10,
-        "phase_delay_omega_c": 3.180450251235275e-10,
+        "phase_delay_omega_c": 3.180450251232134e-10,
         "latency_class": "L3",
         "noise_rms": 1.997003248874672e-05,
         "tau_max_abs": Infinity,
@@ -98,7 +98,7 @@
       "closure_1deg": {
         "name": "e20",
         "latency": 5.984371484277936e-11,
-        "phase_delay_omega_c": 5.984163410604097e-11,
+        "phase_delay_omega_c": 5.984163410598193e-11,
         "latency_class": "L2",
         "noise_rms": 0.0,
         "tau_max_abs": 2.777777777777778e-11,
@@ -119,7 +119,7 @@
       "closure_5deg": {
         "name": "e20",
         "latency": 5.984371484277936e-11,
-        "phase_delay_omega_c": 5.984163410604097e-11,
+        "phase_delay_omega_c": 5.984163410598193e-11,
         "latency_class": "L2",
         "noise_rms": 0.0,
         "tau_max_abs": 1.388888888888889e-10,
@@ -143,7 +143,7 @@
       "r150": {
         "name": "150ps",
         "latency": 1.5e-10,
-        "phase_delay_omega_c": 1.5e-10,
+        "phase_delay_omega_c": 1.4999999999985199e-10,
         "latency_class": "L2",
         "noise_rms": 0.0,
         "tau_max_abs": 1.388888888888889e-10,
@@ -164,7 +164,7 @@
       "r130": {
         "name": "130ps",
         "latency": 1.3e-10,
-        "phase_delay_omega_c": 1.3e-10,
+        "phase_delay_omega_c": 1.2999999999987173e-10,
         "latency_class": "L2",
         "noise_rms": 0.0,
         "tau_max_abs": 1.388888888888889e-10,
@@ -411,23 +411,26 @@
       "state_back": 0.0017
     },
     "phase_delay": {
-      "pd_pure": 9.999999999999998e-12,
+      "pd_pure": 9.999999999990131e-12,
       "lat_pure": 1e-11,
       "pass_pure": true,
       "lat_pad": 2.0500000000000002e-10,
-      "pd_pad": 1.3281858535437833e-10,
+      "pd_pad": 1.3281858535417609e-10,
       "pd_naive": 3.281858535437833e-11,
       "pd_int": 1.3282049642285208e-10,
       "tau_max_216": 6e-11,
       "pass_pad216": false,
-      "pd_oob": 8.999986840605393e-12,
+      "pd_oob": 8.999986840596514e-12,
       "lat_oob": 9e-12,
-      "diverg_deskew": 0.00025252061125968783,
+      "diverg_deskew": 0.000252520612246232,
       "pass_deskew": [
         true,
         true,
         true
-      ]
+      ],
+      "pd_inverting": 3.141647909446916e-11,
+      "pd_noninverting": 3.141647909446918e-11,
+      "pd_inverting_old": -4.685835209054994e-10
     }
   },
   "checks": [
@@ -868,10 +871,22 @@
       "got": "diverg=2.5e-04, pass=[True, True, True]",
       "expected": "< 1e-3, all True (criterion change keeps verdicts)",
       "passed": true
+    },
+    {
+      "name": "inverting buffer phase delay \u2248 non-inverting",
+      "got": "31.42 vs 31.42 ps",
+      "expected": "within 5%",
+      "passed": true
+    },
+    {
+      "name": "old impl would report huge inverting delay (guard)",
+      "got": "-468.6 ps",
+      "expected": "|old| > 10\u00d7 fixed",
+      "passed": true
     }
   ],
   "summary": {
-    "n_checks": 73,
-    "n_passed": 73
+    "n_checks": 75,
+    "n_passed": 75
   }
 }

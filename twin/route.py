@@ -34,6 +34,7 @@ __all__ = [
     "latency_class", "CoupledNets", "coupled_nets",
     "edge_sensitivity", "sensitivity_summary",
     "RouteSpec", "route_closure", "deskew",
+    "phase_delay_at", "loop_gain_matrix", "loop_margins", "PhysicalScaling",
 ]
 
 _TINY = 1e-300
@@ -350,7 +351,10 @@ def phase_delay_at(edge: RouteEdge, omega: float, n_decades: float = 12.0,
     n = int(np.ceil(n_decades * np.log(10.0) / np.log(step)))
     w = w_target * np.power(step, np.arange(-n, 1))
     p = np.unwrap(np.angle(edge.H(1j * w)))
-    return float(-p[-1] / w_target)
+    # 减去起始相位：反相 buffer 的 DC 相位是 ±π，unwrap 从 p[0]=π 出发，
+    # 不减会把 DC 反相（符号翻转，不是延迟）计成 −p[-1]/ω 的巨大伪延迟
+    # （实测 −4934 ps vs 真值 ~66 ps）。相位增量沿路径累加，与常数无关。
+    return float(-(p[-1] - p[0]) / w_target)
 
 
 def _weighted_mean(w: np.ndarray, y: np.ndarray, weight) -> float:

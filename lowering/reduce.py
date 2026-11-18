@@ -520,7 +520,9 @@ def _augment(system: System, manifold_gamma: float | None = None):
                 augs.append(dict(
                     kind="sin", arg=u, states=(s, c),
                     invariant=sub(add(mul(V(s), V(s)), mul(V(c), V(c))), _ONE),
-                    stabilized=False, gamma=None))
+                    # 域证书：|s|,|c| ≤ 1 由不变流形 s²+c²=1 蕴含，不单独记录；
+                    # 硬件映射只需盯 invariant 的漂移。
+                    domain=None, stabilized=False, gamma=None))
             s, c = sin_pairs[u]
             return V(s) if op == "sin" else V(c)
         if op == "exp":
@@ -531,8 +533,10 @@ def _augment(system: System, manifold_gamma: float | None = None):
                 states.append(name)
                 rhs[name] = mul(V(name), ud)
                 exp_map[u] = name
+                # 域证书：e = e^u > 0。e ≤ 0 时 ḗ=e·u̇ 的自身方程退化
+                # （1−h² 反号一类的问题：硬件 offset 把 e 推过 0 会锁死）。
                 augs.append(dict(kind="exp", arg=u, states=(name,),
-                                 invariant=None))
+                                 invariant=None, domain=(name, 0.0, None)))
             return V(exp_map[u])
         if op == "tanh":
             u = rewrite(e.args[0])
@@ -542,8 +546,11 @@ def _augment(system: System, manifold_gamma: float | None = None):
                 states.append(name)
                 rhs[name] = mul(sub(_ONE, pow(V(name), 2)), ud)
                 tanh_map[u] = name
+                # 域证书：h = tanh(u) ∈ (−1, 1)。|h| > 1 时 ḣ=(1−h²)u̇ 的
+                # 系数反号，负反馈变正反馈——硬件 offset/噪声会让增广状态
+                # 逃逸。这是硬件映射提示（钳位/域监控），不改求解器方程。
                 augs.append(dict(kind="tanh", arg=u, states=(name,),
-                                 invariant=None))
+                                 invariant=None, domain=(name, -1.0, 1.0)))
             return V(tanh_map[u])
         if op == "besselj":
             n, u0 = e.args
@@ -685,6 +692,7 @@ class Reduced:
                                            if a.get("invariant") is not None
                                            else None),
                                 n=a.get("n"),
+                                domain=a.get("domain"),
                                 stabilized=bool(a.get("stabilized", False)),
                                 gamma=a.get("gamma"))
                            for a in self.augmentations])
