@@ -1446,6 +1446,7 @@ P0–P6 全链在三锚上跑通（`python3 -m bench.run_pipeline`，34/34，记
 |---|---|---|---|
 | 时间缩放方向 | `α·A`（eig 放大 α 倍，poisson scaled bw=2e18，反向） | `α⁻¹·S·A·S⁻¹`（`t_phys=α·t_model` ⇒ `λ_phys=λ/α`；α=1.58e6 ⇒ 硬件比模型慢） | scaled.bandwidth()=B_hw·margin ≤ B_hw |
 | 状态缩放 | `A·S⁻¹`（单边右乘，非预条件） | 双边相似 `S·A·S⁻¹`（V=Sx，x=S⁻¹V，左乘 S） | Γ_after=1.60 < Γ_before=2.00 —— 预条件真正生效 |
+| 输入缩放 B_v | `B_v = S·B`（缺 α⁻¹——**2026-11 修复**；外部 DC 增益错 S/α 因子：repro dx/dt=−x+u 单位阶跃终值 0.0938 而非 S=0.471） | `B_v = α⁻¹·S·B`（**输入缩放契约**：u 携带物理强迫单位 [x̂/model-time-unit]，u_p(t_p)=u_m(t_p/α) ⇒ 同一个 d/dt_m=α·d/dt_p 代换打在 RHS 的 A、B 两项上；漏掉 B 的 α⁻¹ 内部 eig/A/B/C round-trip 查不出——scaled 系统自身自洽，只有**外部**传递函数 `C_v(jωE_v−A_v)⁻¹B_v` 对拍 `C(jωαE−A)⁻¹B` 才暴露） | `bench/run_scaling.py` 21/21，`results/scaling.json`：repro V_ss=S·x_ss 精确（5.6e-17）、四频点 TF 逐点 ≤4.4e-15、多输入逐通道保持、eig 不变性仍在（≤9.3e-10）；p7 b_ports/netlist `effective_B` 消费的 gain 已含 α⁻¹（p7.py 的 scaled-缺失回退路径同步修复）。替代口径（契约已命名）：端口已是物理速率单位（V/s per V_in，如直接注进物理求和结点的噪声电流）**不**带 α⁻¹、不走 scaled.B；slack 的 B_p 扰动端口与主输入同口径（物理单位扰动源经 scaling.scaled 评估同吃 α⁻¹）。契约显式记录在 `ScalingResult.input_contract`（进 as_dict） |
 | ΔA 量纲 | scaled 系统直接吃 model-time 绝对 `delta_A_norm` ⇒ "缩时间白嫖失配裕度"（naive 得 4e-10 伪裕度） | `delta_A_norm` 按**相对失配**解释：`δ_rel=‖ΔA‖/‖A‖ ⇒ ‖ΔA_v‖=δ_rel·‖A_v‖`，`evaluate_sys(scaling=)` 内部自动缩放（`budget.py`） | shear：raw robA=0.0512，scaled=0.0020（真实预条件增益，非伪值）；naive-absolute 会是 3.98e-10 |
 
 关键语义：`sc.scaled` 是 slack/Γ/σ_y/‖H‖∞ 的唯一一致物理时间入口（`evaluate_sys(sys, spec, scaling=sc)`）；不给 scaling 就退化为 model-time 原始系统。poisson 的 `delta_A_norm=None` 是**正确声明**——KCL 松弛网格的失配是泄漏/漂移型扰动（slack.py：判 drift budget 不用 Γ_proj），`robustness_A` 轴对它"不适用/未评估"，其误差进 `floor_bound`（`results/constraint.json`：floor_meas=1.38e-4 ≤ bound 3.63e-3）。
@@ -1926,15 +1927,29 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                                     # False + pad_can_fix 诚实（feedback False/
                                     # 非 feedback True）；负对照：纯对角/burgers
                                     # ⇒ 空表、NaN/inf 边 flagged（38/38）
-        ✅ run_compiler_e2e.py      # B1 closeout：编译链 COMPOSE 端到端——
-                                    # 同一 descriptor 穿 spec→discretize→
-                                    # scaling→cert→closure→split→basis→
-                                    # interface→route_contract→generate_config，
-                                    # binding axis + verdict 逐级一致性
-                                    # （diffusion-1d 对角链 + synthetic-stiff
-                                    # 快慢链；omega_max=2π·scaled.bandwidth
-                                    # 物理时间交接；组合缺口 F1–F5 记录
-                                    # 在 findings）（36/36）
+        ✅ lowering/compose.py      # B1 组合层 run_chain：链驱动 + 逐 stage
+                                    # 坐标声明（model/physical-time/basis-T/
+                                    # field）；F1 typed boundary（System IR ⇒
+                                    # TypedBoundaryError）、F2 projected 载体
+                                    # 上重推 scaling（alpha 比 = 谱比 0.25，双
+                                    # 口径入台账）、F3 interface 输入域 = "field"
+                                    # （无场 ⇒ 显式 not applicable）、F5 basis
+                                    # 赢家复合进 scaled lane（T⁻¹AT 尘埃清理
+                                    # 1e-12·max|A|；eig 不变性 9.3e-16、外部
+                                    # TF 不变性 6.9e-18、alpha 比 1.0；p7 a_tol
+                                    # 边准入 mask 同时发给契约与系数图 ⇒
+                                    # 边集由构造相等并断言）（compose 层）
+        ✅ run_compiler_e2e.py      # B1 closeout：经 run_chain 走整条链，
+                                    # F1–F5 关闭性断言（findings status=
+                                    # "closed"；F4 保持正向一致断言：
+                                    # omega_max=2π·scaled.bandwidth）；
+                                    # diffusion full+projected 两 lane、
+                                    # synthetic eigenvector+identity 两 lane
+                                    # （48/48；旧 12 条"契约边"实测为
+                                    # eigenvector 共轭的 1e-14 尘埃，清理后
+                                    # 对角化 ⇒ 0 边；identity lane 6 条边 ==
+                                    # coeff 边集，(0,1) 边缩放权重 6.84e-9 <
+                                    # a_tol 5.03e-6 被双边一致剔除）
         ✅ ledger.py                # 七项假设敏感度账本 → results/ledger.json
                                     # （κ_hw 4.86% 翻判 / B_hw margin 0.8 /
                                     # 噪声 0.63%/unit / 失配线性 / 2.86°/级 /
