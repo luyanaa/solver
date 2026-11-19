@@ -22,7 +22,8 @@ from dataclasses import dataclass, field
 import numpy as np
 
 __all__ = ["BehavioralIntegrator", "BehavioralEdge", "BehavioralPort",
-           "BehavioralTap", "BehavioralNetlist", "to_behavioral"]
+           "BehavioralTap", "BehavioralNetlist", "to_behavioral",
+           "attach_nonidealities"]
 
 
 @dataclass
@@ -108,6 +109,10 @@ class BehavioralNetlist:
     ports: list                            # [BehavioralPort]
     taps: list                             # [BehavioralTap]
     source: dict = field(default_factory=dict)
+    # B2 非理想性附件（lowering 不生成它，只承载）：元素名 → 参数 dict，
+    # 由 twin.macromodel.b2_nonideal_map 之类的外部 pass 生成后挂上。
+    # 空 dict == 理想默认（extraction=None 路径），effective_A() 不受影响。
+    nonideal: dict = field(default_factory=dict)
 
     # ---- 重构有效动力学（round-trip 的核心）----
     def effective_A(self) -> np.ndarray:
@@ -155,7 +160,8 @@ class BehavioralNetlist:
             edges=[e.as_dict() for e in self.edges],
             ports=[p.as_dict() for p in self.ports],
             taps=[t.as_dict() for t in self.taps],
-            source=dict(self.source))
+            source=dict(self.source),
+            nonideal={k: dict(v) for k, v in self.nonideal.items()})
 
 
 def to_behavioral(config, name: str = "behavioral") -> BehavioralNetlist:
@@ -195,3 +201,27 @@ def to_behavioral(config, name: str = "behavioral") -> BehavioralNetlist:
     return BehavioralNetlist(name=name, alpha=float(config.source.get("alpha", 0.0)),
                              integrators=ints, edges=edges, ports=ports,
                              taps=taps, source=src)
+
+
+def attach_nonidealities(netlist: BehavioralNetlist, mapping: dict
+                         ) -> BehavioralNetlist:
+    """把 B2 非理想性参数挂到网表上（B2 macromodel pass，DESIGN.md §6.20）。
+
+    `mapping`：元素名 → 参数 dict（由 twin.macromodel.b2_nonideal_map 之类
+    的外部 pass 从 results/b2_extract.json 生成——本模块不 import twin/，
+    依赖方向不变）。校验：未知元素名 ⇒ 显式报错，不静默丢弃；重复挂载
+    也报错（非理想性是实测事实，覆盖 = 撒谎）。
+
+    理想默认：不调用本函数时 netlist.nonideal == {}，effective_A()/round-trip
+    完全不受影响（run_p7_netlist 的旧验收照旧成立）。
+    """
+    known = {itg.name for itg in netlist.integrators}
+    unknown = sorted(set(map(str, mapping)) - known)
+    if unknown:
+        raise ValueError("attach_nonidealities: 未知元素名 %s（integrators: %s）"
+                         % (unknown, sorted(known)))
+    if netlist.nonideal:
+        raise ValueError("attach_nonidealities: nonideal 已挂载（%s），"
+                         "不允许覆盖" % sorted(netlist.nonideal))
+    netlist.nonideal = {k: dict(v) for k, v in mapping.items()}
+    return netlist

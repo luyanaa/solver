@@ -1,0 +1,134 @@
+{
+  "n_checks": 32,
+  "n_pass": 32,
+  "n_fail": 0,
+  "corner_fits": {
+    "tt": {
+      "gm2": 0.00030822,
+      "A0": 9.841179301942471,
+      "g_out_total": 3.1319417169765715e-05,
+      "ro_ohm": 62755.7225676884,
+      "id_a": 1.3911730261538461e-05,
+      "lambda_fit": 1.14542199177086,
+      "pole_pred_hz": 4984640.057325392,
+      "pole_meas_hz": 5011872.34
+    },
+    "ss": {
+      "gm2": 0.000135702,
+      "A0": 7.3024827752190165,
+      "g_out_total": 1.8582994876825303e-05,
+      "ro_ohm": 312658.3328950281,
+      "id_a": 4.8484843076923065e-06,
+      "lambda_fit": 0.6596658438464094,
+      "pole_pred_hz": 2957575.492098114,
+      "pole_meas_hz": 2818382.93
+    },
+    "ff": {
+      "gm2": 0.000416532,
+      "A0": 6.482750381679464,
+      "g_out_total": 6.425235825478297e-05,
+      "ro_ohm": 20463.396532489995,
+      "id_a": 2.110481007692308e-05,
+      "lambda_fit": 2.315478921253203,
+      "pole_pred_hz": 10226080.421560057,
+      "pole_meas_hz": 10000000.0
+    }
+  },
+  "measured": {
+    "gm_mos2_tt": 0.00030822,
+    "gm_fd_tt": 0.00015093504307692315,
+    "g_dev_tt_S": 1.593480178515033e-05,
+    "ro_mos_tt_ohm": 62755.7225676884,
+    "lambda_fit_tt": 1.14542199177086,
+    "ro_hbt_ohm": 3627541.455543755,
+    "A0_hbt": 2803.0237008575077,
+    "A0_ac": {
+      "tt": 9.841179301942471,
+      "ss": 7.3024827752190165,
+      "ff": 6.482750381679464
+    },
+    "pole_meas_hz": {
+      "tt": 5011872.34,
+      "ss": 2818382.93,
+      "ff": 10000000.0
+    },
+    "pole_pred_hz": {
+      "tt": 4984640.057325392,
+      "ss": 2957575.492098114,
+      "ff": 10226080.421560057
+    },
+    "pole_fit_delta_pct": {
+      "tt": -0.5433554733081603,
+      "ss": 4.9387384736294,
+      "ff": 2.260804215600576
+    },
+    "diff_slope_model": -3.8206515121314935,
+    "diff_slope_meas": -3.6538130000000058,
+    "noise_hbt": {
+      "density_v_rthz": 6.376191298842084e-09,
+      "source": "measured-hbt",
+      "factor": 1.8969465578949878,
+      "note": "ngspice .noise VBIC HBT diff pair, white band normalized; no in-band 1/f measured over 1k-1GHz"
+    },
+    "noise_mos": {
+      "density_v_rthz": 7.40836250465106e-09,
+      "source": "derived-not-measured",
+      "factor": 1.0,
+      "note": "4kT*gamma/gm derivation, gamma=0.5; NOT measured (PSP103 OSDI device noise unimplemented in ngspice-44.2)"
+    }
+  },
+  "system": {
+    "pole_tt_rad_s": 166869844.86207348,
+    "dc_gain_tt": 0.8177781122094945,
+    "leak_pct": 10.55739042458765,
+    "ideal_model_dc_gain": 0.999565
+  },
+  "p_workload": {
+    "linear_only": {
+      "tol_10": 1.0,
+      "tol_5": 1.0,
+      "tol_2": 0.875
+    },
+    "nonideal_joint": {
+      "tol_10": 0.9166666666666666,
+      "tol_5": 0.625,
+      "tol_2": 0.375
+    },
+    "nonideal_cal": {
+      "tol_10": 1.0,
+      "tol_5": 1.0,
+      "tol_2": 0.9583333333333334
+    },
+    "nonideal_vs_linear_target": {
+      "tol_10": 0.5,
+      "tol_5": 0.0,
+      "tol_2": 0.0
+    },
+    "b2_json_reference": {
+      "tol_10": 1.0,
+      "tol_5": 1.0,
+      "tol_2": 0.875,
+      "n_mc": 24
+    },
+    "n_mc": 24
+  },
+  "axis_attribution": {
+    "systematic_leak_pct": 10.55739042458765,
+    "sigma_mirror_pct": 5.534088535789476,
+    "sigma_gm_pct": 1.5035361598168462,
+    "sigma_Id_pct": 4.969911388273674,
+    "sigma_pole_nonideal_pct": 0.8839608968007017,
+    "vos_sigma_mV": 10.647829550194691
+  },
+  "validity_limits": [
+    "1-pole small-signal model: valid where the measured AC magnitude is 1-pole (log-mag rms < 1e-3, checked)",
+    "ro/lambda_fit are corner- and bias-dependent (lambda_fit 0.66-2.32 /V across ss/tt/ff); the ledger 0.970/V is a point value; ro is NOT rescaled with per-instance gm",
+    "diff-pair tanh law ignores VBIC Early/high-injection (measured-vs-model slope residual ~4.6%)",
+    "v_swing (0.5 V), TG c_par (30 fF) and q_inj_fc (0.5) are declared model parameters, NOT measurements",
+    "MOS/TG noise: derived 4kT*gamma/gm only \u2014 PSP103 OSDI device noise unimplemented in ngspice-44.2"
+  ],
+  "notes": [
+    "noise mos: PSP103 OSDI device noise returns identically-zero onoise/inoise spectra in ngspice-44.2 (verified in isolation) -> gamma_eff NOT measurable with this toolchain; only HBT (native VBIC) noise is real. No number fabricated.",
+    "noise tg: PSP103 OSDI device noise returns identically-zero onoise/inoise spectra in ngspice-44.2 (verified in isolation) -> gamma_eff NOT measurable with this toolchain; only HBT (native VBIC) noise is real. No number fabricated."
+  ]
+}
