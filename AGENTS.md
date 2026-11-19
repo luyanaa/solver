@@ -39,6 +39,7 @@ Plain Python 3 (stdlib + numpy + scipy + matplotlib). No build step, no packagin
     python3 -m bench.run_compiler_e2e          # B1 closeout compiler-chain COMPOSE e2e via the real composition layer lowering/compose.py (run_chain: typed boundary + declared per-stage coordinate domains + F1-F5 closed by construction — projected-carrier scaling re-derivation, basis conjugation with eig/TF invariance, p7 a_tol edge-admission mask shared by contracts and coeff graph), ~35 s, 48/48 checks
     python3 -m twin.spice.extract_b2           # B2 SG13G2 primitive .noise + corner/MC extraction (~10 min, 6 ngspice runs)
     python3 -m bench.run_b2                    # B2 acceptance: gamma_eff + corner≠MC + CalibratedTwin feed + P(workload passes), ~1 s, reads results/b2_extract.json
+    python3 -m bench.run_b2_behavioral         # B2 primitive macromodels fed from results/b2_extract.json + P(workload) re-eval (nonideal axes: g_out leak, mirror/Id/gm MC, vos, HBT 1.897x white factor), ~2 s, 32/32 checks
 
 In the Trae agent shell, prefix ngspice with `env -u LD_LIBRARY_PATH`. The agent
 injects a libstdc++ that ngspice cannot load (`GLIBCXX_3.4.32` missing). A normal

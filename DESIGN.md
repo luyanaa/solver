@@ -1483,6 +1483,18 @@ P0–P6 全链在三锚上跑通（`python3 -m bench.run_pipeline`，34/34，记
 
 B2 仍是 pre-silicon 行为级：无 PEX/EM/substrate/thermal，corner×MC×cal-loop 组合与 post-layout slack 重跑在 B2 后续条目。
 
+### 6.20 B2 行为级 macromodel：把 SPICE 实测非理想性装进原语模型（`twin/macromodel.py`、`bench/run_b2_behavioral.py`、`results/b2_behavioral.json`）
+
+§6.19 测到了数字，本节把它们变成**可复算的模型**并重算 P(workload)。每条 macromodel 都必须复现自己的实测点，否则验收即 FAIL（32/32，`bench/run_b2_behavioral.py`）。
+
+**(a) 积分器极点是 (gm+g_out)/C，不是 gm/C（headline）。** b2 AC 记录（gm-cell B，Rl=65k，C=1pF）的实测低频增益 A0（9.84/7.30/6.48 @tt/ss/ff）与工作点器件 gm（gm_mos2_param）经 GBW/A0 恒等式给出节点总电导 g_out_total=gm/A0，扣除 65k 负载后得器件自身输出电导 **15.93 µS @TT（ro=62.8k，λ_fit=1.147/V @Id=13.9µA）**。macromodel 预测极点 gm2/(A0·C) 对实测 pole_hz 的偏差为 **−0.54% / +4.94% / +2.26%**（tt/ss/ff，1-pole 拟合残差 ≤2.1e-4 证实模型类）。器件漏电导使 MOS 自系数比 gm/C 口径**系统性 +10.6%**；HBT 接口（λ=0.0138/V，ro=3.63 MΩ）漏电/gmC 仅 **0.036%**。λ_fit 随 corner 张成 **0.66–2.32 /V**——§6.9 的 0.970/V 是二极管偏置下的点值，不是常数。
+
+**(b) P(workload passes) 四口径（24 片实测 MC，n=24）。** (i) 线性参数口径（run_b2.py，gm 轴，σ1.5%）：**1.00 / 1.00 / 0.875**（±10/5/2%，逐点复算一致）；(ii) 非理想联合判据（有效极点 + DC 增益，TT 实测参考）：**0.92 / 0.62 / 0.38**——线性口径漏掉了两条轴：镜像比 σ5.5% 直接进增益、Id σ5.0% 经 λ 进漏电；(iii) 前台增益标定后增益轴收敛到 100 ppm 底但**极点不动**：1.00/1.00/0.96（极点剩余散布 λ·σ_Id/gm=0.52%）；(iv) 若仍以线性 gm/C 为设计目标，漏电把 ±5%/±2% 窗口**清空**（0.50/0.00/0.00）——**target_gm_over_c 必须定义在 (gm+g_out)/C 上，或由标定环 trim gm code 吸收 g_out**。级联 DC 增益从线性口径的 0.9996 降到实测 **0.818（−18.2%）**，同为漏电的系统性效应。轴归因：镜像 5.5% > Id 5.0% > gm 1.5%，系统项 +10.6% 支配均值。
+
+**(c) 噪声与非线性。** HBT 白噪密度由 var_inoise_white/bw 复原为 **6.376 nV/√Hz**，白噪因子 (e_meas/e_{γ=1})² = 1.8961 vs 记录 1.8969（<0.1%）；平谱带内白噪因子经二阶系统传递函数后仍是**纯方差标度**（输出方差比 1.896947），SNR 代价 10·log10 = **2.78 dB**，与 §6.19 的 2.8 dB 一致。MOS 路径保持 4kT·γ/gm 推导口径（7.41 nV/√Hz @γ=0.5，标注 derived-not-measured——PSP103 OSDI 器件噪声在 ngspice-44.2 仍未实现）。差分对 tanh 律对实测扫描斜率的复现差 **+4.6%**（VBIC Early/高注入残余，作为有效域记录）；最差芯片 26.4 mV 失调在工作点吃掉**局部 gm ×0.78（−22%）**——前台 vos 标定是必需项不是装饰。
+
+**(d) 网表承载。** `lowering/netlist.py` 新增 `BehavioralNetlist.nonideal`（空 dict = 理想默认，effective_A/round-trip 不受影响）与 `attach_nonidealities`（键校验、拒绝重复挂载）；`twin/macromodel.b2_nonideal_map` 从 b2_extract.json 为每个积分器生成 ro/leak/A0/v_swing/v_sat/噪声密度+来源/vos/TG 实例参数。v_swing（0.5 V 头room估算）、TG c_par（30 fF）、q_inj_fc（0.5）是**声明的模型参数，不是实测**；TG 串联 RC 极点 352 MHz = 级极点的 71×（模型预测）。
+
 ---
 
 ## 7. 分阶段落地（每阶段都有可证伪的验收）
