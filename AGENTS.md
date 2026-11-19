@@ -37,8 +37,8 @@ Plain Python 3 (stdlib + numpy + scipy + matplotlib). No build step, no packagin
     python3 -m bench.run_route_contract        # B1 per-edge route contracts (four-verdict + feedback omega_c + physical-unit sensitivity contract), ~2 s, 53/53 checks
     python3 -m bench.run_scaling               # P3 输入缩放契约 (B_v = alpha^-1·S·B; external TF/DC-gain/step round-trip that FAILS on the old B_v=S·B bug), ~2 s, 21/21 checks
     python3 -m bench.run_compiler_e2e          # B1 closeout compiler-chain COMPOSE e2e via the real composition layer lowering/compose.py (run_chain: typed boundary + declared per-stage coordinate domains + F1-F5 closed by construction — projected-carrier scaling re-derivation, basis conjugation with eig/TF invariance, p7 a_tol edge-admission mask shared by contracts and coeff graph), ~35 s, 48/48 checks
-    python3 -m twin.spice.extract_b2           # B2 SG13G2 primitive .noise + corner/MC extraction (~10 min, 6 ngspice runs)
-    python3 -m bench.run_b2                    # B2 acceptance: gamma_eff + corner≠MC + CalibratedTwin feed + P(workload passes), ~1 s, reads results/b2_extract.json
+    python3 -m twin.spice.extract_b2           # B2 SG13G2 primitive extraction: .noise + corners + mismatch MC(48) + PVT(3T×3V) + transient step/THD + pre-PEX parasitic probe, fail-closed status (~12 min, 19 ngspice runs)
+    python3 -m bench.run_b2                    # B2 acceptance: fail-closed status + gamma_eff + corner≠MC + CalibratedTwin feed + P(workload) + PVT/transient/parasitic checks, ~2 s, 24/24 checks, reads results/b2_extract.json
     python3 -m bench.run_b2_behavioral         # B2 primitive macromodels fed from results/b2_extract.json + P(workload) re-eval (nonideal axes: g_out leak, mirror/Id/gm MC, vos, HBT 1.897x white factor), ~2 s, 32/32 checks
 
 In the Trae agent shell, prefix ngspice with `env -u LD_LIBRARY_PATH`. The agent
