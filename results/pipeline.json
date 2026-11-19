@@ -148,19 +148,19 @@
             "detail": "\u0393_proj=0.0008149"
           },
           "hinf": {
-            "value": 0.0008148740857541815,
+            "value": 1000.0009536742323,
             "verdict": "pass",
             "detail": "\u2016H\u2016\u221e"
           },
           "lyapunov": {
             "value": {
-              "sigma_y": 0.02018506017616128,
-              "sigma_y2": 0.0004074366543152521,
+              "sigma_y": 24770.795610037563,
+              "sigma_y2": 613592315.1542562,
               "h2_finite": true,
               "method": "direct"
             },
             "verdict": "pass",
-            "detail": "\u03c3_y=0.02019 (direct)"
+            "detail": "\u03c3_y=2.477e+04 (direct)"
           }
         },
         "binding_axis": "robustness_A",
@@ -443,19 +443,19 @@
             "detail": "\u0393_proj=inf"
           },
           "hinf": {
-            "value": 23200298.407650985,
+            "value": 14.702434330727211,
             "verdict": "pass",
             "detail": "\u2016H\u2016\u221e"
           },
           "lyapunov": {
             "value": {
-              "sigma_y": 9974051669.547,
-              "sigma_y2": 9.94817067067933e+19,
+              "sigma_y": 6320.7307555335165,
+              "sigma_y2": 39951637.2839473,
               "h2_finite": true,
               "method": "direct"
             },
             "verdict": "pass",
-            "detail": "\u03c3_y=9.974e+09 (direct)"
+            "detail": "\u03c3_y=6321 (direct)"
           }
         },
         "binding_axis": "bandwidth",
@@ -1039,7 +1039,7 @@
           "T": 0.3
         },
         "cfl": 0.2,
-        "rhs_func": "<function _burgers_fv.<locals>.rhs_func at 0x7f15dadfd900>",
+        "rhs_func": "<function _burgers_fv.<locals>.rhs_func at 0x7f609c1f99b0>",
         "u0": "0.5+0.5 sin(2 pi x) point values (run_phase0/run_transform convention)",
         "reg": {
           "p": 1.4385004176399947,
@@ -1253,19 +1253,19 @@
             "detail": "\u0393_proj=0.0009464"
           },
           "hinf": {
-            "value": 0.00020814576480961507,
+            "value": 6.124887262136152,
             "verdict": "pass",
             "detail": "\u2016H\u2016\u221e"
           },
           "lyapunov": {
             "value": {
-              "sigma_y": 0.02117469271828472,
-              "sigma_y2": 0.00044836761171377986,
+              "sigma_y": 623.0854892891787,
+              "sigma_y2": 388235.5269627352,
               "h2_finite": true,
               "method": "qz"
             },
             "verdict": "pass",
-            "detail": "\u03c3_y=0.02117 (qz)"
+            "detail": "\u03c3_y=623.1 (qz)"
           }
         },
         "binding_axis": "representation",
