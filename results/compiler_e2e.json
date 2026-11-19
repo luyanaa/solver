@@ -8,7 +8,9 @@
       "eta32": 0.4880150804377589,
       "split": "no-split",
       "basis": "identity",
-      "n_edges": 0
+      "n_edges": 0,
+      "alpha_carried": 2.0371832715762605e-07,
+      "alpha_full": 8.148733086305042e-07
     },
     "synthetic-stiff": {
       "alpha": 0.0005968325286732399,
@@ -17,38 +19,86 @@
       "split": "split",
       "gap": 499.9962584004783,
       "basis": "eigenvector",
-      "n_edges": 12,
-      "n_feedback": 12,
-      "kappa": 3000.007800337857
+      "n_edges": 6,
+      "n_feedback": 6,
+      "kappa": 3000.007800337857,
+      "coords": "basis-T(model)",
+      "eig_inv": 9.264036960195256e-16,
+      "tf_inv": 6.942280514687692e-18
     }
   },
   "findings": [
     {
       "id": "F1",
-      "workload": "diffusion-1d",
-      "text": "normalize (lowering.normalize) consumes the reduce System IR, not Discretized/Descriptor; nondimensionalization for descriptor-producing anchors is the discretize unit-domain precondition. Descriptor lane enters the chain at scaling."
+      "status": "closed",
+      "mechanism": "run_chain typed boundary: only descriptor-producing objects (Descriptor/Discretized/ProblemBundle) enter; reduce System IR / Normalization objects raise TypedBoundaryError whose text names pipeline_normalize as the System-IR lane entry. Asserted executably, not documented.",
+      "numbers": {}
     },
     {
       "id": "F2",
-      "workload": "diffusion-1d",
-      "text": "closure.projected (N=32) changes max|lambda| (4.096 -> 1.024); alpha/omega_max were derived on the FULL descriptor. Carrying the projected descriptor downstream requires RE-DERIVING scaling on it, else route_contract/p7 omega_max and P3 alpha split into two conventions. Chain carries the full descriptor + closure certificate as evidence.",
+      "status": "closed",
+      "mechanism": "closure_carry='projected' makes the projected descriptor the ONLY downstream carrier; gramian_scaling is re-derived on it (alpha_carried = lam_max_proj/(2\u03c0\u00b7B_hw\u00b7margin)); both scalings are in ChainResult.scaling_full_record.",
       "numbers": {
         "lam_max_full": 4.096,
-        "lam_max_projected": 1.024
+        "lam_max_projected": 1.024,
+        "alpha_full": 8.148733086305042e-07,
+        "alpha_carried": 2.0371832715762605e-07
       }
     },
     {
       "id": "F3",
-      "workload": "diffusion-1d",
-      "text": "interface consumes a physical field on the periodic grid, not the descriptor/modal coordinates; modal<->field plumbing (the representation transform T) is compiler work not yet wired. Minimal real input used: the anchor grid fields (smooth/step)."
+      "status": "closed",
+      "mechanism": "interface input domain is declared 'field': run_chain(field=) hands the physical field to choose_interface as an EVIDENCE stage (domain_in='field'); a wrong-length input raises ChainCompositionError; a workload without a field records 'interface not applicable' explicitly. The modal<->field representation transform (\u00a75.7 T) is the declared boundary.",
+      "numbers": {}
+    },
+    {
+      "id": "F4",
+      "status": "closed (positive)",
+      "mechanism": "omega_max = max|lambda|/alpha = 2\u03c0\u00b7scaled.bandwidth() asserted positively on every lane; model/physical conventions closed.",
+      "numbers": {}
     },
     {
       "id": "F5",
-      "workload": "synthetic-stiff",
-      "text": "basis selection is not composed into scaling: p7's coefficient graph consumes scaling.scaled (RAW coordinates + P3 preconditioning, a_tol-thresholded), while route contracts / generate_config's coupling graph consume the descriptor passed in (here the basis winner's transformed A). When winner != identity these are DIFFERENT coordinate systems (contracts on 12 transformed edges vs 6 coeff edges on the raw graph); the compiler must compose T into the scaled descriptor before emitting coeff graph + contracts.",
+      "status": "closed",
+      "mechanism": "basis winner composed into the scaled lane: T\u207b\u00b9AT dust-cleaned (1e-12\u00b7max|A|), scaling re-derived in T coordinates (B_v = \u03b1\u207b\u00b9\u00b7S_z\u00b7B_z, external TF + eig invariance asserted), p7's a_tol edge-admission mask applied to the ONE descriptor handed to both emit_route_contracts and generate_config \u21d2 contract edge set == coeff edge set asserted in-chain.",
       "numbers": {
-        "n_coeff_edges": 6,
-        "n_contracts": 12
+        "eig_invariance": 0.0
+      }
+    },
+    {
+      "id": "F1",
+      "status": "closed",
+      "mechanism": "run_chain typed boundary (asserted on System IR; pipeline_normalize stays typed on Descriptor).",
+      "numbers": {}
+    },
+    {
+      "id": "F2",
+      "status": "closed",
+      "mechanism": "diffusion projected lane: scaling re-derived on the projected carrier; alpha ratio 0.25 == spectrum ratio; both scalings ledgered.",
+      "numbers": {}
+    },
+    {
+      "id": "F3",
+      "status": "closed",
+      "mechanism": "field-domain interface evidence in the diffusion chain; 'not applicable' recorded on the synthetic lane (no field).",
+      "numbers": {}
+    },
+    {
+      "id": "F4",
+      "status": "closed (positive)",
+      "mechanism": "omega_max == max|\u03bb|/alpha == 2\u03c0\u00b7scaled.bandwidth() on all lanes.",
+      "numbers": {}
+    },
+    {
+      "id": "F5",
+      "status": "closed",
+      "mechanism": "eigenvector lane composed into basis-T coordinates (dust-cleaned T\u207b\u00b9AT, re-derived scaling, eig/TF/alpha invariance asserted); identity lane: p7 a_tol edge admission applied to the single descriptor both consumers see \u21d2 6==6 edge sets with contract ordinals aligned.",
+      "numbers": {
+        "eig_invariance": 9.264036960195256e-16,
+        "tf_invariance": 6.942280514687692e-18,
+        "nnz_raw_transformed": 12,
+        "nnz_cleaned": 0,
+        "n_edges_identity_lane": 6
       }
     }
   ],
@@ -63,8 +113,16 @@
     },
     {
       "problem": "diffusion-1d",
-      "name": "diffusion-1d: normalize lane boundary is typed (Finding F1)",
-      "got": "AttributeError on Descriptor",
+      "name": "diffusion-1d: F1 closed: run_chain(System IR) \u2192 TypedBoundaryError naming the lane",
+      "got": "System: \u2026run_chain: source is System, which is not a descriptor-produ\u2026",
+      "expected": "TypedBoundaryError; text names normalize/pipeline_normalize entry",
+      "passed": true,
+      "kind": "compose"
+    },
+    {
+      "problem": "diffusion-1d",
+      "name": "diffusion-1d: F1 companion: pipeline_normalize still typed on Descriptor (not silent)",
+      "got": "raised",
       "expected": "explicit exception on Descriptor (System-IR lane, parallel P0 pass)",
       "passed": true,
       "kind": "compose"
@@ -74,6 +132,22 @@
       "name": "diffusion-1d: P3: scaled eig = raw eig / alpha (physical-time descriptor)",
       "got": "max|\u0394|/scale=1.85e-16 (alpha=8.149e-07, method=rms3sigma)",
       "expected": "eig(scaled) = eig(raw)/alpha, ~1e-9",
+      "passed": true,
+      "kind": "compose"
+    },
+    {
+      "problem": "diffusion-1d",
+      "name": "diffusion-1d: chain stages declare coordinate domains (model/physical-time/field)",
+      "got": "ok=True; interface domain_in=('field', 'contract')",
+      "expected": "boundary\u2192model, scaling\u2192physical-time, interface\u2192field declared",
+      "passed": true,
+      "kind": "compose"
+    },
+    {
+      "problem": "diffusion-1d",
+      "name": "diffusion-1d: P3 input contract declared in-chain (B_v = alpha^-1\u00b7S\u00b7B form)",
+      "got": "declared",
+      "expected": "scaling stage notes carry the B_v = \u03b1\u207b\u00b9\u00b7S\u00b7B contract verbatim",
       "passed": true,
       "kind": "compose"
     },
@@ -95,22 +169,6 @@
     },
     {
       "problem": "diffusion-1d",
-      "name": "diffusion-1d: closure N=32: k>N forcing gives full defect, projected dim",
-      "got": "eta=4.880e-01 dim=32",
-      "expected": "eta>0, projected n=32",
-      "passed": true,
-      "kind": "compose"
-    },
-    {
-      "problem": "diffusion-1d",
-      "name": "diffusion-1d: closure N=32 verdict with eps=10\u03b7",
-      "got": "feasible",
-      "expected": "feasible",
-      "passed": true,
-      "kind": "compose"
-    },
-    {
-      "problem": "diffusion-1d",
       "name": "diffusion-1d: closure N=n: exact closure (no reduction available)",
       "got": "eta=0.000e+00",
       "expected": "eta == 0 at full N",
@@ -119,11 +177,11 @@
     },
     {
       "problem": "diffusion-1d",
-      "name": "diffusion-1d: finding F2 recorded: projected N changes max|lambda| vs alpha source",
-      "got": "lam_max 4.096 \u2192 1.024 (projected)",
-      "expected": "recorded; chain carries full descriptor",
+      "name": "diffusion-1d: F2 fact recorded at full carry: projected N=32 would change max|lambda| 4.096\u21921.024 (closed in projected lane)",
+      "got": "lam_max_full=4.096 lam_max_proj(N=32)=1.024 changed=n/a (N=n)",
+      "expected": "spectrum-change fact surfaced by the chain (see projected lane)",
       "passed": true,
-      "kind": "finding"
+      "kind": "info"
     },
     {
       "problem": "diffusion-1d",
@@ -143,27 +201,19 @@
     },
     {
       "problem": "diffusion-1d",
-      "name": "diffusion-1d: interface: smooth field \u2192 capture free + single-source contract",
-      "got": "mode=capture singular=False single_source=True",
-      "expected": "capture, not singular, single_source=True",
+      "name": "diffusion-1d: F3 closed: interface ran in domain 'field' with the workload's field",
+      "got": "status=evidence (field input) mode=capture single_source=True",
+      "expected": "evidence (field input); capture, single_source=True",
       "passed": true,
       "kind": "compose"
     },
     {
       "problem": "diffusion-1d",
-      "name": "diffusion-1d: interface: step field \u2192 singular + single-source leak = 0",
+      "name": "diffusion-1d: interface (direct): step field \u2192 singular + single-source leak = 0",
       "got": "mode=capture singular=True leak=0.0e+00",
       "expected": "singular, mode\u2208{capture,fit}, leak==0",
       "passed": true,
       "kind": "compose"
-    },
-    {
-      "problem": "diffusion-1d",
-      "name": "diffusion-1d: finding F3 recorded: interface needs field input, modal\u2194field plumbing unwired",
-      "got": "recorded (smooth+step fields used)",
-      "expected": "recorded",
-      "passed": true,
-      "kind": "finding"
     },
     {
       "problem": "diffusion-1d",
@@ -175,7 +225,7 @@
     },
     {
       "problem": "diffusion-1d",
-      "name": "diffusion-1d: route report omega_max = 2\u03c0\u00b7scaled.bandwidth() (physical-time hand-off)",
+      "name": "diffusion-1d: F4 (positive): contract omega_max = 2\u03c0\u00b7scaled.bandwidth() (physical-time hand-off)",
       "got": "5.026548e+06 vs 5.026548e+06",
       "expected": "equal (max|\u03bb|/alpha = scaled bandwidth\u00d72\u03c0)",
       "passed": true,
@@ -199,9 +249,57 @@
     },
     {
       "problem": "diffusion-1d",
+      "name": "diffusion-1d: F5 closed-check (trivial lane): contract edge set == coeff edge set",
+      "got": "edge_sets_equal=True",
+      "expected": "True (empty == empty)",
+      "passed": true,
+      "kind": "compose"
+    },
+    {
+      "problem": "diffusion-1d",
       "name": "diffusion-1d: negative control: \u03ba_hw=1e3 \u2192 infeasible, binding_axis=stiffness",
       "got": "status=infeasible axis=stiffness",
       "expected": "infeasible, stiffness (\u03ba=4096>1e3)",
+      "passed": true,
+      "kind": "compose"
+    },
+    {
+      "problem": "diffusion-1d",
+      "name": "diffusion-1d: F2 closed: projected carried downstream + scaling RE-DERIVED on it",
+      "got": "carried=projected alpha_full=8.1487e-07 alpha_carried=2.0372e-07",
+      "expected": "carried='projected'; alpha_carried = lam_max_proj/(2\u03c0\u00b7B_hw\u00b7margin)",
+      "passed": true,
+      "kind": "compose"
+    },
+    {
+      "problem": "diffusion-1d",
+      "name": "diffusion-1d: F2 closed: alpha ratio == spectrum ratio (both scalings in ledger)",
+      "got": "alpha ratio=0.250000 lam ratio=0.250000",
+      "expected": "equal (alpha tracks the CARRIED spectrum, not the full one)",
+      "passed": true,
+      "kind": "compose"
+    },
+    {
+      "problem": "diffusion-1d",
+      "name": "diffusion-1d: projected lane: closure verdict feasible at eps=10\u03b7",
+      "got": "eta=4.880e-01 verdict=feasible dim=32",
+      "expected": "eta>0, feasible, projected n=32",
+      "passed": true,
+      "kind": "compose"
+    },
+    {
+      "problem": "diffusion-1d",
+      "name": "diffusion-1d: F2 closed: downstream consistent on the projected carrier (32 integrators, contracts on 32\u00d732 diag = 0, cert re-evaluated)",
+      "got": "integrators=32 contracts=0 cert=no violation on evaluated axes/robustness_A",
+      "expected": "32 integrators, 0 contracts (diagonal), no-violation cert on projected (\u03ba=1024 < \u03ba_hw=1e6)",
+      "passed": true,
+      "kind": "compose"
+    },
+    {
+      "problem": "diffusion-1d",
+      "name": "diffusion-1d: F2 closed: both scalings recorded honestly (carrier + full reference)",
+      "got": "ledger tags=['carrier', 'final'] alpha_full_record=8.1487e-07",
+      "expected": "carrier + alpha_full_on_full_descriptor present",
       "passed": true,
       "kind": "compose"
     },
@@ -210,14 +308,6 @@
       "name": "synthetic-stiff: synthetic descriptor: 4 finite eigs, real gap present, \u03ba recorded",
       "got": "n_finite=4 \u03ba=3000",
       "expected": "4 finite modes, \u03ba\u22483000 (fastest 3000 / slowest 1)",
-      "passed": true,
-      "kind": "compose"
-    },
-    {
-      "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: P3: scaled eig = raw eig / alpha",
-      "got": "max|\u0394|/scale=5.56e-16 (alpha=5.968e-04)",
-      "expected": "~1e-9 (\u03b1 = max|\u03bb|/(2\u03c0\u00b7B_hw\u00b7margin))",
       "passed": true,
       "kind": "compose"
     },
@@ -264,31 +354,103 @@
     {
       "problem": "synthetic-stiff",
       "name": "synthetic-stiff: basis: winner + transformed eig preserved (within cond tolerance)",
-      "got": "winner=eigenvector cond=1.05 eig_dev/cond=3.03e-16 (tol 1.1e-06)",
+      "got": "winner=eigenvector cond=1 eig_dev/cond=3.34e-15 (tol 1.0e-06)",
       "expected": "winner not None; dev\u00b71 \u2264 cond-scaled tol",
       "passed": true,
       "kind": "compose"
     },
     {
       "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: interface: smooth synthetic state \u2192 capture free, single-source leak 0",
-      "got": "mode=capture singular=False leak=0.0e+00",
-      "expected": "capture, not singular, leak==0",
+      "name": "synthetic-stiff: F5 closed: coords = basis-T; eig invariance under the conjugation",
+      "got": "coords=basis-T(model) eig_dev=9.26e-16 (carrier-alpha eig vs final-alpha eig)",
+      "expected": "basis-T(model); eig(scaled_final) = eig(scaled_carrier) ~1e-8",
       "passed": true,
       "kind": "compose"
     },
     {
       "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: route contracts on FINAL (basis-transformed) descriptor: count = off-diagonal nnz",
-      "got": "n_edges=12 (transformed nnz=12, raw nnz=7)",
-      "expected": "n_edges == nnz(transformed.A off-diagonal)",
+      "name": "synthetic-stiff: F5 closed: external transfer function preserved (B_v = \u03b1\u207b\u00b9\u00b7S_z\u00b7B_z semantics under the conjugation)",
+      "got": "max dev=6.94e-18",
+      "expected": "~0 (cond-scaled; internal round-trips can't catch this class of error \u2014 external TF is the judge)",
       "passed": true,
       "kind": "compose"
     },
     {
       "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: route contracts: feedback edges get omega_c + finite tau_max_abs",
-      "got": "n_feedback=12",
+      "name": "synthetic-stiff: F5 closed: alpha invariant under the basis conjugation (scaling re-derived, same spectrum)",
+      "got": "alpha_final/alpha_carrier=1.000000000000",
+      "expected": "= 1 (similarity preserves max|\u03bb|)",
+      "passed": true,
+      "kind": "compose"
+    },
+    {
+      "problem": "synthetic-stiff",
+      "name": "synthetic-stiff: conjugation hygiene: eigenvector T\u207b\u00b9AT dust (1e-14) cleaned at 1e-12\u00b7max|A| (old '12 edges' were mostly roundoff)",
+      "got": "nnz raw-conj=12 \u2192 cleaned=0 (diagonalized \u21d2 0 coupling edges, TRUE result)",
+      "expected": "raw 12 (dust) \u2192 0 after cleaning",
+      "passed": true,
+      "kind": "compose"
+    },
+    {
+      "problem": "synthetic-stiff",
+      "name": "synthetic-stiff: F5 closed: contracts == coeff edges == 0 (diagonalized basis, same masked descriptor to both consumers)",
+      "got": "n_edges=0 n_coeff=0 edge_sets_equal=True",
+      "expected": "0 == 0, equal by construction and asserted in-chain",
+      "passed": true,
+      "kind": "compose"
+    },
+    {
+      "problem": "synthetic-stiff",
+      "name": "synthetic-stiff: P7 Config: infeasible cert \u21d2 integrator elements flagged with binding axis named",
+      "got": "flagged=4/4 reason='certificate infeasible; binding axis stiffness'",
+      "expected": "all integrators flagged, reason mentions stiffness",
+      "passed": true,
+      "kind": "compose"
+    },
+    {
+      "problem": "synthetic-stiff",
+      "name": "synthetic-stiff: P7 Config: fastest per-element a_ii \u2248 tile slew spec (eigenvector diagonal a_ii = eigenvalue up to dust)",
+      "got": "max gm/C=5.026548e+06 vs omega_max=5.026548e+06 (\u0394rel 0.00e+00)",
+      "expected": "equal within 1e-5 (a_ii is the DIAGONAL rate; diagonalized basis makes it the eigenvalue)",
+      "passed": true,
+      "kind": "compose"
+    },
+    {
+      "problem": "synthetic-stiff",
+      "name": "synthetic-stiff: F3 closed (this lane): no field \u21d2 interface 'not applicable' recorded explicitly",
+      "got": "status=not applicable",
+      "expected": "'not applicable' (not a silent skip; field boundary declared)",
+      "passed": true,
+      "kind": "compose"
+    },
+    {
+      "problem": "synthetic-stiff",
+      "name": "synthetic-stiff: identity lane: winner=identity (restricted candidate set, recorded)",
+      "got": "winner=identity candidates=['identity']",
+      "expected": "identity; candidates recorded in the stage",
+      "passed": true,
+      "kind": "compose"
+    },
+    {
+      "problem": "synthetic-stiff",
+      "name": "synthetic-stiff: F5 closed (identity lane): contracts == coeff edges == masked nnz (a_tol edge admission; the (0,1) edge scaled weight 6.84e-9 < a_tol 5.03e-6 drops on BOTH sides)",
+      "got": "n_edges=6 n_coeff=6 masked_nnz=6 edge_sets_equal=True",
+      "expected": "all equal (6 == 6 == 6); same masked descriptor to both consumers",
+      "passed": true,
+      "kind": "compose"
+    },
+    {
+      "problem": "synthetic-stiff",
+      "name": "synthetic-stiff: F5 closed: coeff edges index into the matching contracts (same (i,j) pairs, contract ordinals aligned)",
+      "got": "pairs_equal=True indexed=True",
+      "expected": "True (one coordinate system end-to-end)",
+      "passed": true,
+      "kind": "compose"
+    },
+    {
+      "problem": "synthetic-stiff",
+      "name": "synthetic-stiff: identity lane: feedback edges get omega_c + finite tau_max_abs",
+      "got": "n_feedback=6",
       "expected": "\u22651 feedback edge; every feedback contract has omega_c==omega_max and tau_max_abs=phase_budget(\u03c9c,5\u00b0)",
       "passed": true,
       "kind": "compose"
@@ -311,39 +473,24 @@
     },
     {
       "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: P7 Config: carries elements AND route_contracts; count consistent with the descriptor generate_config sees (transformed)",
-      "got": "elements=5 contracts=12",
-      "expected": "contracts == 12 (transformed nnz) and == emit count",
+      "name": "synthetic-stiff: P7 Config (identity lane): infeasible cert \u21d2 flagged with binding axis",
+      "got": "flagged=4/4",
+      "expected": "all integrators flagged (stiffness)",
       "passed": true,
       "kind": "compose"
     },
     {
       "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: P7 Config: infeasible cert \u21d2 integrator elements flagged with binding axis named",
-      "got": "flagged=4/4 reason='certificate infeasible; binding axis stiffness'",
-      "expected": "all integrators flagged, reason mentions stiffness",
-      "passed": true,
-      "kind": "compose"
-    },
-    {
-      "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: P7 Config: fastest per-element a_ii \u2248 tile slew spec (coupling shift honestly visible)",
-      "got": "max gm/C=5.026536e+06 vs omega_max=5.026548e+06 (\u0394rel 2.50e-06)",
-      "expected": "equal within 1e-5 (a_ii is the DIAGONAL rate; the eigenvalue differs by the off-diagonal coupling shift)",
-      "passed": true,
-      "kind": "compose"
-    },
-    {
-      "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: P7 Config: coeff edges = scaled off-diag nnz above p7's own a_tol (Finding F5: raw vs transformed coordinate gap recorded)",
-      "got": "n_coeff_edges=6, scaled nnz(>a_tol)=6, contracts=12",
-      "expected": "n_coeff_edges == a_tol-thresholded scaled nnz (internal consistency; cross-coordinate equality is F5, not asserted)",
+      "name": "synthetic-stiff: certificate convention: evaluated on the SAME masked descriptor + scaling that contracts/p7 consume (one coordinate system)",
+      "got": "cert_on=model status=infeasible",
+      "expected": "basis-T/model coords; infeasible stiffness preserved",
       "passed": true,
       "kind": "compose"
     }
   ],
   "summary": {
-    "n_checks": 36,
-    "n_passed": 36
+    "n_checks": 48,
+    "n_passed": 48,
+    "compose_layer": "lowering/compose.py"
   }
 }
