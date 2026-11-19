@@ -40,7 +40,8 @@ sys.path.insert(0, os.path.dirname(HERE))
 from twin.calib import CalibratedTwin, calibrate_foreground   # noqa: E402
 
 C_PF = 1.0            # B0 T1 C_bank = 1 pF (lowering/p7.py C_BANK_F)
-N_MC_EXPECT = 24
+N_MC_EXPECT = 48      # local Pelgrom mismatch depth (bumped from 24)
+N_MC_GLOBAL_EXPECT = 24
 
 
 def _load():
@@ -120,20 +121,38 @@ def main(argv=None):
     mcg = res.get("mc_global")
     noise = res["noise"]
     notes = res["notes"]
+    blocks = res.get("blocks") or {}
+    status = res.get("status", "missing")
+
+    # ---- 0. fail-closed status (required first: a broken block must fail
+    # LOUDLY, never yield silent nulls) --------------------------------------
+    failed_required = [k for k, b in blocks.items()
+                       if b.get("status") == "failed" and b.get("required")]
+    kl = {k: b.get("detail", "")[:60] for k, b in blocks.items()
+          if b.get("status") == "known_limitation"}
+    check("extraction status==complete (fail-closed)",
+          status == "complete" and not failed_required,
+          "status=%s, failed_required=%s (known_limitations kept distinct: %s)"
+          % (status, failed_required, sorted(kl)))
+    check("KNOWN_LIMITATION distinct from failure (PSP103 noise)",
+          {"mos_noise", "tg_noise"} <= set(kl),
+          "%s recorded as known_limitation (required=False), not 'failed'"
+          % sorted(kl))
 
     # ---- 1. runs + coverage -------------------------------------------------
     check("corner runs present",
           set(corners) >= {"tt", "ss", "ff", "hbtwcs", "hbtbcs"},
           "got %s" % sorted(corners))
+    n_mc_actual = len(mc.get("mirror_ratio", {}).get("values", [])) if mc else 0
     check("MC (local mismatch) sample count",
-          mc is not None and len(mc.get("mirror_ratio", {}).get("values", []))
-          == N_MC_EXPECT,
-          "%s" % ("24 samples" if mc else "MC NOT EXTRACTED (honest gap)",
-                  ),
+          n_mc_actual == N_MC_EXPECT,
+          "%d/%d samples" % (n_mc_actual, N_MC_EXPECT),
           genuine_fail=bool(mc))
     check("MC (global process) sample count",
-          mcg is not None and len(mcg.get("mirror_ratio", {}).get("values", []))
-          == N_MC_EXPECT, "%s" % ("24 samples" if mcg else "not extracted"),
+          mcg is not None
+          and len(mcg.get("mirror_ratio", {}).get("values", []))
+          == N_MC_GLOBAL_EXPECT,
+          "%s" % ("%d samples" % N_MC_GLOBAL_EXPECT if mcg else "not extracted"),
           genuine_fail=bool(mcg))
 
     if mc:
@@ -217,27 +236,36 @@ def main(argv=None):
     if mc is None:
         check("CalibratedTwin feed", False,
               "MC missing -> vos uses fallback; skipped", genuine_fail=False)
-    twin, nominal, measured = feed_twin(res)
-    ok_all = True
-    details = []
-    for key in measured:
-        src = twin.sources.get(key)
-        pv, mv = twin.params.get(key), measured[key]
-        rel = abs(pv - mv) / max(abs(mv), 1e-30)
-        ok_all &= (src == "foreground") and rel < 1e-9
-        details.append("%s: %.6g (%s, rel %.1e)" % (key, pv, src, rel))
-    check("CalibratedTwin params == measured, source=foreground", ok_all,
-          "; ".join(details))
-    check("twin actually moved off nominal",
-          any(abs(twin.params[k] - nominal[k]) / max(abs(nominal[k]), 1e-30) > 1e-6
-              for k in nominal),
-          "gm/C %.4g->%.4g rad/s, mirror %.5f->%.5f"
-          % (nominal["gm_over_c_mos"], twin.params["gm_over_c_mos"],
-             nominal["mirror_ratio_hbt"], twin.params["mirror_ratio_hbt"]))
+    try:
+        twin, nominal, measured = feed_twin(res)
+        feed_err = None
+    except Exception as e:
+        twin, nominal, measured = None, None, None
+        feed_err = repr(e)
+        check("CalibratedTwin feed", False, "feed_twin raised: %r" % e)
+        twin_dict = {}
+    else:
+        ok_all = True
+        details = []
+        for key in measured:
+            src = twin.sources.get(key)
+            pv, mv = twin.params.get(key), measured[key]
+            rel = abs(pv - mv) / max(abs(mv), 1e-30)
+            ok_all &= (src == "foreground") and rel < 1e-9
+            details.append("%s: %.6g (%s, rel %.1e)" % (key, pv, src, rel))
+        check("CalibratedTwin params == measured, source=foreground", ok_all,
+              "; ".join(details))
+        check("twin actually moved off nominal",
+              any(abs(twin.params[k] - nominal[k]) / max(abs(nominal[k]), 1e-30) > 1e-6
+                  for k in nominal),
+              "gm/C %.4g->%.4g rad/s, mirror %.5f->%.5f"
+              % (nominal["gm_over_c_mos"], twin.params["gm_over_c_mos"],
+                 nominal["mirror_ratio_hbt"], twin.params["mirror_ratio_hbt"]))
+        twin_dict = twin.as_dict()
 
     # ---- 5. P(workload passes) over MC samples ------------------------------
-    target_pole = measured["gm_over_c_mos"]
-    if mc is not None:
+    if measured is not None and mc is not None:
+        target_pole = measured["gm_over_c_mos"]
         p10 = p_workload(mc, target_pole, 0.10)
         p5 = p_workload(mc, target_pole, 0.05)
         p2 = p_workload(mc, target_pole, 0.02)
@@ -247,8 +275,101 @@ def main(argv=None):
     else:
         p10 = p5 = p2 = None
         check("P(workload passes)", False,
-              "MC not extracted -> P not computable (honest gap)",
+              "MC or measured gm missing -> P not computable (honest gap)",
               genuine_fail=False)
+
+    # ---- 6. MC depth + sigma error bars -------------------------------------
+    if mc:
+        n_mc = len(mc["mirror_ratio"]["values"])
+        have_err = all("sigma_stderr" in mc[k] for k in mc)
+        check("MC sigma error bars reported (sigma/sqrt(2(N-1)))",
+              have_err and n_mc >= 32,
+              "n=%d, sigma_stderr/sigma=%.4f (expected %.4f)"
+              % (n_mc,
+                 mc["mirror_ratio"]["sigma_stderr"] / mc["mirror_ratio"]["sigma"]
+                 if have_err else float("nan"),
+                 1.0 / np.sqrt(2 * (n_mc - 1))))
+
+    # ---- 7. PVT grid ---------------------------------------------------------
+    pvt = res.get("pvt")
+    if pvt and len(pvt.get("rows", {})) == 9:
+        check("PVT grid present (3 temps x 3 supplies)", True,
+              "temps=%s V vdd=%s" % (pvt["temps_c"], pvt["vdds_v"]))
+        sh = pvt["shifts_vs_nominal"]
+        g_t = [abs(sh[k]["gm_mos_fd"]) for k in sh
+               if pvt["rows"][k]["vdd_v"] == 1.5
+               and pvt["rows"][k]["temp_c"] != 27.0]
+        g_v = [abs(sh[k]["gm_mos_fd"]) for k in sh
+               if pvt["rows"][k]["temp_c"] == 27.0
+               and pvt["rows"][k]["vdd_v"] != 1.5]
+        check("PVT shifts reported (finite numbers, not bounded)", True,
+              "max |gm shift| temp %.1fuS, supply %.2fuS; vos temp %.2fmV "
+              "supply %.3fmV; pole temp %.1fMHz supply %.2fMHz"
+              % (max(g_t) * 1e6, max(g_v) * 1e6,
+                 max(abs(sh[k]["vd0_offset_raw"]) for k in sh) * 1e3,
+                 max(abs(sh[k]["vd0_offset_raw"]) for k in sh
+                     if pvt["rows"][k]["temp_c"] == 27.0
+                     and pvt["rows"][k]["vdd_v"] != 1.5) * 1e3,
+                 max(abs(sh[k]["pole_hz"]) for k in sh) / 1e6,
+                 max(abs(sh[k]["pole_hz"]) for k in sh
+                     if pvt["rows"][k]["temp_c"] == 27.0
+                     and pvt["rows"][k]["vdd_v"] != 1.5) / 1e6))
+        # temperature must actually MOVE the MOS gm (honest PVT, not a no-op)
+        check("PVT temperature really moves the models",
+              max(g_t) > 1e-9,
+              "gm temp shift range %.1f..%.1f uS (PSP103 against tnom=27 C; "
+              "HBT VBIC uses (temper+273)/300 directly)"
+              % (min(g_t) * 1e6, max(g_t) * 1e6))
+    else:
+        check("PVT grid present (3 temps x 3 supplies)", False,
+              "PVT rows missing/short: %d" % (len(pvt.get("rows", {})) if pvt else 0),
+              genuine_fail=True)
+
+    # ---- 8. transient --------------------------------------------------------
+    tran = res.get("transient")
+    if tran and "step" in tran and "sine" in tran:
+        st = tran["step"]
+        check("transient settling present (HBT + MOS, defined step)",
+              st["hbt_diff"]["settle_s"] >= 0 and st["mos_gcell"]["settle_s"] >= 0,
+              "HBT: step %gmV -> settle %.1fns (delta %.1fmV); MOS: step %gmV "
+              "-> settle %.1fns, slew %.1fV/us (I=C*dV/dt %.1fuA)"
+              % (st["hbt_diff"]["in_v"] * 1e3, st["hbt_diff"]["settle_s"] * 1e9,
+                 st["hbt_diff"]["delta_v"] * 1e3, st["mos_gcell"]["in_v"] * 1e3,
+                 st["mos_gcell"]["settle_s"] * 1e9,
+                 st["mos_gcell"]["slew_v_per_s"] * 1e-6,
+                 st["mos_gcell"]["slew_implied_a"] * 1e6))
+        si = tran["sine"]
+        check("transient THD reported (python FFT on wrdata)",
+              np.isfinite(si["hbt_diff"]["thd"]) and np.isfinite(si["mos_gcell"]["thd"]),
+              "HBT %gmV@%gMHz THD=%.3f%% (f0meas %.1fMHz); MOS %gmV@%gMHz "
+              "THD=%.3f%% (f0meas %.1fMHz); dt=%gps"
+              % (si["hbt_diff"]["in_v"] * 1e3, si["hbt_diff"]["f0_expect_hz"] / 1e6,
+                 si["hbt_diff"]["thd"] * 100, si["hbt_diff"]["f0_meas_hz"] / 1e6,
+                 si["mos_gcell"]["in_v"] * 1e3, si["mos_gcell"]["f0_expect_hz"] / 1e6,
+                 si["mos_gcell"]["thd"] * 100, si["mos_gcell"]["f0_meas_hz"] / 1e6,
+                 si["dt_s"] * 1e12))
+    else:
+        check("transient settling present (HBT + MOS, defined step)", False,
+              "transient block missing", genuine_fail=True)
+
+    # ---- 9. pre-PEX parasitic sensitivity ------------------------------------
+    par = res.get("parasitics")
+    if par and len(par.get("cases", [])) == 3:
+        poles = [c["pole_hz"] for c in par["cases"]]
+        cs = [c["c_added_ff"] for c in par["cases"]]
+        per_ff = [abs(c["pole_rel_shift_per_ff"]) for c in par["cases"] if c["c_added_ff"]]
+        check("pre-PEX parasitic sensitivity recorded (labeled, not PEX)",
+              "not a PEX result" in par["label"]
+              and poles[0] >= poles[1] > poles[2]
+              and (poles[0] - poles[2]) / poles[0] > 0.05,
+              "pole: 0f %.2fMHz -> 10f %.2fMHz -> 100f %.2fMHz; "
+              "|shift|/fF = %.4f%%/fF @10f, %.4f%%/fF @100f (pred %.4f%%/fF)"
+              % (poles[0] / 1e6, poles[1] / 1e6, poles[2] / 1e6,
+                 per_ff[0] * 100, per_ff[1] * 100,
+                 1e-15 / (1e-12 + 1e-15) * 100))
+    else:
+        check("pre-PEX parasitic sensitivity recorded (labeled, not PEX)", False,
+              "parasitics block missing/short", genuine_fail=True)
 
     # ---- summary ------------------------------------------------------------
     n_pass = sum(c["passed"] for c in checks)
@@ -258,7 +379,9 @@ def main(argv=None):
         corners=corners, mc=mc, mc_global=mcg,
         gamma_eff_hbt=hbt_g,
         noise_coverage=notes,
-        twin=twin.as_dict(),
+        status=status,
+        failed_blocks=res.get("failed_blocks"),
+        twin=twin_dict,
         p_workload=dict(tol_10=p10, tol_5=p5, tol_2=p2, n_mc=N_MC_EXPECT),
         corner_shifts=dict(gm_ss=sh_ss_gm if mc else None,
                            gm_ff=sh_ff_gm if mc else None,

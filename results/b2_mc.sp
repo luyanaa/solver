@@ -44,7 +44,7 @@ let vb = v(b)
 let idb = (1.5-v(d2b))/65k
 echo OPROW $&ratio $&gmos $&gmos2 $&vd0 $&vdc1 $&vb $&idb
 let i = 0
-dowhile i < 24
+dowhile i < 48
   let seed = i + 1
   setseed $&seed
   mc_source
