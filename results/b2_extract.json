@@ -1107,6 +1107,11 @@
       "status": "ok",
       "required": true,
       "detail": "3/3 parasitic C cases"
+    },
+    "joint_corners": {
+      "status": "ok",
+      "required": true,
+      "detail": "4/4 SS/FF x temperature joint points"
     }
   },
   "pvt": {
@@ -1134,8 +1139,9 @@
         "vb_tg": 0.744402,
         "id_pole": 7.6404e-06,
         "ic_hbt": 1.9986000000000015e-05,
-        "gm_hbt": 0.000773092997257667,
+        "gm_hbt": 0.0009947583065721645,
         "ron_tg": 559.7999999999992,
+        "vt_v": 0.02009131250069148,
         "gm_mos_fd": 0.00013039789076923082,
         "id_mos_pole": 5.500935307692308e-06,
         "pole_hz": 3162277.66,
@@ -1151,8 +1157,9 @@
         "vb_tg": 0.745549,
         "id_pole": 5.84379e-06,
         "ic_hbt": 1.9988000000000006e-05,
-        "gm_hbt": 0.0007731703607118104,
+        "gm_hbt": 0.00099485785208468,
         "ron_tg": 445.09999999999826,
+        "vt_v": 0.02009131250069148,
         "gm_mos_fd": 0.00014287999999999996,
         "id_mos_pole": 6.028118615384616e-06,
         "pole_hz": 3162277.66,
@@ -1168,8 +1175,9 @@
         "vb_tg": 0.746575,
         "id_pole": 4.04183e-06,
         "ic_hbt": 1.9991999999999987e-05,
-        "gm_hbt": 0.0007733250876200969,
+        "gm_hbt": 0.000995056943109711,
         "ron_tg": 342.50000000000114,
+        "vt_v": 0.02009131250069148,
         "gm_mos_fd": 0.00015521372307692252,
         "id_mos_pole": 6.549763999999997e-06,
         "pole_hz": 3162277.66,
@@ -1185,8 +1193,9 @@
         "vb_tg": 0.744296,
         "id_pole": 1.4839e-05,
         "ic_hbt": 1.9975000000000008e-05,
-        "gm_hbt": 0.0007726674982598765,
+        "gm_hbt": 0.000772281357581086,
         "ron_tg": 570.4000000000042,
+        "vt_v": 0.025864925786328753,
         "gm_mos_fd": 0.00013821806923076897,
         "id_mos_pole": 1.2715870815384616e-05,
         "pole_hz": 5011872.34,
@@ -1202,8 +1211,9 @@
         "vb_tg": 0.745483,
         "id_pole": 1.37096e-05,
         "ic_hbt": 1.9975999999999993e-05,
-        "gm_hbt": 0.0007727061799869478,
+        "gm_hbt": 0.0007723200199769594,
         "ron_tg": 451.6999999999993,
+        "vt_v": 0.025864925786328753,
         "gm_mos_fd": 0.00015093504307692315,
         "id_mos_pole": 1.3911730261538461e-05,
         "pole_hz": 5011872.34,
@@ -1219,8 +1229,9 @@
         "vb_tg": 0.746455,
         "id_pole": 1.25715e-05,
         "ic_hbt": 1.998e-05,
-        "gm_hbt": 0.0007728609068952353,
+        "gm_hbt": 0.0007724746695604551,
         "ron_tg": 354.500000000002,
+        "vt_v": 0.025864925786328753,
         "gm_mos_fd": 0.00016381621999999978,
         "id_mos_pole": 1.509896826153846e-05,
         "pole_hz": 5011872.34,
@@ -1236,8 +1247,9 @@
         "vb_tg": 0.719755,
         "id_pole": 2.20145e-05,
         "ic_hbt": 1.9958000000000008e-05,
-        "gm_hbt": 0.0007720099088996553,
+        "gm_hbt": 0.0005816977839253964,
         "ron_tg": 3024.4999999999964,
+        "vt_v": 0.03430991238323103,
         "gm_mos_fd": 2.889886215384557e-05,
         "id_mos_pole": 1.9745367983076924e-05,
         "pole_hz": 25118864.3,
@@ -1253,8 +1265,9 @@
         "vb_tg": 0.723423,
         "id_pole": 2.1763e-05,
         "ic_hbt": 1.9958999999999993e-05,
-        "gm_hbt": 0.0007720485906267267,
+        "gm_hbt": 0.000581726930021394,
         "ron_tg": 2657.699999999996,
+        "vt_v": 0.03430991238323103,
         "gm_mos_fd": 3.999485984615371e-05,
         "id_mos_pole": 2.1816551246153846e-05,
         "pole_hz": 19952623.1,
@@ -1270,8 +1283,9 @@
         "vb_tg": 0.726545,
         "id_pole": 2.14498e-05,
         "ic_hbt": 1.996499999999999e-05,
-        "gm_hbt": 0.0007722806809891575,
+        "gm_hbt": 0.000581901806597381,
         "ron_tg": 2345.5,
+        "vt_v": 0.03430991238323103,
         "gm_mos_fd": 5.416633846153833e-05,
         "id_mos_pole": 2.3830133907692305e-05,
         "pole_hz": 15848931.9,
@@ -1282,7 +1296,7 @@
     "shifts_vs_nominal": {
       "pvt_t-40_v135": {
         "gm_mos_fd": -2.0537152307692334e-05,
-        "gm_hbt": 3.868172707192051e-07,
+        "gm_hbt": 0.00022243828659520507,
         "mirror_ratio": 0.00036399999999991994,
         "vd0_offset_raw": 2.229324e-13,
         "ron_tg": 108.09999999999985,
@@ -1291,7 +1305,7 @@
       },
       "pvt_t-40_v150": {
         "gm_mos_fd": -8.05504307692319e-06,
-        "gm_hbt": 4.641807248625257e-07,
+        "gm_hbt": 0.0002225378321077206,
         "mirror_ratio": 0.00036399999999991994,
         "vd0_offset_raw": 4.656274e-13,
         "ron_tg": -6.600000000001046,
@@ -1300,7 +1314,7 @@
       },
       "pvt_t-40_v165": {
         "gm_mos_fd": 4.278679999999372e-06,
-        "gm_hbt": 6.189076331490585e-07,
+        "gm_hbt": 0.00022273692313275163,
         "mirror_ratio": 0.00036399999999991994,
         "vd0_offset_raw": 3.379514e-13,
         "ron_tg": -109.19999999999817,
@@ -1309,7 +1323,7 @@
       },
       "pvt_t27_v135": {
         "gm_mos_fd": -1.2716973846154181e-05,
-        "gm_hbt": -3.868172707133504e-08,
+        "gm_hbt": -3.866239587334286e-08,
         "mirror_ratio": 0.0,
         "vd0_offset_raw": 1.37668e-14,
         "ron_tg": 118.70000000000488,
@@ -1327,7 +1341,7 @@
       },
       "pvt_t27_v165": {
         "gm_mos_fd": 1.2881176923076627e-05,
-        "gm_hbt": 1.5472690828750857e-07,
+        "gm_hbt": 1.5464958349575668e-07,
         "mirror_ratio": 0.0,
         "vd0_offset_raw": -2.009506e-13,
         "ron_tg": -97.19999999999732,
@@ -1336,7 +1350,7 @@
       },
       "pvt_t125_v135": {
         "gm_mos_fd": -0.00012203618092307758,
-        "gm_hbt": -6.962710872924875e-07,
+        "gm_hbt": -0.00019062223605156295,
         "mirror_ratio": -0.0005979999999999874,
         "vd0_offset_raw": -5.79536e-14,
         "ron_tg": 2572.799999999997,
@@ -1345,7 +1359,7 @@
       },
       "pvt_t125_v150": {
         "gm_mos_fd": -0.00011094018323076944,
-        "gm_hbt": -6.575893602211525e-07,
+        "gm_hbt": -0.00019059308995556543,
         "mirror_ratio": -0.0005979999999999874,
         "vd0_offset_raw": -7.21645e-14,
         "ron_tg": 2205.999999999997,
@@ -1354,7 +1368,7 @@
       },
       "pvt_t125_v165": {
         "gm_mos_fd": -9.676870461538482e-05,
-        "gm_hbt": -4.254989977903233e-07,
+        "gm_hbt": -0.00019041821337957836,
         "mirror_ratio": -0.0005979999999999874,
         "vd0_offset_raw": -7.14984e-14,
         "ron_tg": 1893.8000000000006,
@@ -1459,13 +1473,118 @@
         "pole_rel_shift_per_ff": -0.0009059486078815328
       }
     ],
-    "slope_log_per_f": -0.0009496458639557545,
-    "slope_log_per_f_pred": -909090909090.9092,
+    "slope_log_per_f": -949645863955.7545,
+    "slope_log_per_f_pred": -953101798043.2493,
+    "slope_rel_err": -0.003625986326528663,
     "label": "pre-PEX sensitivity estimate, not a PEX result",
-    "note": "no layout exists for the primitives -> PEX is impossible pre-layout. This probe adds an estimated wire/load C at the integrator output and re-extracts the pole; predicted slope -1/(C_tot) in log space is shown for cross-check."
+    "note": "no layout exists for the primitives -> PEX is impossible pre-layout. This probe adds an estimated wire/load C at the integrator output and re-extracts the pole; the predicted two-point log slope ln(C_tot(1)/C_tot(0))/(C1-C0) [per F] is shown for cross-check."
+  },
+  "joint": {
+    "vdd_v": 1.5,
+    "corners": [
+      {
+        "tag": "ss_m40",
+        "mos_sec": "mos_ss",
+        "hbt_sec": "hbt_typ",
+        "temp_c": -40.0
+      },
+      {
+        "tag": "ss_p125",
+        "mos_sec": "mos_ss",
+        "hbt_sec": "hbt_typ",
+        "temp_c": 125.0
+      },
+      {
+        "tag": "ff_m40",
+        "mos_sec": "mos_ff",
+        "hbt_sec": "hbt_typ",
+        "temp_c": -40.0
+      },
+      {
+        "tag": "ff_p125",
+        "mos_sec": "mos_ff",
+        "hbt_sec": "hbt_typ",
+        "temp_c": 125.0
+      }
+    ],
+    "rows": {
+      "ff_m40": {
+        "mirror_ratio": 0.999929,
+        "gm_mos_param": 3.86142e-12,
+        "gm_mos2_param": 0.000359399,
+        "vd0_offset_raw": -2.08722e-14,
+        "vdc1": 1.30012,
+        "vb_tg": 0.746794,
+        "id_pole": 1.49102e-05,
+        "ic_hbt": 1.9988000000000006e-05,
+        "gm_hbt": 0.00099485785208468,
+        "ron_tg": 320.6000000000042,
+        "vt_v": 0.02009131250069148,
+        "gm_mos_fd": 0.00016004456461538464,
+        "id_mos_pole": 1.5120068969230769e-05,
+        "pole_hz": 5623413.25,
+        "temp_c": -40.0,
+        "vdd_v": 1.5
+      },
+      "ss_m40": {
+        "mirror_ratio": 0.999929,
+        "gm_mos_param": 3.73299e-13,
+        "gm_mos2_param": 3.15961e-05,
+        "vd0_offset_raw": 4.63629e-13,
+        "vdc1": 1.30012,
+        "vb_tg": 0.744007,
+        "id_pole": 8.24953e-07,
+        "ic_hbt": 1.9988000000000006e-05,
+        "gm_hbt": 0.00099485785208468,
+        "ron_tg": 599.3000000000026,
+        "vt_v": 0.02009131250069148,
+        "gm_mos_fd": 3.176384615384614e-05,
+        "id_mos_pole": 8.530801538461547e-07,
+        "pole_hz": 2511886.43,
+        "temp_c": -40.0,
+        "vdd_v": 1.5
+      },
+      "ff_p125": {
+        "mirror_ratio": 0.998967,
+        "gm_mos_param": -2.06477e-12,
+        "gm_mos2_param": 0.000262489,
+        "vd0_offset_raw": -7.41629e-14,
+        "vdc1": 1.30041,
+        "vb_tg": 0.727253,
+        "id_pole": 2.26624e-05,
+        "ic_hbt": 1.9958999999999993e-05,
+        "gm_hbt": 0.000581726930021394,
+        "ron_tg": 2274.699999999996,
+        "vt_v": 0.03430991238323103,
+        "gm_mos_fd": 5.585694307692294e-06,
+        "id_mos_pole": 2.2669714483076923e-05,
+        "pole_hz": 112201845.0,
+        "temp_c": 125.0,
+        "vdd_v": 1.5
+      },
+      "ss_p125": {
+        "mirror_ratio": 0.998967,
+        "gm_mos_param": 5.46515e-13,
+        "gm_mos2_param": 0.000298993,
+        "vd0_offset_raw": -7.41629e-14,
+        "vdc1": 1.30041,
+        "vb_tg": 0.719514,
+        "id_pole": 1.57625e-05,
+        "ic_hbt": 1.9958999999999993e-05,
+        "gm_hbt": 0.000581726930021394,
+        "ron_tg": 3048.6000000000013,
+        "vt_v": 0.03430991238323103,
+        "gm_mos_fd": 0.0001263936861538458,
+        "id_mos_pole": 1.5935257553846152e-05,
+        "pole_hz": 5623413.25,
+        "temp_c": 125.0,
+        "vdd_v": 1.5
+      }
+    },
+    "note": "corner libs AND .temp are applied in the SAME run -> measured joint points, not a corner x temperature composition. Local mismatch MC is measured at TT/27 C only; the B2 joint bench applies its per-sample RELATIVE draws on top of each joint point (declared, and scale-checked against the TT MC)."
   },
   "mc_n": 48,
   "status": "complete",
   "failed_blocks": [],
-  "runtime_s": 688.9
+  "runtime_s": 623.4
 }

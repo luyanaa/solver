@@ -12325,14 +12325,14 @@
   },
   "checks": [
     {
-      "name": "static shock \u03c3",
+      "name": "static shock σ",
       "ok": true,
       "value": "1.0000",
       "threshold": ">0.8",
       "case": "weno"
     },
     {
-      "name": "static smooth \u03c3",
+      "name": "static smooth σ",
       "ok": true,
       "value": "0.1265",
       "threshold": "<0.2",
@@ -12367,7 +12367,7 @@
       "case": "weno"
     },
     {
-      "name": "final smooth \u03c3",
+      "name": "final smooth σ",
       "ok": true,
       "value": "0.0855",
       "threshold": "<0.3",
@@ -12398,7 +12398,7 @@
       "name": "entropy production rate (weno5)",
       "ok": true,
       "value": "0.084037 vs 0.083333",
-      "threshold": "\u00b110% of (uL-uR)^3/12",
+      "threshold": "±10% of (uL-uR)^3/12",
       "case": "riemann"
     },
     {
@@ -12426,7 +12426,7 @@
       "name": "entropy production rate (adaptive)",
       "ok": true,
       "value": "0.084234 vs 0.083333",
-      "threshold": "\u00b110% of (uL-uR)^3/12",
+      "threshold": "±10% of (uL-uR)^3/12",
       "case": "riemann"
     },
     {
@@ -12528,7 +12528,7 @@
       "case": "lifting"
     },
     {
-      "name": "A\u2194A\u1d40 identity",
+      "name": "A↔Aᵀ identity",
       "ok": true,
       "value": "2.721e-16",
       "threshold": "<1e-12",
@@ -12718,5 +12718,15 @@
     }
   ],
   "passed": 56,
-  "total": 56
+  "total": 56,
+  "_meta": {
+    "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
+    "git_dirty": true,
+    "bench_module": "bench.run_transform",
+    "command": "python3 -m bench.run_transform",
+    "timestamp_utc": "2026-11-20T05:56:02+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
+  }
 }

@@ -58,7 +58,6 @@ from twin.calib import calibrate_foreground  # noqa: E402
 sys.path.insert(0, os.path.dirname(HERE))  # noqa: E402 (already above)
 
 C_PF = 1.0
-N_MC = 24
 MEAS_NOISE_PPM = 100.0      # same foreground-cal floor as run_b2.py
 GAIN_PAIR_OFFSET = 12       # stage2 draw index (fixed pairing of MC samples)
 
@@ -94,7 +93,7 @@ class TwoIntegrator:
     self = gm_k (g_dev = 0).  The coupling edge carries the measured
     mirror ratio (T5 single-flux-source mirror semantics: gain
     gm_c*ratio/C).  Stage1 gm / Id draws: MC sample k; stage2: sample
-    (k+12) mod 24 (fixed pairing, every measured chip used twice).
+    (k+12) mod n_mc (fixed pairing; n_mc is read from the measured record).
     """
 
     def __init__(self, ext):
@@ -112,13 +111,25 @@ class TwoIntegrator:
         self.gm_vals = list(mc["gm_mos_fd"]["values"])
         self.id_vals = list(mc["id_mos_pole"]["values"])
         self.r_vals = list(mc["mirror_ratio"]["values"])
+        # Truth comes from the measured sample count (b2_extract.json mc_n /
+        # the recorded value lists), never a stale module constant: the
+        # 24-sample constant vs 48 recorded values was exactly the bug that
+        # produced probabilities > 1 in the linear-only row.
+        self.n_mc = len(self.gm_vals)
+        if not (len(self.id_vals) == len(self.r_vals) == self.n_mc):
+            raise ValueError(
+                "MC value lists disagree: gm=%d id=%d ratio=%d"
+                % (len(self.gm_vals), len(self.id_vals), len(self.r_vals)))
+        if ext.get("mc_n") not in (None, self.n_mc):
+            raise ValueError("mc_n=%s but %d recorded MC samples"
+                             % (ext.get("mc_n"), self.n_mc))
 
     def instance(self, k, nonideal=True):
         gm1 = self.gm_vals[k]
-        gm2 = self.gm_vals[(k + GAIN_PAIR_OFFSET) % N_MC]
+        gm2 = self.gm_vals[(k + GAIN_PAIR_OFFSET) % self.n_mc]
         if nonideal:
             id1 = self.id_vals[k]
-            id2 = self.id_vals[(k + GAIN_PAIR_OFFSET) % N_MC]
+            id2 = self.id_vals[(k + GAIN_PAIR_OFFSET) % self.n_mc]
             G1 = gm1 + self.lam_tt * id1
             G2 = gm2 + self.lam_tt * id2
         else:
@@ -158,6 +169,7 @@ def main(argv=None):
 
     tt = ext["corners"]["tt"]
     mc = ext["mc"]
+    n_mc = len(mc["mirror_ratio"]["values"])
 
     # =====================================================================
     # A. IntegratorStage reproduces the measured AC point (corner sweep)
@@ -262,7 +274,7 @@ def main(argv=None):
     draws = mir.sample(240000)
     sig_hat = float(np.std(draws))
     mean_mc = mc["mirror_ratio"]["mean"]
-    sig_mean_mc = mc["mirror_ratio"]["sigma"] / math.sqrt(N_MC)
+    sig_mean_mc = mc["mirror_ratio"]["sigma"] / math.sqrt(n_mc)
     check("B1: mirror sampler sigma == measured Pelgrom sigma (<1%)",
           abs(sig_hat / mc["mirror_ratio"]["sigma"] - 1.0) < 0.01,
           "sigma_hat=%.5f vs measured %.5f" % (
@@ -335,6 +347,7 @@ def main(argv=None):
     # =====================================================================
     print("\n--- C. 2-integrator coupled system (measured quantities only) ---")
     sys2 = TwoIntegrator(ext)
+    assert sys2.n_mc == n_mc
     inst_tt = dict(gm1=tt["gm_mos_fd"], gm2=tt["gm_mos_fd"],
                    G1=tt["gm_mos_fd"] + sys2.g_dev_tt,
                    G2=tt["gm_mos_fd"] + sys2.g_dev_tt,
@@ -442,14 +455,14 @@ def main(argv=None):
     # =====================================================================
     # D. P(workload passes): linear-only vs nonideal vs calibrated
     # =====================================================================
-    print("\n--- D. P(workload passes) over the 24 measured MC chips ---")
+    print("\n--- D. P(workload passes) over the %d measured MC chips ---" % n_mc)
     tols = (0.10, 0.05, 0.02)
 
     # D1: reproduce run_b2.py's linear-param-only numbers exactly
     p_lin = {}
     for tol in tols:
         ok = [abs(g / tt["gm_mos_fd"] - 1.0) <= tol for g in sys2.gm_vals]
-        p_lin[tol] = sum(ok) / N_MC
+        p_lin[tol] = sum(ok) / n_mc
     p_b2 = b2["p_workload"]
     check("D1: linear-param-only P reproduces run_b2.py (gm axis only)",
           abs(p_lin[0.10] - p_b2["tol_10"]) < 1e-9
@@ -463,7 +476,7 @@ def main(argv=None):
     p_non = {t: 0.0 for t in tols}
     p_cal = {t: 0.0 for t in tols}
     p_target = {t: 0.0 for t in tols}   # vs the LINEAR design target gm/C
-    for k in range(N_MC):
+    for k in range(n_mc):
         inst = sys2.instance(k, nonideal=True)
         pole_k = inst["a1"]
         G_k = sys2.dc_gain(inst)
@@ -479,9 +492,9 @@ def main(argv=None):
             # vs the linear design target gm/C (pole axis only)
             p_target[tol] += abs(pole_k / (tt["gm_mos_fd"] / C_BANK_F)
                                  - 1.0) <= tol
-    p_non = {t: p_non[t] / N_MC for t in tols}
-    p_cal = {t: p_cal[t] / N_MC for t in tols}
-    p_target = {t: p_target[t] / N_MC for t in tols}
+    p_non = {t: p_non[t] / n_mc for t in tols}
+    p_cal = {t: p_cal[t] / n_mc for t in tols}
+    p_target = {t: p_target[t] / n_mc for t in tols}
 
     check("D2: nonideal joint P(10/5/2%%) = %.2f/%.2f/%.2f — strictly "
           "below the linear numbers (mirror axis + leak spread enter)"
@@ -492,11 +505,12 @@ def main(argv=None):
           % (p_lin[0.10], p_lin[0.05], p_lin[0.02],
              p_non[0.10], p_non[0.05], p_non[0.02]))
 
+    p_pole = {t: sum(1 for k in range(n_mc)
+                     if abs(sys2.instance(k, True)["a1"] / pole_tt
+                            - 1.0) <= t) / n_mc for t in tols}
     check("D3: foreground gain cal recovers the gain axis (residual = "
           "100 ppm floor) but NOT the pole: P_cal == pole-only P",
-          abs(p_cal[0.02] - sum(1 for k in range(N_MC)
-                                if abs(sys2.instance(k, True)["a1"] / pole_tt
-                                       - 1.0) <= 0.02) / N_MC) < 1e-9
+          all(abs(p_cal[t] - p_pole[t]) < 1e-9 for t in tols)
           and p_cal[0.10] == 1.0 and p_cal[0.05] == 1.0,
           "P_cal %.2f/%.2f/%.2f (gain floor %.0f ppm; pole spread "
           "lambda*sigma_Id/gm = %.2f%%)" % (
@@ -520,7 +534,7 @@ def main(argv=None):
         sigma_gm_pct=mc["gm_mos_fd"]["sigma"] / tt["gm_mos_fd"] * 100.0,
         sigma_Id_pct=mc["id_mos_pole"]["sigma"] / tt["id_mos_pole"] * 100.0,
         sigma_pole_nonideal_pct=float(
-            np.std([sys2.instance(k, True)["a1"] for k in range(N_MC)])
+            np.std([sys2.instance(k, True)["a1"] for k in range(n_mc)])
             / pole_tt * 100.0),
         vos_sigma_mV=mc["vd0_offset_raw"]["sigma"] * 1e3,
     )
@@ -674,7 +688,7 @@ def main(argv=None):
             nonideal_cal={("tol_%d" % int(t * 100)): p_cal[t] for t in tols},
             nonideal_vs_linear_target={
                 ("tol_%d" % int(t * 100)): p_target[t] for t in tols},
-            b2_json_reference=b2["p_workload"], n_mc=N_MC),
+            b2_json_reference=b2["p_workload"], n_mc=n_mc),
         axis_attribution=attrs,
         validity_limits=[
             "1-pole small-signal model: valid where the measured AC "

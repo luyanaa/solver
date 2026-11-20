@@ -147,8 +147,13 @@ def build_diffusion_1d():
 # ===========================================================================
 # poisson-2d
 # ===========================================================================
-def build_poisson_2d():
-    nx = ny = 16
+def build_poisson_2d(n: int = 16):
+    """n×n FD mesh (default 16 = the pipeline anchor). The joint B2 lane
+    compiles the 8×8 variant: the property it tests (the DC solution is set
+    by conductance RATIOS, so a uniform corner scale cancels) is
+    grid-independent, while compose.run_chain's Lyapunov/mask cost scales
+    ~n³ (16×16 measured 10+ min on this box)."""
+    nx = ny = n
     spec = PDESpec(name="poisson-2d", operator="poisson", bc="dirichlet",
                    domain=((0.0, 1.0), (0.0, 1.0)), coeff=1.0,
                    n=(nx, ny), basis="fd")

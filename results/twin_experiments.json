@@ -335,5 +335,15 @@
       "leak_max": 0.000847974164349452,
       "over_ideal": 980968249363.0
     }
-  ]
+  ],
+  "_meta": {
+    "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
+    "git_dirty": true,
+    "bench_module": "bench.run_twin_experiments",
+    "command": "python3 -m bench.run_twin_experiments",
+    "timestamp_utc": "2026-11-20T05:54:05+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
+  }
 }

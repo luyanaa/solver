@@ -87,48 +87,58 @@
     "linear_only": {
       "tol_10": 1.0,
       "tol_5": 1.0,
-      "tol_2": 0.875
+      "tol_2": 0.9166666666666666
     },
     "nonideal_joint": {
-      "tol_10": 0.9166666666666666,
-      "tol_5": 0.625,
-      "tol_2": 0.375
+      "tol_10": 0.9583333333333334,
+      "tol_5": 0.7083333333333334,
+      "tol_2": 0.3541666666666667
     },
     "nonideal_cal": {
       "tol_10": 1.0,
       "tol_5": 1.0,
-      "tol_2": 0.9583333333333334
+      "tol_2": 0.9791666666666666
     },
     "nonideal_vs_linear_target": {
-      "tol_10": 0.5,
+      "tol_10": 0.5208333333333334,
       "tol_5": 0.0,
       "tol_2": 0.0
     },
     "b2_json_reference": {
       "tol_10": 1.0,
       "tol_5": 1.0,
-      "tol_2": 0.875,
-      "n_mc": 24
+      "tol_2": 0.9166666666666666,
+      "n_mc": 48
     },
-    "n_mc": 24
+    "n_mc": 48
   },
   "axis_attribution": {
     "systematic_leak_pct": 10.55739042458765,
-    "sigma_mirror_pct": 5.534088535789476,
-    "sigma_gm_pct": 1.5035361598168462,
-    "sigma_Id_pct": 4.969911388273674,
-    "sigma_pole_nonideal_pct": 0.8839608968007017,
-    "vos_sigma_mV": 10.647829550194691
+    "sigma_mirror_pct": 4.62169116980765,
+    "sigma_gm_pct": 1.239011046285748,
+    "sigma_Id_pct": 4.28785649601943,
+    "sigma_pole_nonideal_pct": 0.7222855417264075,
+    "vos_sigma_mV": 11.333515865374018
   },
   "validity_limits": [
     "1-pole small-signal model: valid where the measured AC magnitude is 1-pole (log-mag rms < 1e-3, checked)",
     "ro/lambda_fit are corner- and bias-dependent (lambda_fit 0.66-2.32 /V across ss/tt/ff); the ledger 0.970/V is a point value; ro is NOT rescaled with per-instance gm",
     "diff-pair tanh law ignores VBIC Early/high-injection (measured-vs-model slope residual ~4.6%)",
     "v_swing (0.5 V), TG c_par (30 fF) and q_inj_fc (0.5) are declared model parameters, NOT measurements",
-    "MOS/TG noise: derived 4kT*gamma/gm only \u2014 PSP103 OSDI device noise unimplemented in ngspice-44.2"
+    "MOS/TG noise: derived 4kT*gamma/gm only — PSP103 OSDI device noise unimplemented in ngspice-44.2"
   ],
   "notes": [
     "noise mos: PSP103 OSDI device noise returns identically-zero onoise/inoise spectra in ngspice-44.2 (verified in isolation) -> gamma_eff NOT measurable with this toolchain; only HBT (native VBIC) noise is real. No number fabricated.",
     "noise tg: PSP103 OSDI device noise returns identically-zero onoise/inoise spectra in ngspice-44.2 (verified in isolation) -> gamma_eff NOT measurable with this toolchain; only HBT (native VBIC) noise is real. No number fabricated."
-  ]
+  ],
+  "_meta": {
+    "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
+    "git_dirty": true,
+    "bench_module": "bench.run_b2_behavioral",
+    "command": "python3 -m bench.run_b2_behavioral",
+    "timestamp_utc": "2026-11-20T06:08:46+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
+  }
 }

@@ -1922,7 +1922,7 @@
       "kind": "rejected",
       "level": 2,
       "ok": false,
-      "reason": "Gamma \u662f differentially transcendental\uff08H\u00f6lder\uff09\uff1a\u6ca1\u6709\u6709\u9650\u9636\u4ee3\u6570\u5fae\u5206\u65b9\u7a0b\uff0c\u4e0d\u80fd\u6709\u9650\u589e\u5e7f",
+      "reason": "Gamma 是 differentially transcendental（Hölder）：没有有限阶代数微分方程，不能有限增广",
       "n": 1,
       "states": [
         "x"
@@ -1996,16 +1996,16 @@
       "kind": "value"
     },
     {
-      "name": "Duffing s\u00b2+c\u00b2 drift",
+      "name": "Duffing s²+c² drift",
       "got": 9.880984919163893e-15,
       "expected": "< 1e-3",
       "passed": true,
       "kind": "abs"
     },
     {
-      "name": "Duffing stabilized drift (\u03b3=100, injected) < 1% of bare",
+      "name": "Duffing stabilized drift (γ=100, injected) < 1% of bare",
       "got": "6.00e-06 vs 1.00e-03",
-      "expected": "stabilized < 0.01\u00b7bare",
+      "expected": "stabilized < 0.01·bare",
       "passed": true,
       "kind": "abs"
     },
@@ -2115,58 +2115,58 @@
       "kind": "value"
     },
     {
-      "name": "Manifold \u03b3=0: E[g\u00b2] grows (last/first)",
+      "name": "Manifold γ=0: E[g²] grows (last/first)",
       "got": "102.6",
-      "expected": "\u2265 10 (no saturation)",
+      "expected": "≥ 10 (no saturation)",
       "passed": true,
       "kind": "value"
     },
     {
-      "name": "Manifold \u03b3=\u03b30 plateau vs \u03b3=0",
+      "name": "Manifold γ=γ0 plateau vs γ=0",
       "got": "2.31e-10 vs 1.07e-05",
-      "expected": "plateau < 0.1\u00b7unstable",
+      "expected": "plateau < 0.1·unstable",
       "passed": true,
       "kind": "value"
     },
     {
-      "name": "Manifold two-term fit a/\u03b3 + b/\u03b3\u00b2",
+      "name": "Manifold two-term fit a/γ + b/γ²",
       "got": "a=1.08e-08 b=1.12e-06 resid=8.8e-04",
       "expected": "a>0, b>0, rel resid < 0.2",
       "passed": true,
       "kind": "value"
     },
     {
-      "name": "Manifold offset-only \u221d 1/\u03b3\u00b2 (\u03b30/10\u03b30)",
+      "name": "Manifold offset-only ∝ 1/γ² (γ0/10γ0)",
       "got": "100.0",
-      "expected": "\u2248 100 (E \u221d b/\u03b3\u00b2)",
+      "expected": "≈ 100 (E ∝ b/γ²)",
       "passed": true,
       "kind": "value"
     },
     {
-      "name": "Manifold noise-only \u221d 1/\u03b3 (\u03b30/10\u03b30)",
+      "name": "Manifold noise-only ∝ 1/γ (γ0/10γ0)",
       "got": "7.9",
-      "expected": "\u2248 10 (E \u221d a/\u03b3)",
+      "expected": "≈ 10 (E ∝ a/γ)",
       "passed": true,
       "kind": "value"
     },
     {
-      "name": "Manifold \u03b3=1000\u00d7 plateau bounded",
+      "name": "Manifold γ=1000× plateau bounded",
       "got": "3.53e-05",
       "expected": "max|g| < 1e-3",
       "passed": true,
       "kind": "value"
     },
     {
-      "name": "Manifold \u03b3=1000\u00d7 pushes max|\u03bb|",
+      "name": "Manifold γ=1000× pushes max|λ|",
       "got": "2e+05 vs 200",
-      "expected": "> 100\u00d7",
+      "expected": "> 100×",
       "passed": true,
       "kind": "value"
     },
     {
-      "name": "Manifold feasible \u03b3 interval non-empty",
+      "name": "Manifold feasible γ interval non-empty",
       "got": "[0.1, 5e+05]",
-      "expected": "\u03b3_min < \u03b30 < \u03b3_max (no forced native verdict)",
+      "expected": "γ_min < γ0 < γ_max (no forced native verdict)",
       "passed": true,
       "kind": "value"
     },
@@ -2179,7 +2179,7 @@
     },
     {
       "name": "a/x + b/x denominator not squared",
-      "got": "1.000\u00b7x + 1.000\u00b7y over [((0, 0, 1), Fraction(1, 1))]",
+      "got": "1.000·x + 1.000·y over [((0, 0, 1), Fraction(1, 1))]",
       "expected": "numerator summed, den = z^1 (not z^2)",
       "passed": true,
       "kind": "value"
@@ -2227,7 +2227,7 @@
       "kind": "value"
     },
     {
-      "name": "Tanh augmentation records domain (h, \u22121, 1)",
+      "name": "Tanh augmentation records domain (h, −1, 1)",
       "got": "[('h1', -1.0, 1.0)]",
       "expected": "[('h1', -1.0, 1.0)]",
       "passed": true,
@@ -2235,8 +2235,8 @@
     },
     {
       "name": "HH exp augmentations record domain (e_k, 0, None)",
-      "got": "6 \u00d7 ('e1', 0.0, None)",
-      "expected": "6 \u00d7 (e_k, 0.0, None)",
+      "got": "6 × ('e1', 0.0, None)",
+      "expected": "6 × (e_k, 0.0, None)",
       "passed": true,
       "kind": "value"
     }
@@ -2244,5 +2244,15 @@
   "summary": {
     "n_checks": 44,
     "n_passed": 44
+  },
+  "_meta": {
+    "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
+    "git_dirty": true,
+    "bench_module": "bench.run_reduce",
+    "command": "python3 -m bench.run_reduce",
+    "timestamp_utc": "2026-11-20T05:55:22+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
   }
 }

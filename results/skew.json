@@ -155,39 +155,39 @@
       "passed": true
     },
     {
-      "name": "uniform leading \u2212\u03c4\u03bb\u00b2",
+      "name": "uniform leading −τλ²",
       "got": "3.14e-02",
       "expected": "< 5e-2",
       "passed": true
     },
     {
-      "name": "scalar DDE \u03c4=1e-03",
+      "name": "scalar DDE τ=1e-03",
       "got": "5.01e-07",
       "expected": "< 1e-05",
       "passed": true
     },
     {
-      "name": "scalar DDE \u03c4=1e-02",
+      "name": "scalar DDE τ=1e-02",
       "got": "5.12e-05",
       "expected": "< 1e-03",
       "passed": true
     },
     {
-      "name": "scalar DDE \u03c4=1e-01",
+      "name": "scalar DDE τ=1e-01",
       "got": "6.45e-03",
       "expected": "< 2e-02",
       "passed": true
     },
     {
-      "name": "scalar \u03c4_crit ratio",
+      "name": "scalar τ_crit ratio",
       "got": "0.636620",
-      "expected": "2/\u03c0 = 0.636620",
+      "expected": "2/π = 0.636620",
       "passed": true
     },
     {
-      "name": "diffusion \u03ba grows",
-      "got": "32.163 \u2192 32.780",
-      "expected": "\u03ba_skew > \u03ba_ideal",
+      "name": "diffusion κ grows",
+      "got": "32.163 → 32.780",
+      "expected": "κ_skew > κ_ideal",
       "passed": true
     },
     {
@@ -197,25 +197,25 @@
       "passed": true
     },
     {
-      "name": "diffusion stable below \u03c4_crit",
+      "name": "diffusion stable below τ_crit",
       "got": true,
       "expected": true,
       "passed": true
     },
     {
-      "name": "diffusion unstable above \u03c4_crit",
+      "name": "diffusion unstable above τ_crit",
       "got": false,
       "expected": false,
       "passed": true
     },
     {
-      "name": "phase budget 1\u00b0",
+      "name": "phase budget 1°",
       "got": "27.78 ps",
       "expected": "27.78 ps",
       "passed": true
     },
     {
-      "name": "phase budget 10\u00b0",
+      "name": "phase budget 10°",
       "got": "277.78 ps",
       "expected": "277.8 ps",
       "passed": true
@@ -227,8 +227,8 @@
       "passed": true
     },
     {
-      "name": "shear \u0393 finite",
-      "got": "5.123 \u2192 5.123",
+      "name": "shear Γ finite",
+      "got": "5.123 → 5.123",
       "expected": "finite",
       "passed": true
     },
@@ -242,5 +242,15 @@
   "summary": {
     "n_checks": 15,
     "n_passed": 15
+  },
+  "_meta": {
+    "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
+    "git_dirty": true,
+    "bench_module": "bench.run_skew",
+    "command": "python3 -m bench.run_skew",
+    "timestamp_utc": "2026-11-20T05:55:24+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
   }
 }

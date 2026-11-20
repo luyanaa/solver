@@ -37,7 +37,7 @@
     {
       "id": "F2",
       "status": "closed",
-      "mechanism": "closure_carry='projected' makes the projected descriptor the ONLY downstream carrier; gramian_scaling is re-derived on it (alpha_carried = lam_max_proj/(2\u03c0\u00b7B_hw\u00b7margin)); both scalings are in ChainResult.scaling_full_record.",
+      "mechanism": "closure_carry='projected' makes the projected descriptor the ONLY downstream carrier; gramian_scaling is re-derived on it (alpha_carried = lam_max_proj/(2π·B_hw·margin)); both scalings are in ChainResult.scaling_full_record.",
       "numbers": {
         "lam_max_full": 4.096,
         "lam_max_projected": 1.024,
@@ -48,19 +48,19 @@
     {
       "id": "F3",
       "status": "closed",
-      "mechanism": "interface input domain is declared 'field': run_chain(field=) hands the physical field to choose_interface as an EVIDENCE stage (domain_in='field'); a wrong-length input raises ChainCompositionError; a workload without a field records 'interface not applicable' explicitly. The modal<->field representation transform (\u00a75.7 T) is the declared boundary.",
+      "mechanism": "interface input domain is declared 'field': run_chain(field=) hands the physical field to choose_interface as an EVIDENCE stage (domain_in='field'); a wrong-length input raises ChainCompositionError; a workload without a field records 'interface not applicable' explicitly. The modal<->field representation transform (§5.7 T) is the declared boundary.",
       "numbers": {}
     },
     {
       "id": "F4",
       "status": "closed (positive)",
-      "mechanism": "omega_max = max|lambda|/alpha = 2\u03c0\u00b7scaled.bandwidth() asserted positively on every lane; model/physical conventions closed.",
+      "mechanism": "omega_max = max|lambda|/alpha = 2π·scaled.bandwidth() asserted positively on every lane; model/physical conventions closed.",
       "numbers": {}
     },
     {
       "id": "F5",
       "status": "closed",
-      "mechanism": "basis winner composed into the scaled lane: T\u207b\u00b9AT dust-cleaned (1e-12\u00b7max|A|), scaling re-derived in T coordinates (B_v = \u03b1\u207b\u00b9\u00b7S_z\u00b7B_z, external TF + eig invariance asserted), p7's a_tol edge-admission mask applied to the ONE descriptor handed to both emit_route_contracts and generate_config \u21d2 contract edge set == coeff edge set asserted in-chain.",
+      "mechanism": "basis winner composed into the scaled lane: T⁻¹AT dust-cleaned (1e-12·max|A|), scaling re-derived in T coordinates (B_v = α⁻¹·S_z·B_z, external TF + eig invariance asserted), p7's a_tol edge-admission mask applied to the ONE descriptor handed to both emit_route_contracts and generate_config ⇒ contract edge set == coeff edge set asserted in-chain.",
       "numbers": {
         "eig_invariance": 0.0
       }
@@ -86,13 +86,13 @@
     {
       "id": "F4",
       "status": "closed (positive)",
-      "mechanism": "omega_max == max|\u03bb|/alpha == 2\u03c0\u00b7scaled.bandwidth() on all lanes.",
+      "mechanism": "omega_max == max|λ|/alpha == 2π·scaled.bandwidth() on all lanes.",
       "numbers": {}
     },
     {
       "id": "F5",
       "status": "closed",
-      "mechanism": "eigenvector lane composed into basis-T coordinates (dust-cleaned T\u207b\u00b9AT, re-derived scaling, eig/TF/alpha invariance asserted); identity lane: p7 a_tol edge admission applied to the single descriptor both consumers see \u21d2 6==6 edge sets with contract ordinals aligned.",
+      "mechanism": "eigenvector lane composed into basis-T coordinates (dust-cleaned T⁻¹AT, re-derived scaling, eig/TF/alpha invariance asserted); identity lane: p7 a_tol edge admission applied to the single descriptor both consumers see ⇒ 6==6 edge sets with contract ordinals aligned.",
       "numbers": {
         "eig_invariance": 9.264036960195256e-16,
         "tf_invariance": 6.942280514687692e-18,
@@ -105,16 +105,16 @@
   "checks": [
     {
       "problem": "diffusion-1d",
-      "name": "diffusion-1d: spec\u2192discretize: descriptor shape + \u03ba_analytic recorded",
-      "got": "n=64 \u03ba=4096",
-      "expected": "n=64, \u03ba=4096",
+      "name": "diffusion-1d: spec→discretize: descriptor shape + κ_analytic recorded",
+      "got": "n=64 κ=4096",
+      "expected": "n=64, κ=4096",
       "passed": true,
       "kind": "compose"
     },
     {
       "problem": "diffusion-1d",
-      "name": "diffusion-1d: F1 closed: run_chain(System IR) \u2192 TypedBoundaryError naming the lane",
-      "got": "System: \u2026run_chain: source is System, which is not a descriptor-produ\u2026",
+      "name": "diffusion-1d: F1 closed: run_chain(System IR) → TypedBoundaryError naming the lane",
+      "got": "System: …run_chain: source is System, which is not a descriptor-produ…",
       "expected": "TypedBoundaryError; text names normalize/pipeline_normalize entry",
       "passed": true,
       "kind": "compose"
@@ -130,7 +130,7 @@
     {
       "problem": "diffusion-1d",
       "name": "diffusion-1d: P3: scaled eig = raw eig / alpha (physical-time descriptor)",
-      "got": "max|\u0394|/scale=1.85e-16 (alpha=8.149e-07, method=rms3sigma)",
+      "got": "max|Δ|/scale=1.85e-16 (alpha=8.149e-07, method=rms3sigma)",
       "expected": "eig(scaled) = eig(raw)/alpha, ~1e-9",
       "passed": true,
       "kind": "compose"
@@ -139,15 +139,15 @@
       "problem": "diffusion-1d",
       "name": "diffusion-1d: chain stages declare coordinate domains (model/physical-time/field)",
       "got": "ok=True; interface domain_in=('field', 'contract')",
-      "expected": "boundary\u2192model, scaling\u2192physical-time, interface\u2192field declared",
+      "expected": "boundary→model, scaling→physical-time, interface→field declared",
       "passed": true,
       "kind": "compose"
     },
     {
       "problem": "diffusion-1d",
-      "name": "diffusion-1d: P3 input contract declared in-chain (B_v = alpha^-1\u00b7S\u00b7B form)",
+      "name": "diffusion-1d: P3 input contract declared in-chain (B_v = alpha^-1·S·B form)",
       "got": "declared",
-      "expected": "scaling stage notes carry the B_v = \u03b1\u207b\u00b9\u00b7S\u00b7B contract verbatim",
+      "expected": "scaling stage notes carry the B_v = α⁻¹·S·B contract verbatim",
       "passed": true,
       "kind": "compose"
     },
@@ -161,7 +161,7 @@
     },
     {
       "problem": "diffusion-1d",
-      "name": "diffusion-1d: P6\u2194P3 hand-off: slack bandwidth axis = scaled.bandwidth()/B_hw",
+      "name": "diffusion-1d: P6↔P3 hand-off: slack bandwidth axis = scaled.bandwidth()/B_hw",
       "got": "0.800000 vs 0.800000",
       "expected": "equal (cert evaluated on sc.scaled)",
       "passed": true,
@@ -177,7 +177,7 @@
     },
     {
       "problem": "diffusion-1d",
-      "name": "diffusion-1d: F2 fact recorded at full carry: projected N=32 would change max|lambda| 4.096\u21921.024 (closed in projected lane)",
+      "name": "diffusion-1d: F2 fact recorded at full carry: projected N=32 would change max|lambda| 4.096→1.024 (closed in projected lane)",
       "got": "lam_max_full=4.096 lam_max_proj(N=32)=1.024 changed=n/a (N=n)",
       "expected": "spectrum-change fact surfaced by the chain (see projected lane)",
       "passed": true,
@@ -187,7 +187,7 @@
       "problem": "diffusion-1d",
       "name": "diffusion-1d: split: diagonal diffusion has NO clean fast/slow gap (TRUE result)",
       "got": "verdict=no-split flags=no-gap-below-10 gap=4.00",
-      "expected": "no-split with no-gap flag (max k\u00b2-ratio 4 < GAP_MIN)",
+      "expected": "no-split with no-gap flag (max k²-ratio 4 < GAP_MIN)",
       "passed": true,
       "kind": "compose"
     },
@@ -209,15 +209,15 @@
     },
     {
       "problem": "diffusion-1d",
-      "name": "diffusion-1d: interface (direct): step field \u2192 singular + single-source leak = 0",
+      "name": "diffusion-1d: interface (direct): step field → singular + single-source leak = 0",
       "got": "mode=capture singular=True leak=0.0e+00",
-      "expected": "singular, mode\u2208{capture,fit}, leak==0",
+      "expected": "singular, mode∈{capture,fit}, leak==0",
       "passed": true,
       "kind": "compose"
     },
     {
       "problem": "diffusion-1d",
-      "name": "diffusion-1d: route contracts: diagonal A \u2192 zero coupling edges (TRUE result)",
+      "name": "diffusion-1d: route contracts: diagonal A → zero coupling edges (TRUE result)",
       "got": "n_edges=0 n_feedback=0",
       "expected": "0 edges (A off-diagonal nnz = 0)",
       "passed": true,
@@ -225,9 +225,9 @@
     },
     {
       "problem": "diffusion-1d",
-      "name": "diffusion-1d: F4 (positive): contract omega_max = 2\u03c0\u00b7scaled.bandwidth() (physical-time hand-off)",
+      "name": "diffusion-1d: F4 (positive): contract omega_max = 2π·scaled.bandwidth() (physical-time hand-off)",
       "got": "5.026548e+06 vs 5.026548e+06",
-      "expected": "equal (max|\u03bb|/alpha = scaled bandwidth\u00d72\u03c0)",
+      "expected": "equal (max|λ|/alpha = scaled bandwidth×2π)",
       "passed": true,
       "kind": "compose"
     },
@@ -243,7 +243,7 @@
       "problem": "diffusion-1d",
       "name": "diffusion-1d: P7 flags empty on feasible cert; residual budget honest (noise axis NaN)",
       "got": "flags=0 budget=None source=none",
-      "expected": "0 flags, budget=None/none (sigma_req=None \u21d2 not promised)",
+      "expected": "0 flags, budget=None/none (sigma_req=None ⇒ not promised)",
       "passed": true,
       "kind": "compose"
     },
@@ -257,9 +257,9 @@
     },
     {
       "problem": "diffusion-1d",
-      "name": "diffusion-1d: negative control: \u03ba_hw=1e3 \u2192 infeasible, binding_axis=stiffness",
+      "name": "diffusion-1d: negative control: κ_hw=1e3 → infeasible, binding_axis=stiffness",
       "got": "status=infeasible axis=stiffness",
-      "expected": "infeasible, stiffness (\u03ba=4096>1e3)",
+      "expected": "infeasible, stiffness (κ=4096>1e3)",
       "passed": true,
       "kind": "compose"
     },
@@ -267,7 +267,7 @@
       "problem": "diffusion-1d",
       "name": "diffusion-1d: F2 closed: projected carried downstream + scaling RE-DERIVED on it",
       "got": "carried=projected alpha_full=8.1487e-07 alpha_carried=2.0372e-07",
-      "expected": "carried='projected'; alpha_carried = lam_max_proj/(2\u03c0\u00b7B_hw\u00b7margin)",
+      "expected": "carried='projected'; alpha_carried = lam_max_proj/(2π·B_hw·margin)",
       "passed": true,
       "kind": "compose"
     },
@@ -281,7 +281,7 @@
     },
     {
       "problem": "diffusion-1d",
-      "name": "diffusion-1d: projected lane: closure verdict feasible at eps=10\u03b7",
+      "name": "diffusion-1d: projected lane: closure verdict feasible at eps=10η",
       "got": "eta=4.880e-01 verdict=feasible dim=32",
       "expected": "eta>0, feasible, projected n=32",
       "passed": true,
@@ -289,9 +289,9 @@
     },
     {
       "problem": "diffusion-1d",
-      "name": "diffusion-1d: F2 closed: downstream consistent on the projected carrier (32 integrators, contracts on 32\u00d732 diag = 0, cert re-evaluated)",
+      "name": "diffusion-1d: F2 closed: downstream consistent on the projected carrier (32 integrators, contracts on 32×32 diag = 0, cert re-evaluated)",
       "got": "integrators=32 contracts=0 cert=no violation on evaluated axes/robustness_A",
-      "expected": "32 integrators, 0 contracts (diagonal), no-violation cert on projected (\u03ba=1024 < \u03ba_hw=1e6)",
+      "expected": "32 integrators, 0 contracts (diagonal), no-violation cert on projected (κ=1024 < κ_hw=1e6)",
       "passed": true,
       "kind": "compose"
     },
@@ -305,15 +305,15 @@
     },
     {
       "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: synthetic descriptor: 4 finite eigs, real gap present, \u03ba recorded",
-      "got": "n_finite=4 \u03ba=3000",
-      "expected": "4 finite modes, \u03ba\u22483000 (fastest 3000 / slowest 1)",
+      "name": "synthetic-stiff: synthetic descriptor: 4 finite eigs, real gap present, κ recorded",
+      "got": "n_finite=4 κ=3000",
+      "expected": "4 finite modes, κ≈3000 (fastest 3000 / slowest 1)",
       "passed": true,
       "kind": "compose"
     },
     {
       "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: P6 cert: infeasible, binding_axis=stiffness (\u03ba > \u03ba_hw)",
+      "name": "synthetic-stiff: P6 cert: infeasible, binding_axis=stiffness (κ > κ_hw)",
       "got": "status=infeasible axis=stiffness",
       "expected": "infeasible, binding_axis=stiffness",
       "passed": true,
@@ -321,9 +321,9 @@
     },
     {
       "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: P6\u2194descriptor consistency: stiffness axis = \u03ba/\u03ba_hw (scaling-invariant)",
+      "name": "synthetic-stiff: P6↔descriptor consistency: stiffness axis = κ/κ_hw (scaling-invariant)",
       "got": "3.00001 vs 3.00001",
-      "expected": "equal (S/\u03b1 similarity preserves \u03ba)",
+      "expected": "equal (S/α similarity preserves κ)",
       "passed": true,
       "kind": "compose"
     },
@@ -337,9 +337,9 @@
     },
     {
       "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: split: real fast/slow gap found (stiffness-bound \u21d2 gap \u2265 GAP_MIN)",
+      "name": "synthetic-stiff: split: real fast/slow gap found (stiffness-bound ⇒ gap ≥ GAP_MIN)",
       "got": "verdict=split n_slow=2 n_fast=2 gap=500 slaving=9.86e-09",
-      "expected": "split, 2+2, gap\u226510, slaving small",
+      "expected": "split, 2+2, gap≥10, slaving small",
       "passed": true,
       "kind": "compose"
     },
@@ -355,7 +355,7 @@
       "problem": "synthetic-stiff",
       "name": "synthetic-stiff: basis: winner + transformed eig preserved (within cond tolerance)",
       "got": "winner=eigenvector cond=1 eig_dev/cond=3.34e-15 (tol 1.0e-06)",
-      "expected": "winner not None; dev\u00b71 \u2264 cond-scaled tol",
+      "expected": "winner not None; dev·1 ≤ cond-scaled tol",
       "passed": true,
       "kind": "compose"
     },
@@ -369,9 +369,9 @@
     },
     {
       "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: F5 closed: external transfer function preserved (B_v = \u03b1\u207b\u00b9\u00b7S_z\u00b7B_z semantics under the conjugation)",
+      "name": "synthetic-stiff: F5 closed: external transfer function preserved (B_v = α⁻¹·S_z·B_z semantics under the conjugation)",
       "got": "max dev=6.94e-18",
-      "expected": "~0 (cond-scaled; internal round-trips can't catch this class of error \u2014 external TF is the judge)",
+      "expected": "~0 (cond-scaled; internal round-trips can't catch this class of error — external TF is the judge)",
       "passed": true,
       "kind": "compose"
     },
@@ -379,15 +379,15 @@
       "problem": "synthetic-stiff",
       "name": "synthetic-stiff: F5 closed: alpha invariant under the basis conjugation (scaling re-derived, same spectrum)",
       "got": "alpha_final/alpha_carrier=1.000000000000",
-      "expected": "= 1 (similarity preserves max|\u03bb|)",
+      "expected": "= 1 (similarity preserves max|λ|)",
       "passed": true,
       "kind": "compose"
     },
     {
       "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: conjugation hygiene: eigenvector T\u207b\u00b9AT dust (1e-14) cleaned at 1e-12\u00b7max|A| (old '12 edges' were mostly roundoff)",
-      "got": "nnz raw-conj=12 \u2192 cleaned=0 (diagonalized \u21d2 0 coupling edges, TRUE result)",
-      "expected": "raw 12 (dust) \u2192 0 after cleaning",
+      "name": "synthetic-stiff: conjugation hygiene: eigenvector T⁻¹AT dust (1e-14) cleaned at 1e-12·max|A| (old '12 edges' were mostly roundoff)",
+      "got": "nnz raw-conj=12 → cleaned=0 (diagonalized ⇒ 0 coupling edges, TRUE result)",
+      "expected": "raw 12 (dust) → 0 after cleaning",
       "passed": true,
       "kind": "compose"
     },
@@ -401,7 +401,7 @@
     },
     {
       "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: P7 Config: infeasible cert \u21d2 integrator elements flagged with binding axis named",
+      "name": "synthetic-stiff: P7 Config: infeasible cert ⇒ integrator elements flagged with binding axis named",
       "got": "flagged=4/4 reason='certificate infeasible; binding axis stiffness'",
       "expected": "all integrators flagged, reason mentions stiffness",
       "passed": true,
@@ -409,15 +409,15 @@
     },
     {
       "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: P7 Config: fastest per-element a_ii \u2248 tile slew spec (eigenvector diagonal a_ii = eigenvalue up to dust)",
-      "got": "max gm/C=5.026548e+06 vs omega_max=5.026548e+06 (\u0394rel 0.00e+00)",
+      "name": "synthetic-stiff: P7 Config: fastest per-element a_ii ≈ tile slew spec (eigenvector diagonal a_ii = eigenvalue up to dust)",
+      "got": "max gm/C=5.026548e+06 vs omega_max=5.026548e+06 (Δrel 0.00e+00)",
       "expected": "equal within 1e-5 (a_ii is the DIAGONAL rate; diagonalized basis makes it the eigenvalue)",
       "passed": true,
       "kind": "compose"
     },
     {
       "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: F3 closed (this lane): no field \u21d2 interface 'not applicable' recorded explicitly",
+      "name": "synthetic-stiff: F3 closed (this lane): no field ⇒ interface 'not applicable' recorded explicitly",
       "got": "status=not applicable",
       "expected": "'not applicable' (not a silent skip; field boundary declared)",
       "passed": true,
@@ -451,13 +451,13 @@
       "problem": "synthetic-stiff",
       "name": "synthetic-stiff: identity lane: feedback edges get omega_c + finite tau_max_abs",
       "got": "n_feedback=6",
-      "expected": "\u22651 feedback edge; every feedback contract has omega_c==omega_max and tau_max_abs=phase_budget(\u03c9c,5\u00b0)",
+      "expected": "≥1 feedback edge; every feedback contract has omega_c==omega_max and tau_max_abs=phase_budget(ωc,5°)",
       "passed": true,
       "kind": "compose"
     },
     {
       "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: (d) contract omega_max = max|\u03bb|/alpha = 2\u03c0\u00b7scaled.bandwidth()",
+      "name": "synthetic-stiff: (d) contract omega_max = max|λ|/alpha = 2π·scaled.bandwidth()",
       "got": "5.026548e+06 vs 5.026548e+06",
       "expected": "equal (SCALED bandwidth, not model-time eig)",
       "passed": true,
@@ -465,15 +465,15 @@
     },
     {
       "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: (d) contract omega_max \u2260 model-time bandwidth (hand-off actually applied)",
-      "got": "omega_max/\u03bb_max = 1.676e+03 (1/alpha)",
+      "name": "synthetic-stiff: (d) contract omega_max ≠ model-time bandwidth (hand-off actually applied)",
+      "got": "omega_max/λ_max = 1.676e+03 (1/alpha)",
       "expected": "= 1/alpha, NOT 1 (alpha>0 scaling genuinely divides)",
       "passed": true,
       "kind": "compose"
     },
     {
       "problem": "synthetic-stiff",
-      "name": "synthetic-stiff: P7 Config (identity lane): infeasible cert \u21d2 flagged with binding axis",
+      "name": "synthetic-stiff: P7 Config (identity lane): infeasible cert ⇒ flagged with binding axis",
       "got": "flagged=4/4",
       "expected": "all integrators flagged (stiffness)",
       "passed": true,
@@ -492,5 +492,15 @@
     "n_checks": 48,
     "n_passed": 48,
     "compose_layer": "lowering/compose.py"
+  },
+  "_meta": {
+    "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
+    "git_dirty": true,
+    "bench_module": "bench.run_compiler_e2e",
+    "command": "python3 -m bench.run_compiler_e2e",
+    "timestamp_utc": "2026-11-20T06:08:43+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
   }
 }

@@ -10,15 +10,23 @@ Closes the B2 obligations on IHP SG13G2 (DESIGN.md §7 Phase 7.5 / §9 risk 3):
     from Monte Carlo (local Pelgrom mismatch: mos_tt_mismatch + mm_ok=1,
     48 setseed/mc_source samples in one ngspice process), then compared.
 (3) PVT: temperature (-40/27/125 °C via ngspice `.temp`, global `temper`)
-    x supply ±10% (1.35/1.5/1.65 V) on the MOS gm-cell and HBT pair.
+    x supply ±10% (1.35/1.5/1.65 V) on the MOS gm-cell and HBT pair. HBT
+    gm is I_C / V_T(T) with V_T(T) = k_B(T+273.15)/q (1.71x over the
+    range); the fixed 300 K VT was a post-processing bug, guarded by
+    bench/run_b2.py's ratio check.
 (4) Transient: .tran step + sine on the HBT diff pair and MOS gm-cell;
     settling + slew measured in time domain, THD by python FFT on the
     wrdata output (amplitudes/frequencies recorded in the JSON).
 (5) Pre-PEX parasitic sensitivity: no layout exists for the primitives, so
     PEX is impossible pre-layout; instead an estimated wire/load C
     (0/10/100 fF) is added at the integrator output node and the pole is
-    re-extracted -> pole shift per added fF. Label: "pre-PEX sensitivity
-    estimate, not a PEX result".
+    re-extracted -> pole shift per added F. Label: "pre-PEX sensitivity
+    estimate, not a PEX result". Measured and predicted log slopes are
+    both per FARAD (the fF/F 1e15 mismatch was a post-processing bug).
+(6) Joint worst-case corner x temperature: the corner lib AND `.temp` are
+    applied in the SAME run (ss/-40, ss/125, ff/-40, ff/125 C at 1.5 V),
+    not composed from two separate sweeps. bench/run_b2_joint.py consumes
+    these points with the 48 local-mismatch draws.
 
 Fail-closed contract: the JSON carries top-level "status"
 ("complete"|"partial"|"failed") plus per-block "blocks{}" statuses. A
@@ -85,6 +93,18 @@ MC_SEED = 1234567
 PVT_TEMPS = (-40.0, 27.0, 125.0)
 PVT_VDDS = (1.35, 1.50, 1.65)     # ±10% around 1.5 V
 PVT_MOS_SEC, PVT_HBT_SEC = "mos_tt", "hbt_typ"
+
+# Worst-case corner x temperature: REAL joint ngspice runs (corner lib and
+# .temp applied together), not a multiplicative composition of two separately
+# measured shifts. The PVT block above holds the process at TT; this block
+# moves process AND temperature, which is what the B2 joint evaluation needs.
+JOINT_VDD = 1.5
+JOINT_CORNERS = (
+    ("mos_ss", "hbt_typ", "ss_m40", -40.0),
+    ("mos_ss", "hbt_typ", "ss_p125", 125.0),
+    ("mos_ff", "hbt_typ", "ff_m40", -40.0),
+    ("mos_ff", "hbt_typ", "ff_p125", 125.0),
+)
 
 # Transient stimulus (recorded verbatim in the JSON so the behavioral-model
 # lane can reproduce the comparison point). THD frequency is 10 MHz for both
@@ -230,14 +250,17 @@ def netlist(mos_sec, hbt_sec, tag, mc=False, mismatch=False,
     return NL.join(p)
 
 
-def netlist_pvt(temp_c, vdd, tag):
+def netlist_pvt(temp_c, vdd, tag, mos_sec="mos_tt", hbt_sec="hbt_typ"):
     """Trimmed PVT netlist: op row + gm sweep + AC pole. No noise sweeps
     (PSP noise is a documented no-op; HBT PVT noise is not a B2 target).
-    tag makes the .dat names unique (runs execute concurrently)."""
+    tag makes the .dat names unique (runs execute concurrently). The corner
+    sections are parameters so the same probe serves the TT PVT grid and the
+    worst-case SS/FF x temperature joint block."""
     p = [
-        "* B2 PVT probe: temp=%g C, vdd=%g V (mos_tt/hbt_typ)" % (temp_c, vdd),
-        '.lib "%s/cornerMOSlv.lib" mos_tt' % MODELS,
-        '.lib "%s/cornerHBT.lib" hbt_typ' % MODELS,
+        "* B2 PVT probe: temp=%g C, vdd=%g V (%s/%s)"
+        % (temp_c, vdd, mos_sec, hbt_sec),
+        '.lib "%s/cornerMOSlv.lib" %s' % (MODELS, mos_sec),
+        '.lib "%s/cornerHBT.lib" %s' % (MODELS, hbt_sec),
         ".temp %g" % temp_c,
         "Vdd vdd 0 %g" % vdd,
         "Itail tail 0 dc 40u",
@@ -576,14 +599,20 @@ def _thd(t, v, f0_expect, n_harm):
                 fund_peak_v=amp, thd=thd, harmonics=harm)
 
 
-def _pvt_combo(tag, temp_c, vdd):
-    out = run(tag, PVT_MOS_SEC, PVT_HBT_SEC,
-              netlist_text=netlist_pvt(temp_c, vdd, tag))
+def _pvt_combo(tag, temp_c, vdd, mos_sec=PVT_MOS_SEC, hbt_sec=PVT_HBT_SEC):
+    out = run(tag, mos_sec, hbt_sec,
+              netlist_text=netlist_pvt(temp_c, vdd, tag, mos_sec, hbt_sec))
     d = parse_oprow(out)
     # PVT runs bias the diff-pair supply at vdd, so ic_hbt / ron_tg must be
     # re-derived with the ACTUAL supply, not the hardcoded 1.5.
     d["ic_hbt"] = (vdd - d["vdc1"]) / 10e3
-    d["gm_hbt"] = d["ic_hbt"] / VT
+    # V_T is TEMPERATURE-DEPENDENT: gm = I_C / V_T(T), with
+    # V_T(T) = k_B (T + 273.15) / q.  The old code divided by the fixed
+    # 300 K VT (25.85 mV) and consequently reported gm_hbt flat from
+    # -40 C to 125 C (0.773 -> 0.772 mS) instead of the real 1.71x swing.
+    vt_t = K_B * (temp_c + 273.15) / Q_E
+    d["vt_v"] = vt_t
+    d["gm_hbt"] = d["ic_hbt"] / vt_t
     f, v = _load_wrdata(OUT + "/b2_gmsweep_%s.dat" % tag)[0]
     i_d = (vdd - v) / 65e3
     gm_fd = np.gradient(i_d, f)
@@ -603,7 +632,7 @@ def extract_all():
     t0 = __import__("time").time()
     res = {"corners": {}, "mc": None, "mc_global": None, "noise": {},
            "notes": [], "blocks": {}, "pvt": None, "transient": None,
-           "parasitics": None, "mc_n": N_MC_LOCAL}
+           "parasitics": None, "joint": None, "mc_n": N_MC_LOCAL}
     blocks = res["blocks"]
 
     def block(name, ok, detail="", kind="required"):
@@ -743,19 +772,53 @@ def extract_all():
                 entries.append(dict(c_added_ff=c_f, pole_hz=pole,
                                     pole_rel_shift=rel,
                                     pole_rel_shift_per_ff=per_ff))
-            slope_meas = (np.log(got[-1][1] / got[0][1])
-                          / (PARAS_C_FF[-1] - PARAS_C_FF[0]))
-            slope_pred = -1.0 / (1e-12 + PARAS_C_FF[-1] * 1e-15)
+            # Two-point log slope: per FARAD on both sides. The old code
+            # divided the measured slope by dC in fF and the prediction by
+            # C_tot in F, a 1e15 unit mismatch. The prediction is the exact
+            # log-slope of the two-point probe (not the differential -1/C at
+            # one endpoint): ln(C_tot(C1)/C_tot(C0)) / (C1-C0).
+            d_c_f = PARAS_C_FF[-1] - PARAS_C_FF[0]
+            c_tot_0 = 1e-12 + PARAS_C_FF[0] * 1e-15
+            c_tot_1 = 1e-12 + PARAS_C_FF[-1] * 1e-15
+            slope_meas = (np.log(got[-1][1] / got[0][1]) / (d_c_f * 1e-15))
+            slope_pred = -np.log(c_tot_1 / c_tot_0) / (d_c_f * 1e-15)
             res["parasitics"] = dict(
                 node="d2b", c_bank_ff=1000.0, cases=entries,
                 slope_log_per_f=slope_meas, slope_log_per_f_pred=slope_pred,
+                slope_rel_err=slope_meas / slope_pred - 1.0,
                 label="pre-PEX sensitivity estimate, not a PEX result",
                 note=("no layout exists for the primitives -> PEX is "
                       "impossible pre-layout. This probe adds an estimated "
                       "wire/load C at the integrator output and re-extracts "
-                      "the pole; predicted slope -1/(C_tot) in log space is "
-                      "shown for cross-check."))
+                      "the pole; the predicted two-point log slope "
+                      "ln(C_tot(1)/C_tot(0))/(C1-C0) [per F] is shown for "
+                      "cross-check."))
         return len(got)
+
+    def joint_jobs():
+        """Worst-case process x temperature measured JOINTLY: the corner lib
+        and .temp are applied in the same ngspice run (no multiplicative
+        corner x temp composition)."""
+        def one(job):
+            mos_sec, hbt_sec, tag, temp_c = job
+            return tag, _pvt_combo(tag, temp_c, JOINT_VDD, mos_sec, hbt_sec)
+
+        with ThreadPoolExecutor(max_workers=2) as ex:
+            rows = [r for r in ex.map(one, JOINT_CORNERS) if r[1] is not None]
+        if rows:
+            rows.sort(key=lambda r: (r[1]["temp_c"], r[0]))
+            res["joint"] = dict(
+                vdd_v=JOINT_VDD,
+                corners=[dict(tag=t, mos_sec=m, hbt_sec=h, temp_c=tc)
+                         for m, h, t, tc in JOINT_CORNERS],
+                rows={t: d for t, d in rows},
+                note=("corner libs AND .temp are applied in the SAME run -> "
+                      "measured joint points, not a corner x temperature "
+                      "composition. Local mismatch MC is measured at TT/27 C "
+                      "only; the B2 joint bench applies its per-sample "
+                      "RELATIVE draws on top of each joint point (declared, "
+                      "and scale-checked against the TT MC)."))
+        return len(rows)
 
     def tran_job():
         out = run("tran", PVT_MOS_SEC, PVT_HBT_SEC,
@@ -800,7 +863,9 @@ def extract_all():
         f_pvt = ex.submit(pvt_jobs)
         f_par = ex.submit(paras_jobs)
         f_trn = ex.submit(tran_job)
+        f_jnt = ex.submit(joint_jobs)
         n_pvt, n_par = f_pvt.result(), f_par.result()
+        n_jnt = f_jnt.result()
         ok_tran = f_trn.result()
 
     # ---- gamma_eff from nominal TT noise ------------------------------------
@@ -875,6 +940,11 @@ def extract_all():
           and len(res["parasitics"]["cases"]) == 3,
           "%d/3 parasitic C cases" % (len(res["parasitics"]["cases"])
                                       if res["parasitics"] else 0))
+    block("joint_corners", res["joint"] is not None
+          and len(res["joint"]["rows"]) == len(JOINT_CORNERS),
+          "%d/%d SS/FF x temperature joint points"
+          % (len(res["joint"]["rows"]) if res["joint"] else 0,
+             len(JOINT_CORNERS)))
 
     failed = [k for k, b in blocks.items()
               if b["status"] == "failed" and b["required"]]

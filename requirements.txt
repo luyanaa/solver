@@ -1,0 +1,13 @@
+# Pinned to >= the versions verified on the dev box (2026-11-19).
+# Pure python3 + these three; no build step, no packaging.
+numpy>=2.5.4
+scipy>=1.18.1
+matplotlib>=3.11.2
+
+# System-level (not pip-installable):
+#   ngspice >= 44.x — required only by the opt-in SPICE benches
+#   (python3 -m twin.spice.extract / twin.spice.extract_b2, i.e.
+#   `bench.run_all --spice`). Inside the Trae agent shell run it as
+#   `env -u LD_LIBRARY_PATH ngspice ...` (agent-injected libstdc++ lacks
+#   GLIBCXX_3.4.32); a normal login shell needs no workaround. PDKs are
+#   external (~/.ciel/ciel/...) and must not be vendored (AGENTS.md).

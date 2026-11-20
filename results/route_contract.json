@@ -1,597 +1,607 @@
 {
- "edge": {
-  "checks": [
-   {
-    "name": "edge: one contract per nonzero off-diagonal A_ij",
-    "got": 4,
-    "expected": 4,
-    "passed": true,
-    "kind": "rc-edge",
-    "note": null
-   },
-   {
-    "name": "edge: exactly two feedback-critical edges (the 0\u21941 cycle)",
-    "got": 2,
-    "expected": 2,
-    "passed": true,
-    "kind": "rc-edge",
-    "note": null
-   },
-   {
-    "name": "edge: edge set matches A off-diagonal nnz",
-    "got": [
-     [
-      0,
-      1
-     ],
-     [
-      0,
-      3
-     ],
-     [
-      1,
-      0
-     ],
-     [
-      2,
-      1
-     ]
+  "edge": {
+    "checks": [
+      {
+        "name": "edge: one contract per nonzero off-diagonal A_ij",
+        "got": 4,
+        "expected": 4,
+        "passed": true,
+        "kind": "rc-edge",
+        "note": null
+      },
+      {
+        "name": "edge: exactly two feedback-critical edges (the 0↔1 cycle)",
+        "got": 2,
+        "expected": 2,
+        "passed": true,
+        "kind": "rc-edge",
+        "note": null
+      },
+      {
+        "name": "edge: edge set matches A off-diagonal nnz",
+        "got": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            3
+          ],
+          [
+            1,
+            0
+          ],
+          [
+            2,
+            1
+          ]
+        ],
+        "expected": "[(0,1),(0,3),(1,0),(2,1)]",
+        "passed": true,
+        "kind": "rc-edge",
+        "note": null
+      },
+      {
+        "name": "edge: feedback edges are exactly {(0,1),(1,0)}",
+        "got": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "expected": "[(0,1),(1,0)]",
+        "passed": true,
+        "kind": "rc-edge",
+        "note": null
+      },
+      {
+        "name": "edge: weights match |A_ij|",
+        "got": [
+          200000.0,
+          300000.0,
+          400000.0,
+          500000.0
+        ],
+        "expected": "(200000, 300000, 400000, 500000)",
+        "passed": true,
+        "kind": "rc-edge",
+        "note": null
+      },
+      {
+        "name": "edge: feedback omega_c finite and positive",
+        "got": "1.058e+06",
+        "expected": "> 0",
+        "passed": true,
+        "kind": "rc-edge",
+        "note": null
+      },
+      {
+        "name": "edge: feedback tau_max_abs = phase_budget(omega_c) (NOT inf)",
+        "got": "8.246e-08 s",
+        "expected": "8.246e-08 s",
+        "passed": true,
+        "kind": "rc-edge",
+        "note": null
+      },
+      {
+        "name": "edge: candidate short wire meets absolute budget (deskew-vs-absolute: common delay doesn't rescue a violation)",
+        "got": "pd 2.06e-08 <= tau 8.25e-08",
+        "expected": "pass_absolute True",
+        "passed": true,
+        "kind": "rc-edge",
+        "note": null
+      },
+      {
+        "name": "edge: phase_delay_at(omega_c) <= tau_max on candidate",
+        "got": "2.06e-08",
+        "expected": "<= 8.25e-08",
+        "passed": true,
+        "kind": "rc-edge",
+        "note": null
+      },
+      {
+        "name": "edge: non-feedback edges trivially absolute_ok with inf budget",
+        "got": [
+          true,
+          true
+        ],
+        "expected": "all True",
+        "passed": true,
+        "kind": "rc-edge",
+        "note": null
+      },
+      {
+        "name": "edge: all candidate edges pass gain/phase/noise on short wire",
+        "got": [
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ],
+          [
+            true,
+            true,
+            true
+          ]
+        ],
+        "expected": "all True",
+        "passed": true,
+        "kind": "rc-edge",
+        "note": null
+      },
+      {
+        "name": "edge: eta_route within the spec budget (phase+gain, <= rad(eps_phase))",
+        "got": "2.18e-02",
+        "expected": "<= 0.0524",
+        "passed": true,
+        "kind": "rc-edge",
+        "note": null
+      },
+      {
+        "name": "edge: latency class recorded and in the valid set",
+        "got": [
+          "L0",
+          "L4"
+        ],
+        "expected": "subset of L0..L4",
+        "passed": true,
+        "kind": "rc-edge",
+        "note": null
+      },
+      {
+        "name": "edge: 1/|A_ij| sensitivity ordering (hf_tau_tol ascending with |A_ij| descending)",
+        "got": "1.05e-07 -> 1.31e-07 -> 1.75e-07 -> 2.62e-07",
+        "expected": "monotone",
+        "passed": true,
+        "kind": "rc-edge",
+        "note": null
+      },
+      {
+        "name": "edge: hf_tau_tol == eps_phi/|A_ij| exactly",
+        "got": "1.05e-07",
+        "expected": "1.05e-07",
+        "passed": true,
+        "kind": "rc-edge",
+        "note": null
+      },
+      {
+        "name": "edge: resolvent pair identity tau_tol * S_tau == eps_phi (exact inverse)",
+        "got": "0.0523599",
+        "expected": "0.0523599",
+        "passed": true,
+        "kind": "rc-edge",
+        "note": null
+      },
+      {
+        "name": "edge: S_tau = omega*|A_ij|*||resolvent|| > 0",
+        "got": "2.83e+05",
+        "expected": "> 0",
+        "passed": true,
+        "kind": "rc-edge",
+        "note": null
+      },
+      {
+        "name": "edge: report round-trips through JSON (4 contracts)",
+        "got": 4,
+        "expected": 4,
+        "passed": true,
+        "kind": "rc-edge",
+        "note": null
+      }
     ],
-    "expected": "[(0,1),(0,3),(1,0),(2,1)]",
-    "passed": true,
-    "kind": "rc-edge",
-    "note": null
-   },
-   {
-    "name": "edge: feedback edges are exactly {(0,1),(1,0)}",
-    "got": [
-     [
-      0,
-      1
-     ],
-     [
-      1,
-      0
-     ]
+    "summary": {
+      "n_edges": 4,
+      "n_feedback": 2,
+      "omega_max": 1058300.5244258363,
+      "tau_max_abs_fb": 8.245905636970319e-08,
+      "phase_delay_fb": 2.0613020081311908e-08
+    }
+  },
+  "units": {
+    "checks": [
+      {
+        "name": "units: omega_max on the physical axis (lam_max/alpha)",
+        "got": "1.0583e+09",
+        "expected": "1.0583e+09",
+        "passed": true,
+        "kind": "rc-units",
+        "note": null
+      },
+      {
+        "name": "units: weight is the physical coefficient A_v = alpha^-1*A",
+        "got": "3e+08",
+        "expected": "3e+08",
+        "passed": true,
+        "kind": "rc-units",
+        "note": null
+      },
+      {
+        "name": "units: S_tau(physical) = S_tau(model)/alpha (NOT the old mixed-unit number)",
+        "got": "1000",
+        "expected": "1/alpha = 1000",
+        "passed": true,
+        "kind": "rc-units",
+        "note": null
+      },
+      {
+        "name": "units: tau_tol(physical) = alpha * tau_tol(model)",
+        "got": "0.001",
+        "expected": "alpha = 0.001",
+        "passed": true,
+        "kind": "rc-units",
+        "note": null
+      },
+      {
+        "name": "units: hf_tau_tol = eps_phi/|A_v,ij| scales by alpha (physical A_ij, not model A_ij)",
+        "got": "0.001",
+        "expected": "alpha = 0.001",
+        "passed": true,
+        "kind": "rc-units",
+        "note": null
+      },
+      {
+        "name": "units: ordering preserved in physical units (hf_tau_tol ascending with |A_v,ij| descending)",
+        "got": "1.047e-10 -> 1.309e-10 -> 1.745e-10 -> 2.618e-10",
+        "expected": "monotone",
+        "passed": true,
+        "kind": "rc-units",
+        "note": null
+      },
+      {
+        "name": "units: source records the physical-dynamics derivation",
+        "got": [
+          "reconstructed alpha^...",
+          "J_p = E_p^-1 A_p..."
+        ],
+        "expected": "reconstructed/E_p^-1",
+        "passed": true,
+        "kind": "rc-units",
+        "note": null
+      },
+      {
+        "name": "units: report J field carries the physical J_p (not model A)",
+        "got": "J_p",
+        "expected": "J_p = E_p^-1 A_p",
+        "passed": true,
+        "kind": "rc-units",
+        "note": null
+      }
     ],
-    "expected": "[(0,1),(1,0)]",
-    "passed": true,
-    "kind": "rc-edge",
-    "note": null
-   },
-   {
-    "name": "edge: weights match |A_ij|",
-    "got": [
-     200000.0,
-     300000.0,
-     400000.0,
-     500000.0
+    "summary": {
+      "alpha": 0.001,
+      "S_tau_ratio": 999.9999999999998,
+      "tau_tol_ratio": 0.0010000000000000002,
+      "hf_ratio": 0.001,
+      "omega_max_model": 1058300.5244258363,
+      "omega_max_phys": 1058300524.4258362
+    }
+  },
+  "singular": {
+    "checks": [
+      {
+        "name": "sing: singular-E descriptor accepted, 2 contracts emitted",
+        "got": 2,
+        "expected": 2,
+        "passed": true,
+        "kind": "rc-sing",
+        "note": null
+      },
+      {
+        "name": "sing: omega_max = max|finite eig| on the differential subspace (no naive E inversion)",
+        "got": "1.12e+06",
+        "expected": "1.12e+06",
+        "passed": true,
+        "kind": "rc-sing",
+        "note": null
+      },
+      {
+        "name": "sing: source records the pinv differential-subspace lift",
+        "got": "J_p = pinv(E_p) A_p on t...",
+        "expected": "pinv(E_p) A_p",
+        "passed": true,
+        "kind": "rc-sing",
+        "note": null
+      },
+      {
+        "name": "sing: differential-row edge keeps finite sensitivity",
+        "got": "(S 3.121e+05, tol 1.68e-07)",
+        "expected": "finite > 0",
+        "passed": true,
+        "kind": "rc-sing",
+        "note": null
+      },
+      {
+        "name": "sing: algebraic-row edge reports honest 0 sensitivity (no finite dynamics on that edge), tau_tol=inf",
+        "got": "(S 0, tol inf)",
+        "expected": "S=0, tau_tol=inf",
+        "passed": true,
+        "kind": "rc-sing",
+        "note": null
+      },
+      {
+        "name": "sing: hf_tau_tol still finite on the algebraic row (eps/|A_v,ij| — the gm budget is independent of the lift)",
+        "got": "1.309e-07",
+        "expected": "1.309e-07",
+        "passed": true,
+        "kind": "rc-sing",
+        "note": null
+      },
+      {
+        "name": "sing: pinv lift is not flagged as defective (contracts valid)",
+        "got": [
+          false,
+          false
+        ],
+        "expected": "all False",
+        "passed": true,
+        "kind": "rc-sing",
+        "note": null
+      }
     ],
-    "expected": "(200000, 300000, 400000, 500000)",
-    "passed": true,
-    "kind": "rc-edge",
-    "note": null
-   },
-   {
-    "name": "edge: feedback omega_c finite and positive",
-    "got": "1.058e+06",
-    "expected": "> 0",
-    "passed": true,
-    "kind": "rc-edge",
-    "note": null
-   },
-   {
-    "name": "edge: feedback tau_max_abs = phase_budget(omega_c) (NOT inf)",
-    "got": "8.246e-08 s",
-    "expected": "8.246e-08 s",
-    "passed": true,
-    "kind": "rc-edge",
-    "note": null
-   },
-   {
-    "name": "edge: candidate short wire meets absolute budget (deskew-vs-absolute: common delay doesn't rescue a violation)",
-    "got": "pd 2.06e-08 <= tau 8.25e-08",
-    "expected": "pass_absolute True",
-    "passed": true,
-    "kind": "rc-edge",
-    "note": null
-   },
-   {
-    "name": "edge: phase_delay_at(omega_c) <= tau_max on candidate",
-    "got": "2.06e-08",
-    "expected": "<= 8.25e-08",
-    "passed": true,
-    "kind": "rc-edge",
-    "note": null
-   },
-   {
-    "name": "edge: non-feedback edges trivially absolute_ok with inf budget",
-    "got": [
-     true,
-     true
+    "summary": {
+      "omega_max": 1120000.0,
+      "S_tau_diff": 312082.62823103624,
+      "S_tau_alg": 0.0,
+      "J_source": "J_p = pinv(E_p) A_p on the differential subspace (singular/ill-conditioned E_p, cond=inf; constraint rows are zero — honest 0 sensitivity, resolvent 1/(jw) block is a known lift artifact)"
+    }
+  },
+  "p7": {
+    "checks": [
+      {
+        "name": "p7: Config carries route_contracts field",
+        "got": "list",
+        "expected": "list",
+        "passed": true,
+        "kind": "rc-p7",
+        "note": null
+      },
+      {
+        "name": "p7: contract count == off-diagonal nnz of A (diffusion: diagonal => 0, a true 'no routing')",
+        "got": 0,
+        "expected": 0,
+        "passed": true,
+        "kind": "rc-p7",
+        "note": null
+      },
+      {
+        "name": "p7: aggregate 'route-edges' ElementConfig kept (backward compat)",
+        "got": true,
+        "expected": "present",
+        "passed": true,
+        "kind": "rc-p7",
+        "note": null
+      },
+      {
+        "name": "p7: Config JSON round-trip includes route_contracts key",
+        "got": true,
+        "expected": true,
+        "passed": true,
+        "kind": "rc-p7",
+        "note": null
+      },
+      {
+        "name": "p7: chain => 4 contracts, 1 feedback in Config",
+        "got": [
+          4,
+          2
+        ],
+        "expected": [
+          4,
+          2
+        ],
+        "passed": true,
+        "kind": "rc-p7",
+        "note": null
+      },
+      {
+        "name": "p7: contract names carry state names from discretized.states",
+        "got": "x1->x0",
+        "expected": "state names",
+        "passed": true,
+        "kind": "rc-p7",
+        "note": null
+      },
+      {
+        "name": "p7: source records contract counts",
+        "got": [
+          4,
+          2
+        ],
+        "expected": [
+          4,
+          2
+        ],
+        "passed": true,
+        "kind": "rc-p7",
+        "note": null
+      },
+      {
+        "name": "p7: each contract carries the four closure verdict keys",
+        "got": [
+          "pass_absolute",
+          "pass_gain",
+          "pass_noise",
+          "pass_phase"
+        ],
+        "expected": "gain/noise/phase/absolute",
+        "passed": true,
+        "kind": "rc-p7",
+        "note": null
+      }
     ],
-    "expected": "all True",
-    "passed": true,
-    "kind": "rc-edge",
-    "note": null
-   },
-   {
-    "name": "edge: all candidate edges pass gain/phase/noise on short wire",
-    "got": [
-     [
-      true,
-      true,
-      true
-     ],
-     [
-      true,
-      true,
-      true
-     ],
-     [
-      true,
-      true,
-      true
-     ],
-     [
-      true,
-      true,
-      true
-     ]
+    "summary": {
+      "diffusion_contracts": 0,
+      "chain_contracts": 4,
+      "chain_feedback": 2
+    }
+  },
+  "violation": {
+    "checks": [
+      {
+        "name": "viol: forced long wire flips feedback verdict to False",
+        "got": false,
+        "expected": false,
+        "passed": true,
+        "kind": "rc-viol",
+        "note": null
+      },
+      {
+        "name": "viol: failure is the absolute-delay criterion (phase_delay >> tau_max), not invented",
+        "got": "pd 2.18e-06 > tau 8.25e-08",
+        "expected": "pass_absolute False",
+        "passed": true,
+        "kind": "rc-viol",
+        "note": null
+      },
+      {
+        "name": "viol: pad_can_fix=False on feedback edge (deskew negative control: matched delay != instantaneous)",
+        "got": false,
+        "expected": false,
+        "passed": true,
+        "kind": "rc-viol",
+        "note": null
+      },
+      {
+        "name": "viol: non-feedback long wire still pad_can_fix=True",
+        "got": [
+          true,
+          true
+        ],
+        "expected": "all True",
+        "passed": true,
+        "kind": "rc-viol",
+        "note": null
+      },
+      {
+        "name": "viol: contract-level verdict property reflects failure",
+        "got": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "expected": "not all True",
+        "passed": true,
+        "kind": "rc-viol",
+        "note": null
+      },
+      {
+        "name": "viol: non-feedback failure lands in pad-fixable criteria",
+        "got": 2,
+        "expected": 2,
+        "passed": true,
+        "kind": "rc-viol",
+        "note": null
+      }
     ],
-    "expected": "all True",
-    "passed": true,
-    "kind": "rc-edge",
-    "note": null
-   },
-   {
-    "name": "edge: eta_route within the spec budget (phase+gain, <= rad(eps_phase))",
-    "got": "2.18e-02",
-    "expected": "<= 0.0524",
-    "passed": true,
-    "kind": "rc-edge",
-    "note": null
-   },
-   {
-    "name": "edge: latency class recorded and in the valid set",
-    "got": [
-     "L0",
-     "L4"
+    "summary": {
+      "fb_phase_delay": 2.1830473209421914e-06,
+      "fb_tau_max": 8.245905636970319e-08,
+      "fb_latency": 5e-06
+    }
+  },
+  "negative": {
+    "checks": [
+      {
+        "name": "neg: diagonal A => empty contract list (true 'no routing', not an error)",
+        "got": 0,
+        "expected": 0,
+        "passed": true,
+        "kind": "rc-neg",
+        "note": null
+      },
+      {
+        "name": "neg: burgers (descriptor=None, no explicit edges) => empty, not fabricated",
+        "got": 0,
+        "expected": 0,
+        "passed": true,
+        "kind": "rc-neg",
+        "note": null
+      },
+      {
+        "name": "neg: NaN edge flagged, finite edge NOT flagged (per-edge scope)",
+        "got": [
+          2,
+          1,
+          1
+        ],
+        "expected": [
+          2,
+          1,
+          1
+        ],
+        "passed": true,
+        "kind": "rc-neg",
+        "note": null
+      },
+      {
+        "name": "neg: flagged contract carries a defective reason; verdict not all True",
+        "got": "defective edge: |A_ij| n...",
+        "expected": "defective",
+        "passed": true,
+        "kind": "rc-neg",
+        "note": null
+      },
+      {
+        "name": "neg: inf edge flagged with reason; finite edge passes spec",
+        "got": [
+          1,
+          "defective edge: |A_ij|...",
+          1
+        ],
+        "expected": ">0 flagged",
+        "passed": true,
+        "kind": "rc-neg",
+        "note": null
+      },
+      {
+        "name": "neg: derive_coupling_edges returns [] + J for diagonal desc",
+        "got": [
+          0,
+          true
+        ],
+        "expected": [
+          0,
+          true
+        ],
+        "passed": true,
+        "kind": "rc-neg",
+        "note": null
+      }
     ],
-    "expected": "subset of L0..L4",
-    "passed": true,
-    "kind": "rc-edge",
-    "note": null
-   },
-   {
-    "name": "edge: 1/|A_ij| sensitivity ordering (hf_tau_tol ascending with |A_ij| descending)",
-    "got": "1.05e-07 -> 1.31e-07 -> 1.75e-07 -> 2.62e-07",
-    "expected": "monotone",
-    "passed": true,
-    "kind": "rc-edge",
-    "note": null
-   },
-   {
-    "name": "edge: hf_tau_tol == eps_phi/|A_ij| exactly",
-    "got": "1.05e-07",
-    "expected": "1.05e-07",
-    "passed": true,
-    "kind": "rc-edge",
-    "note": null
-   },
-   {
-    "name": "edge: resolvent pair identity tau_tol * S_tau == eps_phi (exact inverse)",
-    "got": "0.0523599",
-    "expected": "0.0523599",
-    "passed": true,
-    "kind": "rc-edge",
-    "note": null
-   },
-   {
-    "name": "edge: S_tau = omega*|A_ij|*||resolvent|| > 0",
-    "got": "2.83e+05",
-    "expected": "> 0",
-    "passed": true,
-    "kind": "rc-edge",
-    "note": null
-   },
-   {
-    "name": "edge: report round-trips through JSON (4 contracts)",
-    "got": 4,
-    "expected": 4,
-    "passed": true,
-    "kind": "rc-edge",
-    "note": null
-   }
-  ],
+    "summary": {
+      "diagonal_contracts": 0,
+      "burgers_contracts": 0,
+      "nan_flagged": 1
+    }
+  },
   "summary": {
-   "n_edges": 4,
-   "n_feedback": 2,
-   "omega_max": 1058300.5244258363,
-   "tau_max_abs_fb": 8.245905636970319e-08,
-   "phase_delay_fb": 2.0613020081311908e-08
+    "n_checks": 53,
+    "n_passed": 53
+  },
+  "_meta": {
+    "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
+    "git_dirty": true,
+    "bench_module": "bench.run_route_contract",
+    "command": "python3 -m bench.run_route_contract",
+    "timestamp_utc": "2026-11-20T06:08:33+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
   }
- },
- "units": {
-  "checks": [
-   {
-    "name": "units: omega_max on the physical axis (lam_max/alpha)",
-    "got": "1.0583e+09",
-    "expected": "1.0583e+09",
-    "passed": true,
-    "kind": "rc-units",
-    "note": null
-   },
-   {
-    "name": "units: weight is the physical coefficient A_v = alpha^-1*A",
-    "got": "3e+08",
-    "expected": "3e+08",
-    "passed": true,
-    "kind": "rc-units",
-    "note": null
-   },
-   {
-    "name": "units: S_tau(physical) = S_tau(model)/alpha (NOT the old mixed-unit number)",
-    "got": "1000",
-    "expected": "1/alpha = 1000",
-    "passed": true,
-    "kind": "rc-units",
-    "note": null
-   },
-   {
-    "name": "units: tau_tol(physical) = alpha * tau_tol(model)",
-    "got": "0.001",
-    "expected": "alpha = 0.001",
-    "passed": true,
-    "kind": "rc-units",
-    "note": null
-   },
-   {
-    "name": "units: hf_tau_tol = eps_phi/|A_v,ij| scales by alpha (physical A_ij, not model A_ij)",
-    "got": "0.001",
-    "expected": "alpha = 0.001",
-    "passed": true,
-    "kind": "rc-units",
-    "note": null
-   },
-   {
-    "name": "units: ordering preserved in physical units (hf_tau_tol ascending with |A_v,ij| descending)",
-    "got": "1.047e-10 -> 1.309e-10 -> 1.745e-10 -> 2.618e-10",
-    "expected": "monotone",
-    "passed": true,
-    "kind": "rc-units",
-    "note": null
-   },
-   {
-    "name": "units: source records the physical-dynamics derivation",
-    "got": [
-     "reconstructed alpha^...",
-     "J_p = E_p^-1 A_p..."
-    ],
-    "expected": "reconstructed/E_p^-1",
-    "passed": true,
-    "kind": "rc-units",
-    "note": null
-   },
-   {
-    "name": "units: report J field carries the physical J_p (not model A)",
-    "got": "J_p",
-    "expected": "J_p = E_p^-1 A_p",
-    "passed": true,
-    "kind": "rc-units",
-    "note": null
-   }
-  ],
-  "summary": {
-   "alpha": 0.001,
-   "S_tau_ratio": 999.9999999999998,
-   "tau_tol_ratio": 0.0010000000000000002,
-   "hf_ratio": 0.001,
-   "omega_max_model": 1058300.5244258363,
-   "omega_max_phys": 1058300524.4258362
-  }
- },
- "singular": {
-  "checks": [
-   {
-    "name": "sing: singular-E descriptor accepted, 2 contracts emitted",
-    "got": 2,
-    "expected": 2,
-    "passed": true,
-    "kind": "rc-sing",
-    "note": null
-   },
-   {
-    "name": "sing: omega_max = max|finite eig| on the differential subspace (no naive E inversion)",
-    "got": "1.12e+06",
-    "expected": "1.12e+06",
-    "passed": true,
-    "kind": "rc-sing",
-    "note": null
-   },
-   {
-    "name": "sing: source records the pinv differential-subspace lift",
-    "got": "J_p = pinv(E_p) A_p on t...",
-    "expected": "pinv(E_p) A_p",
-    "passed": true,
-    "kind": "rc-sing",
-    "note": null
-   },
-   {
-    "name": "sing: differential-row edge keeps finite sensitivity",
-    "got": "(S 3.121e+05, tol 1.68e-07)",
-    "expected": "finite > 0",
-    "passed": true,
-    "kind": "rc-sing",
-    "note": null
-   },
-   {
-    "name": "sing: algebraic-row edge reports honest 0 sensitivity (no finite dynamics on that edge), tau_tol=inf",
-    "got": "(S 0, tol inf)",
-    "expected": "S=0, tau_tol=inf",
-    "passed": true,
-    "kind": "rc-sing",
-    "note": null
-   },
-   {
-    "name": "sing: hf_tau_tol still finite on the algebraic row (eps/|A_v,ij| \u2014 the gm budget is independent of the lift)",
-    "got": "1.309e-07",
-    "expected": "1.309e-07",
-    "passed": true,
-    "kind": "rc-sing",
-    "note": null
-   },
-   {
-    "name": "sing: pinv lift is not flagged as defective (contracts valid)",
-    "got": [
-     false,
-     false
-    ],
-    "expected": "all False",
-    "passed": true,
-    "kind": "rc-sing",
-    "note": null
-   }
-  ],
-  "summary": {
-   "omega_max": 1120000.0,
-   "S_tau_diff": 312082.62823103624,
-   "S_tau_alg": 0.0,
-   "J_source": "J_p = pinv(E_p) A_p on the differential subspace (singular/ill-conditioned E_p, cond=inf; constraint rows are zero \u2014 honest 0 sensitivity, resolvent 1/(jw) block is a known lift artifact)"
-  }
- },
- "p7": {
-  "checks": [
-   {
-    "name": "p7: Config carries route_contracts field",
-    "got": "list",
-    "expected": "list",
-    "passed": true,
-    "kind": "rc-p7",
-    "note": null
-   },
-   {
-    "name": "p7: contract count == off-diagonal nnz of A (diffusion: diagonal => 0, a true 'no routing')",
-    "got": 0,
-    "expected": 0,
-    "passed": true,
-    "kind": "rc-p7",
-    "note": null
-   },
-   {
-    "name": "p7: aggregate 'route-edges' ElementConfig kept (backward compat)",
-    "got": true,
-    "expected": "present",
-    "passed": true,
-    "kind": "rc-p7",
-    "note": null
-   },
-   {
-    "name": "p7: Config JSON round-trip includes route_contracts key",
-    "got": true,
-    "expected": true,
-    "passed": true,
-    "kind": "rc-p7",
-    "note": null
-   },
-   {
-    "name": "p7: chain => 4 contracts, 1 feedback in Config",
-    "got": [
-     4,
-     2
-    ],
-    "expected": [
-     4,
-     2
-    ],
-    "passed": true,
-    "kind": "rc-p7",
-    "note": null
-   },
-   {
-    "name": "p7: contract names carry state names from discretized.states",
-    "got": "x1->x0",
-    "expected": "state names",
-    "passed": true,
-    "kind": "rc-p7",
-    "note": null
-   },
-   {
-    "name": "p7: source records contract counts",
-    "got": [
-     4,
-     2
-    ],
-    "expected": [
-     4,
-     2
-    ],
-    "passed": true,
-    "kind": "rc-p7",
-    "note": null
-   },
-   {
-    "name": "p7: each contract carries the four closure verdict keys",
-    "got": [
-     "pass_absolute",
-     "pass_gain",
-     "pass_noise",
-     "pass_phase"
-    ],
-    "expected": "gain/noise/phase/absolute",
-    "passed": true,
-    "kind": "rc-p7",
-    "note": null
-   }
-  ],
-  "summary": {
-   "diffusion_contracts": 0,
-   "chain_contracts": 4,
-   "chain_feedback": 2
-  }
- },
- "violation": {
-  "checks": [
-   {
-    "name": "viol: forced long wire flips feedback verdict to False",
-    "got": false,
-    "expected": false,
-    "passed": true,
-    "kind": "rc-viol",
-    "note": null
-   },
-   {
-    "name": "viol: failure is the absolute-delay criterion (phase_delay >> tau_max), not invented",
-    "got": "pd 2.18e-06 > tau 8.25e-08",
-    "expected": "pass_absolute False",
-    "passed": true,
-    "kind": "rc-viol",
-    "note": null
-   },
-   {
-    "name": "viol: pad_can_fix=False on feedback edge (deskew negative control: matched delay != instantaneous)",
-    "got": false,
-    "expected": false,
-    "passed": true,
-    "kind": "rc-viol",
-    "note": null
-   },
-   {
-    "name": "viol: non-feedback long wire still pad_can_fix=True",
-    "got": [
-     true,
-     true
-    ],
-    "expected": "all True",
-    "passed": true,
-    "kind": "rc-viol",
-    "note": null
-   },
-   {
-    "name": "viol: contract-level verdict property reflects failure",
-    "got": [
-     false,
-     false,
-     false,
-     false
-    ],
-    "expected": "not all True",
-    "passed": true,
-    "kind": "rc-viol",
-    "note": null
-   },
-   {
-    "name": "viol: non-feedback failure lands in pad-fixable criteria",
-    "got": 2,
-    "expected": 2,
-    "passed": true,
-    "kind": "rc-viol",
-    "note": null
-   }
-  ],
-  "summary": {
-   "fb_phase_delay": 2.1830473209421914e-06,
-   "fb_tau_max": 8.245905636970319e-08,
-   "fb_latency": 5e-06
-  }
- },
- "negative": {
-  "checks": [
-   {
-    "name": "neg: diagonal A => empty contract list (true 'no routing', not an error)",
-    "got": 0,
-    "expected": 0,
-    "passed": true,
-    "kind": "rc-neg",
-    "note": null
-   },
-   {
-    "name": "neg: burgers (descriptor=None, no explicit edges) => empty, not fabricated",
-    "got": 0,
-    "expected": 0,
-    "passed": true,
-    "kind": "rc-neg",
-    "note": null
-   },
-   {
-    "name": "neg: NaN edge flagged, finite edge NOT flagged (per-edge scope)",
-    "got": [
-     2,
-     1,
-     1
-    ],
-    "expected": [
-     2,
-     1,
-     1
-    ],
-    "passed": true,
-    "kind": "rc-neg",
-    "note": null
-   },
-   {
-    "name": "neg: flagged contract carries a defective reason; verdict not all True",
-    "got": "defective edge: |A_ij| n...",
-    "expected": "defective",
-    "passed": true,
-    "kind": "rc-neg",
-    "note": null
-   },
-   {
-    "name": "neg: inf edge flagged with reason; finite edge passes spec",
-    "got": [
-     1,
-     "defective edge: |A_ij|...",
-     1
-    ],
-    "expected": ">0 flagged",
-    "passed": true,
-    "kind": "rc-neg",
-    "note": null
-   },
-   {
-    "name": "neg: derive_coupling_edges returns [] + J for diagonal desc",
-    "got": [
-     0,
-     true
-    ],
-    "expected": [
-     0,
-     true
-    ],
-    "passed": true,
-    "kind": "rc-neg",
-    "note": null
-   }
-  ],
-  "summary": {
-   "diagonal_contracts": 0,
-   "burgers_contracts": 0,
-   "nan_flagged": 1
-  }
- },
- "summary": {
-  "n_checks": 53,
-  "n_passed": 53
- }
 }

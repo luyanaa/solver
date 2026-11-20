@@ -1,0 +1,35 @@
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Install python deps
+        run: pip install -r requirements.txt
+      # ngspice is optional: only the --spice benches need it; the default
+      # suite is non-SPICE. Install it anyway so the opt-in path is testable.
+      - name: Install ngspice (optional, for --spice)
+        run: sudo apt-get update && sudo apt-get install -y ngspice || true
+      - name: Run bench suite + staleness audit
+        run: ./ci.sh
+      - name: Archive results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: results
+          path: |
+            results/run_all.json
+            results/*.json
+            results/*_report.txt
+          if-no-files-found: warn

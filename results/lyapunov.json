@@ -200,7 +200,7 @@
     },
     {
       "name": "index-1 feedthrough control is inf",
-      "got": "qz-direct-feedthrough (D_total\u22600)",
+      "got": "qz-direct-feedthrough (D_total≠0)",
       "expected": "inf",
       "log10_err": 0.0,
       "tol": "",
@@ -218,7 +218,7 @@
     },
     {
       "name": "sys.D=1 feedthrough is inf",
-      "got": "direct-feedthrough (sys.D\u22600, \u2016D\u2016=1.00e+00)",
+      "got": "direct-feedthrough (sys.D≠0, ‖D‖=1.00e+00)",
       "expected": "inf",
       "log10_err": 0.0,
       "tol": "",
@@ -236,5 +236,15 @@
     }
   ],
   "n_pass": 26,
-  "n_total": 26
+  "n_total": 26,
+  "_meta": {
+    "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
+    "git_dirty": true,
+    "bench_module": "bench.run_lyapunov",
+    "command": "python3 -m bench.run_lyapunov",
+    "timestamp_utc": "2026-11-20T05:55:04+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
+  }
 }

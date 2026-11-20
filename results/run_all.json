@@ -1,0 +1,225 @@
+{
+  "started_utc": "2026-11-20T05:51:06+00:00",
+  "finished_utc": "2026-11-20T06:13:11+00:00",
+  "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
+  "git_dirty": true,
+  "flags": {
+    "spice": false,
+    "fast": false
+  },
+  "total_seconds": 1324.6,
+  "per_bench": {
+    "run_twin_experiments": {
+      "exit": 0,
+      "seconds": 178.4,
+      "checks": null,
+      "stamped": "twin_experiments.json"
+    },
+    "run_phase0": {
+      "exit": 0,
+      "seconds": 46.6,
+      "checks": [
+        45,
+        45
+      ],
+      "stamped": "phase0.json"
+    },
+    "run_lyapunov": {
+      "exit": 0,
+      "seconds": 12.1,
+      "checks": [
+        26,
+        26
+      ],
+      "stamped": "lyapunov.json"
+    },
+    "run_reduce": {
+      "exit": 0,
+      "seconds": 18.0,
+      "checks": [
+        44,
+        44
+      ],
+      "stamped": "reduce.json"
+    },
+    "run_skew": {
+      "exit": 0,
+      "seconds": 2.0,
+      "checks": [
+        15,
+        15
+      ],
+      "stamped": "skew.json"
+    },
+    "run_route": {
+      "exit": 0,
+      "seconds": 7.5,
+      "checks": [
+        75,
+        75
+      ],
+      "stamped": "route.json"
+    },
+    "run_transform": {
+      "exit": 0,
+      "seconds": 29.7,
+      "checks": [
+        56,
+        56
+      ],
+      "stamped": "transform.json"
+    },
+    "run_sde": {
+      "exit": 0,
+      "seconds": 11.2,
+      "checks": [
+        27,
+        27
+      ],
+      "stamped": "sde.json"
+    },
+    "run_multirate": {
+      "exit": 0,
+      "seconds": 8.2,
+      "checks": [
+        33,
+        33
+      ],
+      "stamped": "multirate.json"
+    },
+    "run_compiler": {
+      "exit": 0,
+      "seconds": 2.5,
+      "checks": [
+        22,
+        22
+      ],
+      "stamped": "compiler.json"
+    },
+    "run_constraint": {
+      "exit": 0,
+      "seconds": 0.8,
+      "checks": [
+        44,
+        44
+      ],
+      "stamped": "constraint.json"
+    },
+    "run_constraint_timing": {
+      "exit": 0,
+      "seconds": 0.8,
+      "checks": [
+        36,
+        36
+      ],
+      "stamped": "constraint_timing.json"
+    },
+    "run_pipeline": {
+      "exit": 0,
+      "seconds": 604.4,
+      "checks": [
+        34,
+        34
+      ],
+      "stamped": "pipeline.json"
+    },
+    "run_substrate": {
+      "exit": 0,
+      "seconds": 90.6,
+      "checks": [
+        40,
+        40
+      ],
+      "stamped": "substrate.json"
+    },
+    "run_stagea": {
+      "exit": 0,
+      "seconds": 3.4,
+      "checks": [
+        26,
+        26
+      ],
+      "stamped": "stagea.json"
+    },
+    "run_closure_split": {
+      "exit": 0,
+      "seconds": 10.0,
+      "checks": [
+        34,
+        34
+      ],
+      "stamped": "closure_split.json"
+    },
+    "run_basis_interface": {
+      "exit": 0,
+      "seconds": 4.8,
+      "checks": [
+        31,
+        31
+      ],
+      "stamped": "basis_interface.json"
+    },
+    "run_calib": {
+      "exit": 0,
+      "seconds": 1.8,
+      "checks": [
+        62,
+        62
+      ],
+      "stamped": "calib.json"
+    },
+    "run_p7_netlist": {
+      "exit": 0,
+      "seconds": 5.7,
+      "checks": [
+        26,
+        26
+      ],
+      "stamped": "p7_netlist.json"
+    },
+    "run_route_contract": {
+      "exit": 0,
+      "seconds": 5.9,
+      "checks": [
+        53,
+        53
+      ],
+      "stamped": "route_contract.json"
+    },
+    "run_scaling": {
+      "exit": 0,
+      "seconds": 1.7,
+      "checks": null,
+      "stamped": "scaling.json"
+    },
+    "run_compiler_e2e": {
+      "exit": 0,
+      "seconds": 7.3,
+      "checks": [
+        48,
+        48
+      ],
+      "stamped": "compiler_e2e.json"
+    },
+    "run_b2": {
+      "exit": 0,
+      "seconds": 0.4,
+      "checks": null,
+      "stamped": "b2.json"
+    },
+    "run_b2_behavioral": {
+      "exit": 0,
+      "seconds": 3.1,
+      "checks": null,
+      "stamped": "b2_behavioral.json"
+    },
+    "run_b2_joint": {
+      "exit": 0,
+      "seconds": 264.6,
+      "checks": null,
+      "stamped": "b2_joint.json"
+    }
+  },
+  "skipped": [],
+  "failures": []
+}

@@ -1,288 +1,298 @@
 {
- "cases": {
-  "closure_diffusion": {
-   "eta": {
-    "8": 0.00017102891838033173,
-    "16": 0.00011370054403735843,
-    "32": 6.615685066392237e-05,
-    "48": 3.829507433130533e-05,
-    "64": 0.0
-   },
-   "eta_analytic": {
-    "8": 0.00017102891838033173,
-    "16": 0.00011370054403735843,
-    "32": 6.615685066392237e-05,
-    "48": 3.829507433130533e-05
-   }
+  "cases": {
+    "closure_diffusion": {
+      "eta": {
+        "8": 0.00017102891838033173,
+        "16": 0.00011370054403735843,
+        "32": 6.615685066392237e-05,
+        "48": 3.829507433130533e-05,
+        "64": 0.0
+      },
+      "eta_analytic": {
+        "8": 0.00017102891838033173,
+        "16": 0.00011370054403735843,
+        "32": 6.615685066392237e-05,
+        "48": 3.829507433130533e-05
+      }
+    },
+    "closure_burgers": {
+      "eta": {
+        "2": 0.816496580927726,
+        "3": 0.2581988897471613,
+        "4": 1.11363095816244e-15
+      },
+      "alias_frac": {
+        "2": 1.0,
+        "3": 1.0,
+        "4": 0.10416570411387564
+      }
+    },
+    "split_stiff": {
+      "slaving": {
+        "A_fs=1.0": 9.703883210214828e-09,
+        "A_fs=0.1": 9.739202914580222e-10
+      },
+      "eig_match": 0.0,
+      "gap_ratio": 10000.0
+    },
+    "split_feedback": {
+      "eig_match": 4.440892098500626e-14,
+      "bound": 1.0000000001000446e-10,
+      "slaving": 1.5843000380507573e-11
+    }
   },
-  "closure_burgers": {
-   "eta": {
-    "2": 0.816496580927726,
-    "3": 0.2581988897471613,
-    "4": 1.11363095816244e-15
-   },
-   "alias_frac": {
-    "2": 1.0,
-    "3": 1.0,
-    "4": 0.10416570411387564
-   }
+  "checks": [
+    {
+      "name": "eta(N=full) is exactly 0 (linear diagonal is closed)",
+      "got": "0.00e+00",
+      "expected": "0",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "eta(N) matches ||f_{k>N}|| / ||F(u_ref)|| (4 points)",
+      "got": "max|dev|<1e-12",
+      "expected": "yes",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "eta grows monotonically as N shrinks (8>16>32>48>64)",
+      "got": "1.710e-04 > 1.137e-04 > 6.616e-05 > 3.830e-05 > 0.000e+00",
+      "expected": "strictly decreasing in N",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "defect confined to (I-P_N): coords 0..15 are zero",
+      "got": "0.00e+00",
+      "expected": "0",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "forcing at k=33 with N=16: defect = full forcing (clean)",
+      "got": "‖r‖=1.000000 @k=33",
+      "expected": "‖r‖=1 @k=33",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "eta = 1 exactly for out-of-band unit forcing",
+      "got": "1.000000000000",
+      "expected": "1",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "verdict: eta>eps asks reduce-N (not silently feasible)",
+      "got": "reduce-N",
+      "expected": "reduce-N",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "verdict: eps > eta ⇒ feasible",
+      "got": "feasible",
+      "expected": "feasible",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "verdict: no eps ⇒ unjudged (no silent claim)",
+      "got": "unjudged",
+      "expected": "unjudged",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "projected descriptor keeps slow block A[:N,:N]",
+      "got": "shape=16, A[0,0]=-1.0",
+      "expected": "n=16, A[0,0]=-1",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "quadratic closure defect > 0 at N=2 (content up to |k|<=2N)",
+      "got": "8.165e-01",
+      "expected": ">0",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "eta decreases with N (2 > 3 > 4)",
+      "got": "8.165e-01 > 2.582e-01 > 1.114e-15",
+      "expected": "monotone",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "eta(N=4) at numerical floor: products of |k|<=2 modes stay |k|<=4",
+      "got": "1.11e-15",
+      "expected": "<1e-12",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "defect energy entirely in (N,2N] alias band at N=2",
+      "got": "1.000",
+      "expected": "1.0",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "verdict: alias-band-dominated defect ⇒ change-basis",
+      "got": "change-basis",
+      "expected": "change-basis",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "N at resolvable max with exact rhs: eta=0 ⇒ feasible",
+      "got": "feasible/1.59e-17",
+      "expected": "feasible/~0",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "stiff pair auto-splits at the 1e4 gap",
+      "got": "split",
+      "expected": "split",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "gap ratio >= 1e3 reported",
+      "got": "1e+04",
+      "expected": ">=1e3",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "Schur A_eff reproduces slow eigenvalue to algebraic accuracy",
+      "got": "0.00e+00",
+      "expected": "<1e-12",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "reduced slow eigenvalue equals design value -1",
+      "got": "-1.000e+00",
+      "expected": "-1",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "slaving residual small because gap is large (measured)",
+      "got": "9.704e-09",
+      "expected": "<1e-6",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "slaving residual scales ~ A_fs (10x smaller coupling ⇒ ~10x error)",
+      "got": "9.96",
+      "expected": "~10",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "reduced descriptor is n_slow square",
+      "got": "1",
+      "expected": "1",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "feedback split: verdict split with flag set",
+      "got": "split",
+      "expected": "split",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "eig_match within Schur-correction bound (×2 margin)",
+      "got": "4.44e-14 <= 2.00e-10",
+      "expected": "yes",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "feedback slaving residual reported and small",
+      "got": "1.584e-11",
+      "expected": "<1e-5",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "weak gap (-1,-2): auto ⇒ no-split, no fabricated QSSA",
+      "got": "no-split/True",
+      "expected": "no-split/None",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "weak gap ratio reported honestly",
+      "got": "2.0",
+      "expected": "2",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "forced tau_fast across weak gap: split honored + weak-gap flag",
+      "got": "split/True",
+      "expected": "split/weak-gap",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "defective Jordan block ⇒ no-split (defective flag)",
+      "got": "no-split/True",
+      "expected": "no-split/defective",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "unstable fast candidate ⇒ no-split (fast-block-unstable)",
+      "got": "no-split/True",
+      "expected": "no-split/fast-block-unstable",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "singular E ⇒ NotImplementedError (already a split output)",
+      "got": "raised",
+      "expected": "NotImplementedError",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "singular fast block ⇒ ValueError (no silent inversion)",
+      "got": "raised",
+      "expected": "ValueError",
+      "passed": 1,
+      "kind": "closure_split"
+    },
+    {
+      "name": "unstable fast block ⇒ ValueError in qssa_reduce",
+      "got": "raised",
+      "expected": "ValueError",
+      "passed": 1,
+      "kind": "closure_split"
+    }
+  ],
+  "summary": {
+    "n_checks": 34,
+    "n_passed": 34
   },
-  "split_stiff": {
-   "slaving": {
-    "A_fs=1.0": 9.703883210214828e-09,
-    "A_fs=0.1": 9.739202914580222e-10
-   },
-   "eig_match": 0.0,
-   "gap_ratio": 10000.0
-  },
-  "split_feedback": {
-   "eig_match": 4.440892098500626e-14,
-   "bound": 1.0000000001000446e-10,
-   "slaving": 1.5843000380507573e-11
+  "_meta": {
+    "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
+    "git_dirty": true,
+    "bench_module": "bench.run_closure_split",
+    "command": "python3 -m bench.run_closure_split",
+    "timestamp_utc": "2026-11-20T06:08:15+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
   }
- },
- "checks": [
-  {
-   "name": "eta(N=full) is exactly 0 (linear diagonal is closed)",
-   "got": "0.00e+00",
-   "expected": "0",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "eta(N) matches ||f_{k>N}|| / ||F(u_ref)|| (4 points)",
-   "got": "max|dev|<1e-12",
-   "expected": "yes",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "eta grows monotonically as N shrinks (8>16>32>48>64)",
-   "got": "1.710e-04 > 1.137e-04 > 6.616e-05 > 3.830e-05 > 0.000e+00",
-   "expected": "strictly decreasing in N",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "defect confined to (I-P_N): coords 0..15 are zero",
-   "got": "0.00e+00",
-   "expected": "0",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "forcing at k=33 with N=16: defect = full forcing (clean)",
-   "got": "\u2016r\u2016=1.000000 @k=33",
-   "expected": "\u2016r\u2016=1 @k=33",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "eta = 1 exactly for out-of-band unit forcing",
-   "got": "1.000000000000",
-   "expected": "1",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "verdict: eta>eps asks reduce-N (not silently feasible)",
-   "got": "reduce-N",
-   "expected": "reduce-N",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "verdict: eps > eta \u21d2 feasible",
-   "got": "feasible",
-   "expected": "feasible",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "verdict: no eps \u21d2 unjudged (no silent claim)",
-   "got": "unjudged",
-   "expected": "unjudged",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "projected descriptor keeps slow block A[:N,:N]",
-   "got": "shape=16, A[0,0]=-1.0",
-   "expected": "n=16, A[0,0]=-1",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "quadratic closure defect > 0 at N=2 (content up to |k|<=2N)",
-   "got": "8.165e-01",
-   "expected": ">0",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "eta decreases with N (2 > 3 > 4)",
-   "got": "8.165e-01 > 2.582e-01 > 1.114e-15",
-   "expected": "monotone",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "eta(N=4) at numerical floor: products of |k|<=2 modes stay |k|<=4",
-   "got": "1.11e-15",
-   "expected": "<1e-12",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "defect energy entirely in (N,2N] alias band at N=2",
-   "got": "1.000",
-   "expected": "1.0",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "verdict: alias-band-dominated defect \u21d2 change-basis",
-   "got": "change-basis",
-   "expected": "change-basis",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "N at resolvable max with exact rhs: eta=0 \u21d2 feasible",
-   "got": "feasible/1.59e-17",
-   "expected": "feasible/~0",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "stiff pair auto-splits at the 1e4 gap",
-   "got": "split",
-   "expected": "split",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "gap ratio >= 1e3 reported",
-   "got": "1e+04",
-   "expected": ">=1e3",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "Schur A_eff reproduces slow eigenvalue to algebraic accuracy",
-   "got": "0.00e+00",
-   "expected": "<1e-12",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "reduced slow eigenvalue equals design value -1",
-   "got": "-1.000e+00",
-   "expected": "-1",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "slaving residual small because gap is large (measured)",
-   "got": "9.704e-09",
-   "expected": "<1e-6",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "slaving residual scales ~ A_fs (10x smaller coupling \u21d2 ~10x error)",
-   "got": "9.96",
-   "expected": "~10",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "reduced descriptor is n_slow square",
-   "got": "1",
-   "expected": "1",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "feedback split: verdict split with flag set",
-   "got": "split",
-   "expected": "split",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "eig_match within Schur-correction bound (\u00d72 margin)",
-   "got": "4.44e-14 <= 2.00e-10",
-   "expected": "yes",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "feedback slaving residual reported and small",
-   "got": "1.584e-11",
-   "expected": "<1e-5",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "weak gap (-1,-2): auto \u21d2 no-split, no fabricated QSSA",
-   "got": "no-split/True",
-   "expected": "no-split/None",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "weak gap ratio reported honestly",
-   "got": "2.0",
-   "expected": "2",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "forced tau_fast across weak gap: split honored + weak-gap flag",
-   "got": "split/True",
-   "expected": "split/weak-gap",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "defective Jordan block \u21d2 no-split (defective flag)",
-   "got": "no-split/True",
-   "expected": "no-split/defective",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "unstable fast candidate \u21d2 no-split (fast-block-unstable)",
-   "got": "no-split/True",
-   "expected": "no-split/fast-block-unstable",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "singular E \u21d2 NotImplementedError (already a split output)",
-   "got": "raised",
-   "expected": "NotImplementedError",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "singular fast block \u21d2 ValueError (no silent inversion)",
-   "got": "raised",
-   "expected": "ValueError",
-   "passed": 1,
-   "kind": "closure_split"
-  },
-  {
-   "name": "unstable fast block \u21d2 ValueError in qssa_reduce",
-   "got": "raised",
-   "expected": "ValueError",
-   "passed": 1,
-   "kind": "closure_split"
-  }
- ],
- "summary": {
-  "n_checks": 34,
-  "n_passed": 34
- }
 }

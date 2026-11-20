@@ -4049,81 +4049,81 @@
   },
   "checks": [
     {
-      "name": "N weak \u03c1_sup",
-      "got": "0.7379 @ \u03c9=5.04",
+      "name": "N weak ρ_sup",
+      "got": "0.7379 @ ω=5.04",
       "expected": "< 1",
       "passed": true
     },
     {
-      "name": "N strong \u03c1_sup (negative control)",
-      "got": "1.4757 @ \u03c9=5.04",
+      "name": "N strong ρ_sup (negative control)",
+      "got": "1.4757 @ ω=5.04",
       "expected": "> 1 (NO)",
       "passed": true
     },
     {
       "name": "interior peak, not DC",
-      "got": "\u03c3_dc=0.030 \u03c1=0.738 @\u03c9=5.04",
-      "expected": "interior & \u03c3_dc<0.9\u03c1_sup",
+      "got": "σ_dc=0.030 ρ=0.738 @ω=5.04",
+      "expected": "interior & σ_dc<0.9ρ_sup",
       "passed": true
     },
     {
-      "name": "N measured rate vs \u03c1_sup (normal \u21d2 exact)",
-      "got": "0.7500 vs 0.7379 (\u03941.6%)",
-      "expected": "within \u00b125%",
+      "name": "N measured rate vs ρ_sup (normal ⇒ exact)",
+      "got": "0.7500 vs 0.7379 (Δ1.6%)",
+      "expected": "within ±25%",
       "passed": true
     },
     {
-      "name": "N rate bracket [\u03c3_dc, \u03c1_sup]",
+      "name": "N rate bracket [σ_dc, ρ_sup]",
       "got": "0.7500",
-      "expected": "\u03c3_dc \u2264 rate \u2264 1.05\u00b7\u03c1_sup",
+      "expected": "σ_dc ≤ rate ≤ 1.05·ρ_sup",
       "passed": true
     },
     {
       "name": "N strong diverges",
-      "got": "\u00d757.65 per-iter diff growth",
+      "got": "×57.65 per-iter diff growth",
       "expected": "> 1",
       "passed": true
     },
     {
-      "name": "NN measured rate vs \u03c1_eig_sup (honest relation)",
-      "got": "0.1482 vs 0.1465 (\u03941.2%)",
-      "expected": "within \u00b125%",
+      "name": "NN measured rate vs ρ_eig_sup (honest relation)",
+      "got": "0.1482 vs 0.1465 (Δ1.2%)",
+      "expected": "within ±25%",
       "passed": true
     },
     {
-      "name": "NN \u03c3_max bound conservative but valid",
-      "got": "rate=0.148 \u2264 \u03c1_sup=0.738 (gap 5.0\u00d7)",
-      "expected": "rate \u2264 \u03c1_sup",
+      "name": "NN σ_max bound conservative but valid",
+      "got": "rate=0.148 ≤ ρ_sup=0.738 (gap 5.0×)",
+      "expected": "rate ≤ ρ_sup",
       "passed": true
     },
     {
       "name": "NN strong diverges (c=1.1)",
-      "got": "\u00d72.29 per-iter diff growth",
+      "got": "×2.29 per-iter diff growth",
       "expected": "> 1",
       "passed": true
     },
     {
-      "name": "IVP window rate \u2264 \u03c1_sup (Volterra faster, bound holds)",
-      "got": "0.1636 vs \u03c1_sup=0.7379",
-      "expected": "\u2264 1.05\u00b7\u03c1_sup",
+      "name": "IVP window rate ≤ ρ_sup (Volterra faster, bound holds)",
+      "got": "0.1636 vs ρ_sup=0.7379",
+      "expected": "≤ 1.05·ρ_sup",
       "passed": true
     },
     {
       "name": "replay plateau vs bound",
-      "got": "1.328e-03 vs 2.061e-03 (\u00d70.64)",
-      "expected": "within \u00d73",
+      "got": "1.328e-03 vs 2.061e-03 (×0.64)",
+      "expected": "within ×3",
       "passed": true
     },
     {
       "name": "k_max formula vs knee",
       "got": "pred 8 vs obs 8",
-      "expected": "within \u00b120%",
+      "expected": "within ±20%",
       "passed": true
     },
     {
       "name": "plateau stationary (more iters don't help)",
       "got": "late rate 0.998",
-      "expected": "\u22481 (>0.9)",
+      "expected": "≈1 (>0.9)",
       "passed": true
     },
     {
@@ -4133,19 +4133,19 @@
       "passed": true
     },
     {
-      "name": "zoh closure \u2261 manual PureDelay closure (low-\u03c9 spec, tol 1e-8)",
+      "name": "zoh closure ≡ manual PureDelay closure (low-ω spec, tol 1e-8)",
       "got": "verdict=True, gain_err=1.64e-04 vs 2.22e-16",
       "expected": "identical within numerical tol",
       "passed": true
     },
     {
       "name": "zoh passes feedback absolute-delay budget",
-      "got": "\u03c4=5.00e-07 \u2264 \u03c4_max=1.39e-06",
+      "got": "τ=5.00e-07 ≤ τ_max=1.39e-06",
       "expected": "pass_absolute",
       "passed": true
     },
     {
-      "name": "ZOH magnitude @ Nyquist = 2/\u03c0 (droop)",
+      "name": "ZOH magnitude @ Nyquist = 2/π (droop)",
       "got": "0.636620",
       "expected": "0.636620",
       "passed": true
@@ -4157,9 +4157,9 @@
       "passed": true
     },
     {
-      "name": "ZOH phase @ Nyquist = \u2212\u03c0/2 (\u2261 PureDelay phase)",
+      "name": "ZOH phase @ Nyquist = −π/2 (≡ PureDelay phase)",
       "got": "-1.570796 vs -1.570796 rad",
-      "expected": "both = \u2212\u03c0/2",
+      "expected": "both = −π/2",
       "passed": true
     },
     {
@@ -4169,86 +4169,96 @@
       "passed": true
     },
     {
-      "name": "droop negligible well below Nyquist (\u03c9T_s\u22480.031, \u2248x\u00b2/6)",
+      "name": "droop negligible well below Nyquist (ωT_s≈0.031, ≈x²/6)",
       "got": "4.11e-05",
       "expected": "< 1e-4",
       "passed": true
     },
     {
-      "name": "high-\u03c9 workload: ZOH gain verdict NO (droop penalty)",
-      "got": "gain_err=0.363 (\u22481\u22122/\u03c0)",
+      "name": "high-ω workload: ZOH gain verdict NO (droop penalty)",
+      "got": "gain_err=0.363 (≈1−2/π)",
       "expected": "pass_gain=NO",
       "passed": true
     },
     {
-      "name": "high-\u03c9 workload: PureDelay wrongly passes gain (old bug)",
+      "name": "high-ω workload: PureDelay wrongly passes gain (old bug)",
       "got": "gain_err=2.22e-16",
       "expected": "pass_gain=YES",
       "passed": true
     },
     {
-      "name": "high-\u03c9 workload: ZOH phase err \u2261 PureDelay phase err (droop doesn't touch phase)",
-      "got": "90.000000\u00b0 vs 90.000000\u00b0",
-      "expected": "equal (\u03c4_ideal=0 \u21d2 both measure absolute phase)",
+      "name": "high-ω workload: ZOH phase err ≡ PureDelay phase err (droop doesn't touch phase)",
+      "got": "90.000000° vs 90.000000°",
+      "expected": "equal (τ_ideal=0 ⇒ both measure absolute phase)",
       "passed": true
     },
     {
-      "name": "low-\u03c9 workload: ZOH passes full closure (droop < \u03b5)",
+      "name": "low-ω workload: ZOH passes full closure (droop < ε)",
       "got": "gain_err=4.11e-05 droop=4.11e-05",
       "expected": "pass_gain=YES",
       "passed": true
     },
     {
-      "name": "auto-degrade at low \u03c9 \u2192 PureDelay(T_s/2), recorded",
-      "got": "PureDelay (droop 4.11e-05 < \u03b5)",
+      "name": "auto-degrade at low ω → PureDelay(T_s/2), recorded",
+      "got": "PureDelay (droop 4.11e-05 < ε)",
       "expected": "degraded=True, block=PureDelay",
       "passed": true
     },
     {
-      "name": "no degradation at Nyquist-scale \u03c9 (ZOH kept)",
+      "name": "no degradation at Nyquist-scale ω (ZOH kept)",
       "got": "ZOH (droop 0.363)",
       "expected": "degraded=False, block=ZOH",
       "passed": true
     },
     {
-      "name": "degradation threshold \u03c9T_s* from droop=\u03b5 (\u03b5=0.01 \u21d2 \u221a(24\u03b5)\u22480.49)",
-      "got": "\u03c9T_s*=0.49064, droop there=0.01000",
-      "expected": "droop(\u03c9T_s*) = \u03b5 within 5%",
+      "name": "degradation threshold ωT_s* from droop=ε (ε=0.01 ⇒ √(24ε)≈0.49)",
+      "got": "ωT_s*=0.49064, droop there=0.01000",
+      "expected": "droop(ωT_s*) = ε within 5%",
       "passed": true
     },
     {
       "name": "aliasing flagged near Nyquist (violation)",
-      "got": "\u03c9_sig/\u03c9_N=0.95 \u2192 violation",
+      "got": "ω_sig/ω_N=0.95 → violation",
       "expected": "violation",
       "passed": true
     },
     {
       "name": "aliasing warning at 0.7 Nyquist",
-      "got": "\u03c9_sig/\u03c9_N=0.70 \u2192 warning",
+      "got": "ω_sig/ω_N=0.70 → warning",
       "expected": "warning",
       "passed": true
     },
     {
       "name": "aliasing clean well below Nyquist",
-      "got": "\u03c9_sig/\u03c9_N=0.10 \u2192 none",
+      "got": "ω_sig/ω_N=0.10 → none",
       "expected": "none",
       "passed": true
     },
     {
       "name": "reconstruction filter is a separate line (not folded into droop)",
       "got": "declared=True budget=-40 dB | sinc-only image atten=-4.37 dB (exp -4.37)",
-      "expected": "separate keys; sinc-only atten matches |sinc(1.05\u03c0/2)|",
+      "expected": "separate keys; sinc-only atten matches |sinc(1.05π/2)|",
       "passed": true
     },
     {
       "name": "droop term stays in route gain axis (not in alias/recon)",
       "got": "droop=0.3319, droop_ok=False",
-      "expected": "droop \u2248 1\u2212|sinc(0.475\u03c0)|=0.323, droop_ok=False",
+      "expected": "droop ≈ 1−|sinc(0.475π)|=0.323, droop_ok=False",
       "passed": true
     }
   ],
   "summary": {
     "n_checks": 33,
     "n_passed": 33
+  },
+  "_meta": {
+    "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
+    "git_dirty": true,
+    "bench_module": "bench.run_multirate",
+    "command": "python3 -m bench.run_multirate",
+    "timestamp_utc": "2026-11-20T05:56:21+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
   }
 }

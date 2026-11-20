@@ -1469,21 +1469,21 @@ P0–P6 全链在三锚上跑通（`python3 -m bench.run_pipeline`，34/34，记
 
 ### 6.19 B2 pre-silicon 原语实测：.noise γ_eff + corner/MC 分离 + P(workload)（`results/b2_extract.json`、`b2.json`）
 
-`python3 -m twin.spice.extract_b2`（~12 min，7 次 ngspice：5 corner + 2 MC）+ `python3 -m bench.run_b2`（15/15 checks）。对象是 B0 tile spec 的行为级原语，**不是** §6.9 的二极管镜像（extract.py）：HBT 差分对（npn13G2，20 µA/边、10k 负载——接口 gm 级）、HBT 电流镜像（20 µA）、LV MOS gm-cell×2（sg13_lv_nmos 10u/0.13u @ Vgs=0.3837 = 10 µA 二极管点、饱和区；gm/Id≈25/V，用孤立 diode sweep 交叉验证——固定 Vgs=0.40 会掉进三极管区，gm/Id 只剩 8.7/V，是第一个被实测抓住的偏置陷阱）、传输门（2u nmos ∥ 4u pmos，Ron=452 Ω）。
+`python3 -m twin.spice.extract_b2`（~10–25 min，负载相关；24 次 ngspice：5 corner + 2 MC + 9 PVT + 4 joint corner×temp + 3 parasitic + 1 transient）+ `python3 -m bench.run_b2`（26/26 checks）。对象是 B0 tile spec 的行为级原语，**不是** §6.9 的二极管镜像（extract.py）：HBT 差分对（npn13G2，20 µA/边、10k 负载——接口 gm 级）、HBT 电流镜像（20 µA）、LV MOS gm-cell×2（sg13_lv_nmos 10u/0.13u @ Vgs=0.3837 = 10 µA 二极管点、饱和区；gm/Id≈25/V，用孤立 diode sweep 交叉验证——固定 Vgs=0.40 会掉进三极管区，gm/Id 只剩 8.7/V，是第一个被实测抓住的偏置陷阱）、传输门（2u nmos ∥ 4u pmos，Ron=452 Ω）。
 
-**(1) γ_eff 实测（关 §9 风险 3 的一半）**：HBT（VBIC level 9，native model）的 `.noise` 可测：输入参考白噪声 **6.4 nV/√Hz**（1k–1 GHz 积分 var_in=4.07e-8 V²，100 M–1 G 波段全平——带内无可见 1/f 拐点）。分母 g_m=I_C/V_T=773 µS 来自实测 I_C（gm/IC=1/V_T 是精确物理，不是拟合）。相对理想白噪声 4kT/g_m（γ=1 口径）的 white factor = **1.90×**；相对 §6.9 采用的推导假设 γ=1/2 的 γ_eff = **3.79×** ⇒ SNR 乐观 **2.8 dB**。风险 3 的"5–10× ⇒ 7–10 dB"场景在 HBT 接口上**未触发**（比 feared 的小），但 1.90 也不是 1.0——账本 `excess_noise_gamma` 的 α≈1 应按 HBT 实测 1.9 修正。**MOS/传输门的 .noise 不可测**：PSP103 OSDI 器件噪声在 ngspice-44.2 未实现（孤立单管验证 onoise/inoise 谱恒为 0、op `[gm]` 参数恒 ~0 常数）；§6.9 的 MOS 噪声列仍是推导口径、未升级——如实记录，不造数。
+**(1) γ_eff 实测（关 §9 风险 3 的一半）**：HBT（VBIC level 9，native model）的 `.noise` 可测：输入参考白噪声 **6.4 nV/√Hz**（1k–1 GHz 积分 var_in=4.07e-8 V²，100 M–1 G 波段全平——带内无可见 1/f 拐点）。分母 g_m=I_C/V_T=773 µS 来自实测 I_C（gm/IC=1/V_T 是精确物理，不是拟合）。相对理想白噪声 4kT/g_m（γ=1 口径）的 white factor = **1.90×**；相对 §6.9 采用的推导假设 γ=1/2 的 γ_eff = **3.79×** ⇒ SNR 乐观 **2.8 dB**。风险 3 的"5–10× ⇒ 7–10 dB"场景在 HBT 接口上**未触发**（比 feared 的小），但 1.90 也不是 1.0——账本 `excess_noise_gamma` 的 α≈1 应按 HBT 实测 1.9 修正。**MOS/传输门的 .noise 不可测**：PSP103 OSDI 器件噪声在 ngspice-44.2 未实现（孤立单管验证 onoise/inoise 谱恒为 0、op `[gm]` 参数恒 ~0 常数）；§6.9 的 MOS 噪声列仍是推导口径、未升级——如实记录，不造数。**替代工具评估与登记决定**：Xyce 不实现 PSP103 OSDI（其 ADMS 库无该模型），BSIM4 是另一套模型卡——两者都验证不了**本 PDK 的 PSP103 噪声**，只会给出另一颗器件的教科书 γ，因此不做"替代验证"；MOS/TG `gamma_eff` 正式登记为 **Stage C1 硅片首测项**（C1 的 noise PSD 行），在此之前保持 4kTγ/gm 推导口径 + `derived-not-measured` 标签，不进 P(workload) 的实测轴。
 
 **(2) corner ≠ MC（三路分布分开跑、分开报）**：
 - **corner（全局工艺，mos_tt/ss/ff + hbt_typ/wcs/bcs，器件同向平移）**：固定 Vgs 的 gm_fd 115(ss)/151(tt)/94(ff) µS——亚阈值下 gm 对 corner **非单调**（ff 提升电流同时降低 gm/Id）；单调的是 Id：4.85 < 13.9 < 21.1 µA；实测 AC 极点（Rl≈ro 负载 + 1 pF，−3 dB）：**2.82 / 5.01 / 10.0 MHz**（3.6× 张成）。HBT corner 族移动镜像比 ±0.13%（wcs −0.21% / bcs +0.13%）。镜像比对 MOS corner 完全不敏感（0.0 σ_MC shift——MOS corner 不动 HBT，口径正确）。
-- **MC-局部失配（`mos_tt_mismatch` + 逐实例 `mm_ok=1`，24 样本）**：HBT 差分对输入失调 **σ=10.7 mV**（均值 +4.3 mV，24 样本 SEM≈2 mV）、镜像比 **σ=5.5%**（≈ is 3.8%·√2，机制对账）、gm **σ=1.5%**（2.3 µS）、Ron **σ=1.5%**（6.9 Ω）、I_C σ=2.7%。gm 的 corner shift 是失配 σ 的 **16–25×**——全局工艺平移 ≠ 逐器件失配，两条预算不能合并。
+- **MC-局部失配（`mos_tt_mismatch` + 逐实例 `mm_ok=1`，48 样本）**：HBT 差分对输入失调 **σ=11.33 mV**（SEM≈1.17 mV）、镜像比 **σ=4.62%**（≈ is 3.8%·√2，机制对账）、gm **σ=1.87 µS（1.25%）**、Ron **σ=7.64 Ω（1.69%）**、I_C σ=4.30%。gm 的 corner shift 是失配 σ 的 **16–25×**——全局工艺平移 ≠ 逐器件失配，两条预算不能合并。
 - **MC-全局工艺（`moslv/hbt_stat` libs，24 样本）**：`_stat` 库的 gauss() 是**全局 .param**——所有器件同一抽签：失调 σ≈1e-8 µV（≈0，两器件同漂，这是它与失配的判别性差异）、gm σ=26.9 µS。三路分布的可分性就是它们的定义：corner=系统性平移、stat-MC=全局随机、mismatch-MC=逐器件随机。
 - **工具链事实（复现于本机 ngspice-44.2）**：逐实例 agauss 重抽必须用 PDK 自带配方 `setseed`+`mc_source`+实例 `mm_ok=1`（`libs.tech/gnucap/tests/ngspice/moslv/tb_moslv_mc_mm_tt.sp`），复现其 reference `.out` 逐位一致；**纯 `reset` 循环不重抽 per-instance agauss**（实测配对 ΔVgs/ΔVbe≡0）；全局 `.param mm_ok=1` 会破坏电路（镜像比塌到 1e-7）；mos_tt_mismatch 子电路在 mm_ok=0 时二极管点收敛到 0 V（退化），只在 mm_ok=1 下可用。
 
-**(3) CalibratedTwin 换入实测参数 + P(workload passes)**：`twin/calib.py` 的 CalibratedTwin 以实测值替换 nominal（gm/C=1.509e8 rad/s = gm_fd 151 µS/1 pF、镜像比 0.999565、差分增益 −3.654、Ron 451.7 Ω、失调 σ=10.6 mV；全部 source="foreground"，residual=100 ppm 测量底合同）。**P(workload passes)**（积分器极点 |pole/target−1|≤tol，24 个 mismatch-MC 样本的真实分数）：±10% ⇒ **1.00**、±5% ⇒ **1.00**、±2% ⇒ **0.88**。±2% 容差下 12% 样本出局——corner 数字（单点最坏值）给不出的就是这个分布口径。
+**(3) CalibratedTwin 换入实测参数 + P(workload passes)**：`twin/calib.py` 的 CalibratedTwin 以实测值替换 nominal（gm/C=1.509e8 rad/s = gm_fd 151 µS/1 pF、镜像比 0.999565、差分增益 −3.654、Ron 451.7 Ω、失调 σ=11.33 mV；全部 source="foreground"，residual=100 ppm 测量底合同）。**P(workload passes)**（积分器极点 |pole/target−1|≤tol，48 个 mismatch-MC 样本的真实分数）：±10% ⇒ **1.00**、±5% ⇒ **1.00**、±2% ⇒ **0.917**。±2% 容差下 8.3% 样本出局——corner 数字（单点最坏值）给不出的就是这个分布口径。
 
-B2 仍是 pre-silicon 行为级：无 PEX/EM/substrate/thermal，corner×MC×cal-loop 组合与 post-layout slack 重跑在 B2 后续条目。
+B2 仍是 pre-silicon 行为级：无 PEX/EM/substrate/thermal；corner×MC×cal-loop 组合已由 §6.21 关闭（3 anchors × 9 实测点 × 48 失配 × 4 校准模式），post-layout slack 重跑仍是 B2 后续条目。
 
-Fail-closed B2 extension（`extract_b2.py`、`results/b2_extract.json` 的 `status`/`blocks`）：任何 required block 运行/解析失败即 status≠"complete"，run_b2 报为真失败；PSP103 OSDI 器件噪声保持 `known_limitation`（required=False），绝不为静默 null。**PVT**（−40/27/125 °C 经 ngspice `.temp` × 电源 1.35/1.5/1.65 V）：固定 Vgs=0.3837 下 MOS gm 实测 142.9/150.9/40.0 µS 随温变化（125 °C 弱反型塌缩），±10% 电源 ±8.5%（pole-cell 偏流由电阻定）；积分器极点 3.16/5.01/19.95 MHz；HBT gm 为尾定 Ic 的 Ic/VT，全网格 772–773 µS 的不变性是**结构使然**（Early 级比率偏移 ≤±6e-4）——如实记录，不宣称模型稳健性。**失配 MC 加深 24→48**（setseed/mc_source 配方不变）：vos σ=11.33±1.17 mV、镜像 σ=4.62%±0.48%、gm σ=1.87±0.19 µS、Ron σ=7.64±0.79 Ω（JSON 内含 σ/√(2(N−1)) 误差棒）。**Transient**（10 MHz、dt=200 ps；100 MHz PSP tran 过慢——已记录）：HBT 差分对 10 mV 阶跃 → ΔVout −73.1 mV、1% 整定 0.8 ns、THD 0.272%（h3 主导、偶次抑制）；MOS gm-cell 1 mV 阶跃 → Δ −9.82 mV、整定 146.8 ns ≈ 5 MHz 极点的 4.6τ、摆率 0.303 V/µs、THD 0.227%（h2 主导）。**Pre-PEX 寄生**：尚无版图，PEX 做不了——改为在积分器输出加 C 重测极点（0/10/100 fF → 4.942/4.893/4.495 MHz；−0.101%/fF @10 fF、−0.091%/fF @100 fF vs 1/(C_tot) 预测 −0.0999%/fF），明确标注"pre-PEX 敏感度估算，非 PEX 结果"。
+Fail-closed B2 extension（`extract_b2.py`、`results/b2_extract.json` 的 `status`/`blocks`）：任何 required block 运行/解析失败即 status≠"complete"，run_b2 报为真失败；PSP103 OSDI 器件噪声保持 `known_limitation`（required=False），绝不为静默 null。**PVT**（−40/27/125 °C 经 ngspice `.temp` × 电源 1.35/1.5/1.65 V）：固定 Vgs=0.3837 下 MOS gm 实测 65.4/150.9/40.0 µS（1.5 V；125 °C 弱反型塌缩），±10% 电源 ±8.5%（pole-cell 偏流由电阻定）；积分器极点 3.16/5.01/19.95 MHz；HBT gm = I_C/V_T(T)，**V_T(T)=k_B(T+273.15)/q**，-40/27/125 °C ⇒ **0.995/0.772/0.582 mS**（1.708× = V_T 比）——早先"HBT gm 全网格 772–773 µS 不变"是固定 300 K VT 的后处理错误（已修；run_b2 用 gm(-40)/gm(125)==VT(125)/VT(-40) 与 1.65–1.77 区间双重钉住）。**偏置头room**：TT/125 °C 与 FF/125 °C 的固定 Vgs + 65 kΩ 负载把 MOS 拉到 Vd=82/26 mV（三极管），联合评估把它们标为 bias-invalid（P=0 + 原因），不包装成"模型预测通过"。**失配 MC 加深 24→48**（setseed/mc_source 配方不变）：vos σ=11.33±1.17 mV、镜像 σ=4.62%±0.48%、gm σ=1.87±0.19 µS、Ron σ=7.64±0.79 Ω（JSON 内含 σ/√(2(N−1)) 误差棒）。**Transient**（10 MHz、dt=200 ps；100 MHz PSP tran 过慢——已记录）：HBT 差分对 10 mV 阶跃 → ΔVout −73.1 mV、1% 整定 0.8 ns、THD 0.272%（h3 主导、偶次抑制）；MOS gm-cell 1 mV 阶跃 → Δ −9.82 mV、整定 146.8 ns ≈ 5 MHz 极点的 4.6τ、摆率 0.303 V/µs、THD 0.227%（h2 主导）。**Pre-PEX 寄生**：尚无版图，PEX 做不了——改为在积分器输出加 C 重测极点（0/10/100 fF → 4.942/4.893/4.495 MHz；实测对数斜率 **−9.496e11 /F** vs 两点预测 **−9.531e11 /F**，差 +0.37%），明确标注"pre-PEX 敏感度估算，非 PEX 结果"；早先 measured/fF 与 predicted/F 的 **1e15 单位错配**已统一到 /F，run_b2 检查同量纲、同号、<2%。
 
 ### 6.20 B2 行为级 macromodel：把 SPICE 实测非理想性装进原语模型（`twin/macromodel.py`、`bench/run_b2_behavioral.py`、`results/b2_behavioral.json`）
 
@@ -1491,11 +1491,87 @@ Fail-closed B2 extension（`extract_b2.py`、`results/b2_extract.json` 的 `stat
 
 **(a) 积分器极点是 (gm+g_out)/C，不是 gm/C（headline）。** b2 AC 记录（gm-cell B，Rl=65k，C=1pF）的实测低频增益 A0（9.84/7.30/6.48 @tt/ss/ff）与工作点器件 gm（gm_mos2_param）经 GBW/A0 恒等式给出节点总电导 g_out_total=gm/A0，扣除 65k 负载后得器件自身输出电导 **15.93 µS @TT（ro=62.8k，λ_fit=1.147/V @Id=13.9µA）**。macromodel 预测极点 gm2/(A0·C) 对实测 pole_hz 的偏差为 **−0.54% / +4.94% / +2.26%**（tt/ss/ff，1-pole 拟合残差 ≤2.1e-4 证实模型类）。器件漏电导使 MOS 自系数比 gm/C 口径**系统性 +10.6%**；HBT 接口（λ=0.0138/V，ro=3.63 MΩ）漏电/gmC 仅 **0.036%**。λ_fit 随 corner 张成 **0.66–2.32 /V**——§6.9 的 0.970/V 是二极管偏置下的点值，不是常数。
 
-**(b) P(workload passes) 四口径（24 片实测 MC，n=24）。** (i) 线性参数口径（run_b2.py，gm 轴，σ1.5%）：**1.00 / 1.00 / 0.875**（±10/5/2%，逐点复算一致）；(ii) 非理想联合判据（有效极点 + DC 增益，TT 实测参考）：**0.92 / 0.62 / 0.38**——线性口径漏掉了两条轴：镜像比 σ5.5% 直接进增益、Id σ5.0% 经 λ 进漏电；(iii) 前台增益标定后增益轴收敛到 100 ppm 底但**极点不动**：1.00/1.00/0.96（极点剩余散布 λ·σ_Id/gm=0.52%）；(iv) 若仍以线性 gm/C 为设计目标，漏电把 ±5%/±2% 窗口**清空**（0.50/0.00/0.00）——**target_gm_over_c 必须定义在 (gm+g_out)/C 上，或由标定环 trim gm code 吸收 g_out**。级联 DC 增益从线性口径的 0.9996 降到实测 **0.818（−18.2%）**，同为漏电的系统性效应。轴归因：镜像 5.5% > Id 5.0% > gm 1.5%，系统项 +10.6% 支配均值。
+**(b) P(workload passes) 四口径（48 片实测 MC，n=48）。** (i) 线性参数口径（run_b2.py，gm 轴，σ1.25%）：**1.00 / 1.00 / 0.917**（±10/5/2%，逐点复算一致）；(ii) 非理想联合判据（有效极点 + DC 增益，TT 实测参考）：**0.96 / 0.71 / 0.35**——线性口径漏掉了两条轴：镜像比 σ4.6% 直接进增益、Id σ4.3% 经 λ 进漏电；(iii) 前台增益标定后增益轴收敛到 100 ppm 底但**极点不动**：1.00/1.00/0.98（极点剩余散布 λ·σ_Id/gm=0.45%）；(iv) 若仍以线性 gm/C 为设计目标，漏电把 ±5%/±2% 窗口**清空**（0.52/0.00/0.00）——**target_gm_over_c 必须定义在 (gm+g_out)/C 上，或由标定环 trim gm code 吸收 g_out**。级联 DC 增益从线性口径的 0.9996 降到实测 **0.818（−18.2%）**，同为漏电的系统性效应。轴归因：镜像 4.6% > Id 4.3% > gm 1.2%，系统项 +10.6% 支配均值。
 
 **(c) 噪声与非线性。** HBT 白噪密度由 var_inoise_white/bw 复原为 **6.376 nV/√Hz**，白噪因子 (e_meas/e_{γ=1})² = 1.8961 vs 记录 1.8969（<0.1%）；平谱带内白噪因子经二阶系统传递函数后仍是**纯方差标度**（输出方差比 1.896947），SNR 代价 10·log10 = **2.78 dB**，与 §6.19 的 2.8 dB 一致。MOS 路径保持 4kT·γ/gm 推导口径（7.41 nV/√Hz @γ=0.5，标注 derived-not-measured——PSP103 OSDI 器件噪声在 ngspice-44.2 仍未实现）。差分对 tanh 律对实测扫描斜率的复现差 **+4.6%**（VBIC Early/高注入残余，作为有效域记录）；最差芯片 26.4 mV 失调在工作点吃掉**局部 gm ×0.78（−22%）**——前台 vos 标定是必需项不是装饰。
 
 **(d) 网表承载。** `lowering/netlist.py` 新增 `BehavioralNetlist.nonideal`（空 dict = 理想默认，effective_A/round-trip 不受影响）与 `attach_nonidealities`（键校验、拒绝重复挂载）；`twin/macromodel.b2_nonideal_map` 从 b2_extract.json 为每个积分器生成 ro/leak/A0/v_swing/v_sat/噪声密度+来源/vos/TG 实例参数。v_swing（0.5 V 头room估算）、TG c_par（30 fF）、q_inj_fc（0.5）是**声明的模型参数，不是实测**；TG 串联 RC 极点 352 MHz = 级极点的 71×（模型预测）。
+
+### 6.21 B2 联合闭环：corner × MC × calibration-in-the-loop（`bench/run_b2_joint.py`、`results/b2_joint.json`）
+
+**问题。** §6.19/§6.20 的 P(workload) 只在 TT/27 °C 的 48 组局部失配 MC 上算过，corner 与 MC 是两张分开的表。剩余闭环是把 worst-case corner（SS/FF × −40/125 °C）、48 组局部失配、标定环叠在一起，在 `diffusion-1d`/`poisson-2d`/`burgers-1d` 三个 anchor 上各给一张 P 表。
+
+**做法**（复用现有入口，不新建求解器）：
+1. `bench.problems.build_problem` 的三个 bundle → `lowering.compose.run_chain`（boundary→closure→split→scaling→basis→cert→interface→contracts→p7），同一 masked descriptor 端到端。poisson 的 descriptor 先做 **E=I 规范化**（E=c_node·I 使 split 的 det 判据下溢；E x'=Ax+Bu 与 x'=E⁻¹Ax+E⁻¹Bu 是同一个 ODE，时间单位不变），并沿用 run_pipeline 的 `delta_A_norm=None, gamma_M=inf`（robustness 轴由漂移预算判；`run_chain` 新增 `gamma_M` 直通，避免 256 态上 ~15 min 的 resolvent 扫频）。
+2. 编译后的物理时间 descriptor `A_v=α⁻¹SAS⁻¹`、`B_v` 是扰动载体。逐点 self 系数比：
+   - 积分器 anchor（diffusion/burgers）：对角用 AC 实测 `k_pole=pole_hz(点)/pole_hz(tt,27)`（漏电 g_out/C 的实测比）；输入/耦合边用 `k_gm=gm2(点)/gm2(tt)`（**真小信号 gm**，不是 5 mV 差分 gm——125 °C 下两者差 ~8×，差分 gm 会给出错误符号的角点趋势）。
+   - poisson：`A_v=-G/c` 是电导矩阵，对角与耦合同一 gm 原语 ⇒ 全矩阵用 `k_gm`；QoI 在 `T=α·1 ns=237τ_phys` 取稳态，KCL 的 DC 解由电导**比**决定，均匀角点缩放被 `G⁻¹I` 抵消，这是它与积分器 anchor 的判别性差异。
+   - 耦合边再乘镜像比 `k_mirror`；读出 `C` 视为已标定（不扰动）。
+3. 局部失配：48 组实测 (gm, Id, mirror) 的**相对**因子，按 `(state+k) mod 48` 循环分配到 n 个状态（bootstrap；不是逐状态独立抽样，声明的）。mismatch 只在 TT/27 测过，叠加到角点是声明的组合假设。
+4. QoI：编译后 descriptor 的零初值阶跃响应 x(T)（diffusion T=α·1；burgers T=α·0.3；poisson 的 1 ns 是**模型时间**求解 deadline，P3 后 T=α·1 ns=1.543e-4 s=237τ_phys，取稳态比值口径），相对 L2 误差 vs 名义。步响应用增广矩阵 expm（奇异 A 不求逆）；固定数值平移 `shift=max(0, max Re λ_nom)`，`x(T)=e^{shift T}expm((A−shift I)T)b`，指数溢出或非有限即判失败，不造有限数。**坐标错配修复**：早先把 1 ns 当物理时间，T=0.0015τ_phys，响应落在预松弛区（x≈bT），电导比从未进入 QoI，poisson 的角点误差退化成输入增益误差；改为模型时间后 `run_b2_joint` 的 J11（比值口径跨角点平坦）才真正成立。
+5. 校准模式（残差下限统一 100 ppm 测量底）：
+   - `uncal`：角点 × mismatch 直接进系数。
+   - `no_track`：在测试条件（同一颗芯片、27 °C）前台 trim 掉工艺角与静态失配；运行时只有温度偏移，无背景跟踪 ⇒ 残差 = 同工艺 27 °C 参考下的温度偏移。
+   - `bg_track`：`no_track` + replica 背景跟踪，刷新粒度**声明** 1 °C ⇒ 残差 = 温度偏移 × min(1, 1 °C/|T−27 °C|) + 地板。
+   - `full`：工作点连续 trim 的上界 ⇒ 100 ppm 地板（bracket，不是实测量）。
+6. 偏置头room 门：固定 Vgs=0.3837 + 65 kΩ 在 TT/125 与 FF/125 把 MOS 拉到 `V_d=1.5−I_d·65kΩ ≈ 82/26 mV`（三极管）⇒ `bias_ok=False`，该点所有模式 P=0 并在 JSON 里带原因。
+
+**结果**（P at 1%/2%/5%，n=48；`k_diag`/V_d/逐点误差见 `b2_joint.json`）：
+
+**diffusion-1d（速率定义：极点/漏电）**
+
+| point | k_diag | V_d/mV | bias | uncal 1/2/5 | no_track 1/2/5 | bg_track 1/2/5 | full 1/2/5 | err_uncal med |
+|---|---|---|---|---|---|---|---|---|
+| tt_27 | 1.000 | 596 | ok | 0.54/0.92/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 0.95% |
+| ss_27 | 0.562 | 1185 | ok | 0.00/0.00/0.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 56.23% |
+| ff_27 | 1.995 | 128 | ok | 0.00/0.00/0.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 34.25% |
+| tt_-40 | 0.631 | 1108 | ok | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 41.87% |
+| tt_125 | 3.981 | 82 | **FAIL** | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 12.00% |
+| ss_m40 | 0.501 | 1445 | ok | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.00/1.00/1.00 | 1.00/1.00/1.00 | 89.81% |
+| ss_p125 | 1.122 | 464 | ok | 0.00/0.10/0.94 | 0.00/0.00/0.00 | 0.00/1.00/1.00 | 1.00/1.00/1.00 | 3.59% |
+| ff_m40 | 1.122 | 517 | ok | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 15.88% |
+| ff_p125 | 22.387 | 26 | **FAIL** | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 16.25% |
+
+**poisson-2d（比值定义：G⁻¹I 稳态）**
+
+| point | k_diag | V_d/mV | bias | uncal 1/2/5 | no_track 1/2/5 | bg_track 1/2/5 | full 1/2/5 | err_uncal med |
+|---|---|---|---|---|---|---|---|---|
+| tt_27 | 1.000 | 596 | ok | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 0.52% |
+| ss_27 | 0.440 | 1185 | ok | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 0.52% |
+| ff_27 | 1.351 | 128 | ok | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 0.52% |
+| tt_-40 | 0.585 | 1108 | ok | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 0.52% |
+| tt_125 | 1.129 | 82 | **FAIL** | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.52% |
+| ss_m40 | 0.103 | 1445 | ok | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 0.52% |
+| ss_p125 | 0.970 | 464 | ok | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 0.52% |
+| ff_m40 | 1.166 | 517 | ok | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 0.52% |
+| ff_p125 | 0.852 | 26 | **FAIL** | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.52% |
+
+**burgers-1d（增长指数：pre-shock）**
+
+| point | k_diag | V_d/mV | bias | uncal 1/2/5 | no_track 1/2/5 | bg_track 1/2/5 | full 1/2/5 | err_uncal med |
+|---|---|---|---|---|---|---|---|---|
+| tt_27 | 1.000 | 596 | ok | 0.00/0.00/0.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 14.65% |
+| ss_27 | 0.562 | 1185 | ok | 0.00/0.00/0.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 81.56% |
+| ff_27 | 1.995 | 128 | ok | 0.00/0.00/0.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 1.00/1.00/1.00 | 84.62% |
+| tt_-40 | 0.631 | 1108 | ok | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.00/1.00/1.00 | 1.00/1.00/1.00 | 60.02% |
+| tt_125 | 3.981 | 82 | **FAIL** | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 95.59% |
+| ss_m40 | 0.501 | 1445 | ok | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 1.00/1.00/1.00 | 98.00% |
+| ss_p125 | 1.122 | 464 | ok | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.00/0.00/1.00 | 1.00/1.00/1.00 | 67.37% |
+| ff_m40 | 1.122 | 517 | ok | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 1.00/1.00/1.00 | 155.54% |
+| ff_p125 | 22.387 | 26 | **FAIL** | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 0.00/0.00/0.00 | 99.33% |
+
+† `bias=FAIL`：固定 `Vgs=0.3837` + 65 kΩ 在 TT/125 与 FF/125 把 MOS 拉到 `V_d=82/26 mV`（三极管）；P=0 是偏置门，不是模型判决。
+
+**读法**（每格 P at 1%/2%/5%，n=48；`k_diag` 是逐点 self 系数比，`V_d` 是偏置门）：
+
+1. **uncal（不做任何标定）**：角点直接打穿 1% 窗。diffusion 在 27 °C 只有 TT 过半（0.54/0.92/1.00），SS/FF 全 0（中位误差 56.2%/34.3%）；全部温度点（TT PVT + joint SS/FF × −40/125 °C）全 0，ss/−40 中位 89.8%。burgers 连 TT/27 都是 0（中位 14.7%），增长指数把失配与角点一起放大（ff/−40 中位 156%）。poisson 是唯一 uncal 就 1% 全过的锚点（48/48，中位 0.52%）：QoI 取在 237τ_phys 的稳态，均匀角点/温度缩放被 `G⁻¹I` 的比值抵消，只剩逐节点电流源失配。**这是"比值定义 vs 速率定义"的判别性差异，不是 poisson 更宽松。**
+2. **no_track（测试温度前台 trim、无背景跟踪）**：27 °C 所有工艺角回到 1.00（trim 把该芯片的工艺角与静态失配吸收）；diffusion/burgers 的温度点全部 0（−40/125 °C 的 gm/漏电漂移无人跟踪）。poisson 在所有点保持 1.00——比值口径下温度对稳态无影响。
+3. **bg_track（1 °C 刷新 replica）**：把温度残差压到 `frac×1/67`。diffusion 的 ff/−40 与 tt/−40 全恢复；ss/−40 与 ss/125 在 1% 为 0（残差 ≈0.77×1/67≈1.15%），2% 起通过。burgers 的同一残差被增长指数放大：ff/−40 与 ss/−40 到 5% 仍为 0，ss/125 到 5% 才通过。poisson 全 1.00（均匀残差再次被比值抵消）。
+4. **full（连续 trim 上界）**：所有 bias-valid 点 1%/2%/5% 全 1.00。QoI 误差：diffusion 9.995e-5、burgers 9.12e-5、poisson 9.76e-16（均匀 100 ppm 在比值口径下精确抵消）。**本 lane 没有看到增长指数放大 100 ppm 地板**；早先"~4%"的估计来自单轴扰动，不是均匀系数缩放（`validity_limits` 已按实测改写）。
+5. **标定环买到什么**：`uncal → no_track` 买"工艺角 + 静态失配"（27 °C 全部恢复）；`no_track → bg_track` 买"温度漂移"（−40/125 °C 的失败基本消失，残余 = 1 °C 刷新粒度 × 温度行程）；`bg_track → full` 买"刷新残差 + 工作点漂移"的上界。三列之差就是 §6.20 标定环的预算，`full` 列是 bracket，不是实测量。
+6. **偏置门优先于模型**：tt_125/ff_p125 的 P=0 不是"模型预测失败"，而是固定偏置网络失效；要先换偏置（或降 Vgs）再谈这一点的角点通过率。
+
+**全仓验收（2026-11-20）**：`python3 -m bench.run_all` 顺序跑完 25 个套件，无失败、无跳过，1324.6 s；计入 check 计数器的 868/868 项全部通过（`run_twin_experiments` 是无 check 计数器的实验驱动）。记录在 `results/run_all.json`。
 
 ---
 
@@ -1611,7 +1687,7 @@ B0 把 §3 的 10-tile 表收敛成一颗可流片的 characterization vehicle�
 
 **(c) 冻结规格书抽象。** 每个 tile 在 compiler 里暴露 `(E,A,B,C)` descriptor 片段 + `‖H‖₂`/`‖H‖∞`（由 `analysis/` 在其 (E,A,B,C) 上算）+ 功耗 + 面积。功率/面积为 TARGET（§2.1：1000 节点 @10µV@10MHz ⇒ ~0.1 W、~3 mm² C——本 chip 只有几十节点，功率/面积**不是瓶颈**，瓶颈是 κ_hw、route 寄生、校准漂移）。**B0 退出 = 这张表 + 每 tile 的 (E,A,B,C)/‖H‖₂/‖H‖∞/power/area 五行规格冻结**；具体数值待 §7 Phase 7 的 primitive SPICE/PEX 填入，B0 只冻结结构与口径。
 
-**(d) B0 的诚实边界。** (1) 第一颗是 characterization vehicle，不是 processor——§7 Phase 7 已冻结。(2) 功率/面积是 §2.1 一阶估算（TARGET），不是实测；§9 风险 3 已半关：HBT 接口的 γ_eff 已 `.noise` 实测（white factor 1.90× vs γ=1 口径，3.79× vs 推导 γ=1/2，SNR 乐观 2.8 dB，§6.19）——"5–10×"场景在 HBT 上未触发；MOS 一侧因 PSP103 OSDI 器件噪声在 ngspice-44.2 未实现仍是推导口径，实测要等 SPICE 器件噪声支持或硅测（C1）。(3) 工艺包络不只看 f_T：κ_hw=1e6 是 nominal，账本敏感度 4.86% 意味着实测窗口若只到 1e4，diffusion N=1024 这类 stiffness-bound workload 翻判——**κ_hw 必须在 C1 实测，不能只信 PDK**。(4) per-edge route contract 由 B1 `lowering/route_contract.py` 在四判据（gain/phase/noise/feedback-ωc）上发，T7 的数量只是容量冻结。(5) B2 已把 primitive 级 corner/MC/噪声/P(workload) 数字从 TARGET 升级为实测（§6.19，`results/b2.json`）：T1 极点 5.01 MHz@TT（corner 张成 2.82–10.0 MHz）、接口失调 σ=10.7 mV、镜像比 σ=5.5%——功率/面积仍是 TARGET，但失配/噪声/极点的预算轴不再靠 3σ 假设。提取是 fail-closed（b2_extract.json 的 `status`/`blocks`，required block 失败 run_b2 即非零退出），覆盖 PVT 与 transient 激励，并以加 C 的 pre-PEX 敏感度探针代替 PEX（尚无版图）；primitives 的偏置源是理想源，故偏置网络自身的电源敏感度仍是 B3 测量项。
+**(d) B0 的诚实边界。** (1) 第一颗是 characterization vehicle，不是 processor——§7 Phase 7 已冻结。(2) 功率/面积是 §2.1 一阶估算（TARGET），不是实测；§9 风险 3 已半关：HBT 接口的 γ_eff 已 `.noise` 实测（white factor 1.90× vs γ=1 口径，3.79× vs 推导 γ=1/2，SNR 乐观 2.8 dB，§6.19）——"5–10×"场景在 HBT 上未触发；MOS 一侧因 PSP103 OSDI 器件噪声在 ngspice-44.2 未实现仍是推导口径，实测要等 SPICE 器件噪声支持或硅测（C1）。(3) 工艺包络不只看 f_T：κ_hw=1e6 是 nominal，账本敏感度 4.86% 意味着实测窗口若只到 1e4，diffusion N=1024 这类 stiffness-bound workload 翻判——**κ_hw 必须在 C1 实测，不能只信 PDK**。(4) per-edge route contract 由 B1 `lowering/route_contract.py` 在四判据（gain/phase/noise/feedback-ωc）上发，T7 的数量只是容量冻结。(5) B2 已把 primitive 级 corner/MC/噪声/P(workload) 数字从 TARGET 升级为实测（§6.19，`results/b2.json`）：T1 极点 5.01 MHz@TT（corner 张成 2.82–10.0 MHz）、接口失调 σ=11.33 mV（48 样本）、镜像比 σ=4.62%——功率/面积仍是 TARGET，但失配/噪声/极点的预算轴不再靠 3σ 假设。提取是 fail-closed（b2_extract.json 的 `status`/`blocks`，required block 失败 run_b2 即非零退出），覆盖 PVT 与 transient 激励，并以加 C 的 pre-PEX 敏感度探针代替 PEX（尚无版图）；primitives 的偏置源是理想源，故偏置网络自身的电源敏感度仍是 B3 测量项。
 
 ### Phase 8：heterogeneous substrates（研究阶段，按 §3.7 的优先级）
 

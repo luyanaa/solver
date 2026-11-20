@@ -130,5 +130,15 @@
   "n_pass": 21,
   "n_total": 21,
   "contract": "u carries physical forcing units; u_p(t_p)=u_m(t_p/alpha) ⇒ B_v = alpha^-1·S·B",
-  "note": "2026-11 fix: B_v was S·B (missing alpha^-1); old code gave DC gain off by S/alpha (repro V_ss 0.0938 vs 1.0). Internal eig/A/B/C round-trip could not catch it; external transfer function can."
+  "note": "2026-11 fix: B_v was S·B (missing alpha^-1); old code gave DC gain off by S/alpha (repro V_ss 0.0938 vs 1.0). Internal eig/A/B/C round-trip could not catch it; external transfer function can.",
+  "_meta": {
+    "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
+    "git_dirty": true,
+    "bench_module": "bench.run_scaling",
+    "command": "python3 -m bench.run_scaling",
+    "timestamp_utc": "2026-11-20T06:08:35+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
+  }
 }

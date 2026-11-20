@@ -471,21 +471,21 @@
       "passed": true
     },
     {
-      "name": "depth1 phase < 3\u00b0",
-      "got": "2.862\u00b0",
-      "expected": "< 3\u00b0",
+      "name": "depth1 phase < 3°",
+      "got": "2.862°",
+      "expected": "< 3°",
       "passed": true
     },
     {
-      "name": "depth4 phase > 3\u00b0",
-      "got": "11.450\u00b0",
-      "expected": "> 3\u00b0",
+      "name": "depth4 phase > 3°",
+      "got": "11.450°",
+      "expected": "> 3°",
       "passed": true
     },
     {
       "name": "depth4 noise",
-      "got": "20.0 \u00b5V",
-      "expected": "< 50 \u00b5V",
+      "got": "20.0 µV",
+      "expected": "< 50 µV",
       "passed": true
     },
     {
@@ -520,20 +520,20 @@
     },
     {
       "name": "all-pass phase < RC phase",
-      "got": "1.119\u00b0 vs 3.858\u00b0",
+      "got": "1.119° vs 3.858°",
       "expected": "ap < rc",
       "passed": true
     },
     {
       "name": "all-pass J_H / RC J_H",
-      "got": "107.5\u00d7",
-      "expected": "> 10\u00d7",
+      "got": "107.5×",
+      "expected": "> 10×",
       "passed": true
     },
     {
       "name": "all-pass J_tau / RC J_tau",
-      "got": "11.3\u00d7",
-      "expected": "> 5\u00d7",
+      "got": "11.3×",
+      "expected": "> 5×",
       "passed": true
     },
     {
@@ -556,42 +556,42 @@
     },
     {
       "name": "deskew group spread",
-      "got": "2.68e+02 \u2192 2.86e-02 ps\u00b2",
-      "expected": "> 5e3\u00d7",
+      "got": "2.68e+02 → 2.86e-02 ps²",
+      "expected": "> 5e3×",
       "passed": true
     },
     {
       "name": "deskew leaves absolute delay",
-      "got": "2.15\u00b0 @100 MHz",
-      "expected": "2.15\u00b0",
+      "got": "2.15° @100 MHz",
+      "expected": "2.15°",
       "passed": true
     },
     {
-      "name": "deskewed loop fails 1\u00b0 reserve",
+      "name": "deskewed loop fails 1° reserve",
       "got": false,
       "expected": false,
       "passed": true
     },
     {
-      "name": "deskewed loop passes 5\u00b0 reserve",
+      "name": "deskewed loop passes 5° reserve",
       "got": true,
       "expected": true,
       "passed": true
     },
     {
-      "name": "feedback \u03c4_max",
+      "name": "feedback τ_max",
       "got": "138.9 ps",
       "expected": "138.9 ps",
       "passed": true
     },
     {
-      "name": "150 ps fails 5\u00b0",
+      "name": "150 ps fails 5°",
       "got": false,
       "expected": false,
       "passed": true
     },
     {
-      "name": "130 ps passes 5\u00b0",
+      "name": "130 ps passes 5°",
       "got": true,
       "expected": true,
       "passed": true
@@ -633,15 +633,15 @@
       "passed": true
     },
     {
-      "name": "slow/fast \u03c4_tol ratio",
+      "name": "slow/fast τ_tol ratio",
       "got": "200.0",
       "expected": "200",
       "passed": true
     },
     {
       "name": "resonance shrinks budget",
-      "got": "20.05\u00d7",
-      "expected": "2Q = 20\u00d7",
+      "got": "20.05×",
+      "expected": "2Q = 20×",
       "passed": true
     },
     {
@@ -651,21 +651,21 @@
       "passed": true
     },
     {
-      "name": "\u03c4_tol ordered by |J|",
+      "name": "τ_tol ordered by |J|",
       "got": "0.69 < 6.93 < 13.85 < 138.52",
       "expected": "increasing",
       "passed": true
     },
     {
-      "name": "worst \u03c9 at resonance",
-      "got": "1.000 \u03c90",
-      "expected": "\u2248 50 MHz",
+      "name": "worst ω at resonance",
+      "got": "1.000 ω0",
+      "expected": "≈ 50 MHz",
       "passed": true
     },
     {
       "name": "W_low vs W_high J_H ratio",
-      "got": "5.67\u00d7",
-      "expected": "> 3\u00d7",
+      "got": "5.67×",
+      "expected": "> 3×",
       "passed": true
     },
     {
@@ -694,18 +694,18 @@
     },
     {
       "name": "weighted J_tau ratio",
-      "got": "5.49\u00d7",
-      "expected": "> 3\u00d7",
+      "got": "5.49×",
+      "expected": "> 3×",
       "passed": true
     },
     {
-      "name": "H vs direct solve (R1\u2260R2, C1\u2260C2)",
+      "name": "H vs direct solve (R1≠R2, C1≠C2)",
       "got": "7.19e-16",
       "expected": "< 1e-12",
       "passed": true
     },
     {
-      "name": "reciprocity R2\u00b7H01 = R1\u00b7H10",
+      "name": "reciprocity R2·H01 = R1·H10",
       "got": "0.00e+00",
       "expected": "< 1e-12",
       "passed": true
@@ -717,7 +717,7 @@
       "passed": true
     },
     {
-      "name": "crosstalk_hf_victim(1) = measured V1/V2 floor, \u2260 crosstalk_hf",
+      "name": "crosstalk_hf_victim(1) = measured V1/V2 floor, ≠ crosstalk_hf",
       "got": "0.09091 vs 0.09089 (hf=0.16667)",
       "expected": "victim method = |H01/H11| floor; C2-version differs by (C2+Cm)/(C1+Cm)",
       "passed": true
@@ -725,7 +725,7 @@
     {
       "name": "crosstalk() floor carries R1/R2",
       "got": "0.08332 vs 0.08333",
-      "expected": "Cm/(C2+Cm)\u00b7R1/R2",
+      "expected": "Cm/(C2+Cm)·R1/R2",
       "passed": true
     },
     {
@@ -742,7 +742,7 @@
     },
     {
       "name": "loop H=1 dip at pole freq",
-      "got": "49.84 MHz vs \u00b150.00 MHz",
+      "got": "49.84 MHz vs ±50.00 MHz",
       "expected": "dip at poles",
       "passed": true
     },
@@ -754,25 +754,25 @@
     },
     {
       "name": "loop margin monotone in tau",
-      "got": "3.14e+07 \u2192 2.15e+07 \u2192 1.15e+07 \u2192 1.56e+06",
+      "got": "3.14e+07 → 2.15e+07 → 1.15e+07 → 1.56e+06",
       "expected": "decreasing",
       "passed": true
     },
     {
       "name": "loop tau_ex exact (scalar_dde_root)",
-      "got": "Re/|\u03bb|=7.0e-17, Im/|\u03bb|=1.000000",
-      "expected": "root on j\u03c9 axis at \u03c4_ex",
+      "got": "Re/|λ|=7.0e-17, Im/|λ|=1.000000",
+      "expected": "root on jω axis at τ_ex",
       "passed": true
     },
     {
-      "name": "loop 2/\u03c0 optimism (Loop B)",
-      "got": "0.6467 vs 2/\u03c0=0.6366",
-      "expected": "\u2248 2/\u03c0",
+      "name": "loop 2/π optimism (Loop B)",
+      "got": "0.6467 vs 2/π=0.6366",
+      "expected": "≈ 2/π",
       "passed": true
     },
     {
       "name": "first-order descriptor boundary",
-      "got": "max Re @\u03c4_fo=-2.3e-05, @1.05\u03c4=2.0e+09",
+      "got": "max Re @τ_fo=-2.3e-05, @1.05τ=2.0e+09",
       "expected": "0 then > 0",
       "passed": true
     },
@@ -783,20 +783,20 @@
       "passed": true
     },
     {
-      "name": "deskew skew \u2192 0",
-      "got": "150.0 \u2192 9.8e-08 ps",
+      "name": "deskew skew → 0",
+      "got": "150.0 → 9.8e-08 ps",
       "expected": "< 0.01 ps",
       "passed": true
     },
     {
       "name": "deskew does NOT recover absolute margin",
       "got": "deskew=6.531e+06, target=6.546e+06, short=2.150e+07",
-      "expected": "deskew \u2248 250 ps level (\u00b11%), \u226a short",
+      "expected": "deskew ≈ 250 ps level (±1%), ≪ short",
       "passed": true
     },
     {
       "name": "S peak grows toward instability",
-      "got": "10.0 \u2192 14.7 \u2192 27.4 \u2192 202.1",
+      "got": "10.0 → 14.7 → 27.4 → 202.1",
       "expected": "increasing",
       "passed": true
     },
@@ -807,7 +807,7 @@
       "passed": true
     },
     {
-      "name": "scaling: alpha=0.1 \u2192 80 MHz fails 10 MHz",
+      "name": "scaling: alpha=0.1 → 80 MHz fails 10 MHz",
       "got": "80 MHz",
       "expected": "fail",
       "passed": true
@@ -819,15 +819,15 @@
       "passed": true
     },
     {
-      "name": "scaling: band round-trip + \u03bb_hw=\u03bb/\u03b1",
-      "got": "round=5.03e+07, \u03bb_hw/\u03b1=5.0e+13",
-      "expected": "\u03c9\u00b7\u03b1\u00b7(1/\u03b1) = \u03c9; \u03bb_hw = 1e6\u00b7\u03bb",
+      "name": "scaling: band round-trip + λ_hw=λ/α",
+      "got": "round=5.03e+07, λ_hw/α=5.0e+13",
+      "expected": "ω·α·(1/α) = ω; λ_hw = 1e6·λ",
       "passed": true
     },
     {
       "name": "scaling: x=V/S_x and noise budget",
-      "got": "swing\u21922.00 units, 80\u00b5V\u21920.080 units",
-      "expected": "\u00b12.00 units, 0.080 units",
+      "got": "swing→2.00 units, 80µV→0.080 units",
+      "expected": "±2.00 units, 0.080 units",
       "passed": true
     },
     {
@@ -839,7 +839,7 @@
     {
       "name": "in-band pads: pd < latency",
       "got": "132.8 vs 205.0 ps (ratio 0.648)",
-      "expected": "pd < lat, ratio \u2248 0.65",
+      "expected": "pd < lat, ratio ≈ 0.65",
       "passed": true
     },
     {
@@ -849,21 +849,21 @@
       "passed": true
     },
     {
-      "name": "unwrap vs \u222b\u03c4_g d\u03c9 cross-check",
+      "name": "unwrap vs ∫τ_g dω cross-check",
       "got": "1.44e-05 (trapezoid quadrature err)",
       "expected": "< 1e-4",
       "passed": true
     },
     {
       "name": "verdict uses unwrapped phase delay",
-      "got": "\u03c4_max=60.0 ps, pd=132.8, naive=32.8, lat=205.0",
+      "got": "τ_max=60.0 ps, pd=132.8, naive=32.8, lat=205.0",
       "expected": "FAIL (naive-angle impl would pass)",
       "passed": true
     },
     {
-      "name": "out-of-band pads: pd \u2248 latency",
+      "name": "out-of-band pads: pd ≈ latency",
       "got": "8.999987 vs 9.000000 ps",
-      "expected": "ratio 1 \u00b1 1e-3",
+      "expected": "ratio 1 ± 1e-3",
       "passed": true
     },
     {
@@ -873,7 +873,7 @@
       "passed": true
     },
     {
-      "name": "inverting buffer phase delay \u2248 non-inverting",
+      "name": "inverting buffer phase delay ≈ non-inverting",
       "got": "31.42 vs 31.42 ps",
       "expected": "within 5%",
       "passed": true
@@ -881,12 +881,22 @@
     {
       "name": "old impl would report huge inverting delay (guard)",
       "got": "-468.6 ps",
-      "expected": "|old| > 10\u00d7 fixed",
+      "expected": "|old| > 10× fixed",
       "passed": true
     }
   ],
   "summary": {
     "n_checks": 75,
     "n_passed": 75
+  },
+  "_meta": {
+    "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
+    "git_dirty": true,
+    "bench_module": "bench.run_route",
+    "command": "python3 -m bench.run_route",
+    "timestamp_utc": "2026-11-20T05:55:32+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
   }
 }

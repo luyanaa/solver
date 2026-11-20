@@ -320,6 +320,23 @@ def main(argv=None):
               "gm temp shift range %.1f..%.1f uS (PSP103 against tnom=27 C; "
               "HBT VBIC uses (temper+273)/300 directly)"
               % (min(g_t) * 1e6, max(g_t) * 1e6))
+        # HBT gm = Ic/V_T(T) with V_T(T)=k_B(T+273.15)/q. A fixed 300 K VT
+        # made gm_hbt flat from -40 C to 125 C (the reported post-processing
+        # bug); this check pins the 1.71x swing and the exact V_T ratio.
+        def _at(temp):
+            return [d for d in pvt["rows"].values()
+                    if d["temp_c"] == temp and d["vdd_v"] == 1.5][0]
+        d40, d125 = _at(-40.0), _at(125.0)
+        ratio_g = d40["gm_hbt"] / d125["gm_hbt"]
+        ratio_vt = d125["vt_v"] / d40["vt_v"]
+        check("HBT gm follows V_T(T)=k_B(T+273.15)/q (1.71x, not flat)",
+              abs(ratio_g / ratio_vt - 1.0) < 1e-2
+              and 1.65 < ratio_g < 1.77
+              and abs(d40["gm_hbt"] - d40["ic_hbt"] / d40["vt_v"]) < 1e-15,
+              "gm(-40)/gm(125)=%.3f == VT(125)/VT(-40)=%.3f; "
+              "gm %.4f/%.4f/%.4f mS at -40/27/125 C"
+              % (ratio_g, ratio_vt, d40["gm_hbt"] * 1e3,
+                 _at(27.0)["gm_hbt"] * 1e3, d125["gm_hbt"] * 1e3))
     else:
         check("PVT grid present (3 temps x 3 supplies)", False,
               "PVT rows missing/short: %d" % (len(pvt.get("rows", {})) if pvt else 0),
@@ -367,6 +384,17 @@ def main(argv=None):
               % (poles[0] / 1e6, poles[1] / 1e6, poles[2] / 1e6,
                  per_ff[0] * 100, per_ff[1] * 100,
                  1e-15 / (1e-12 + 1e-15) * 100))
+        # measured and predicted log slopes must share ONE unit (/F) and
+        # sign; the old code divided the measurement by fF and the
+        # prediction by F (1e15 mismatch, opposite-looking magnitudes).
+        slope, pred = par["slope_log_per_f"], par["slope_log_per_f_pred"]
+        check("pre-PEX log slope: measured vs predicted same unit (/F) "
+              "and sign (<2%)",
+              slope < 0 and pred < 0
+              and abs(slope / pred - 1.0) < 0.02
+              and abs(par["slope_rel_err"] - (slope / pred - 1.0)) < 1e-12,
+              "measured %.4e /F vs predicted %.4e /F (%+.2f%%)"
+              % (slope, pred, par["slope_rel_err"] * 100))
     else:
         check("pre-PEX parasitic sensitivity recorded (labeled, not PEX)", False,
               "parasitics block missing/short", genuine_fail=True)

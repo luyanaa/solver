@@ -270,7 +270,7 @@ def run_chain(source, *, B_hw: float, kappa_hw: float, v_swing: float = 1.0,
               basis_candidates: tuple | None = None,
               field=None, dx: float = 1.0,
               delta_A_norm: float = 1e-3, tol_l2: float = 1e-2,
-              sigma_req=None) -> ChainResult:
+              sigma_req=None, gamma_M=None, hinf=None) -> ChainResult:
     """描述符产线负载走整条编译链，返回结构化结果。
 
     链序（每个 stage 声明坐标系）：
@@ -284,6 +284,13 @@ def run_chain(source, *, B_hw: float, kappa_hw: float, v_swing: float = 1.0,
     closure_carry="projected"：projected descriptor 成为唯一下游载体，
     scaling 在它上面重推（F2 关闭）；"full"：全 descriptor 前进，
     closure 证书作证据。其余参数直通对应 pass。
+
+    gamma_M：直通 evaluate_sys。当 workload 的 robustness 轴不由
+    Γ_proj‖ΔA‖ 判定（poisson-2d 的失配/泄漏扰动按 drift budget 判，
+    delta_A_norm=None）时，传 float("inf") 表示该轴的真值，跳过 scaled
+    矩阵上的 resolvent 扫频（256 态上实测 ~15 min）；默认 None = 照常扫。
+    hinf：直通 evaluate_sys（调用方已有 H∞ 证据时跳过 Hamiltonian 二分 +
+    扫频；poisson 的守恒零模给出 inf 上界）。
     """
     from lowering.closure import project_spectral
     from lowering.split import cvsplit
@@ -436,8 +443,14 @@ def run_chain(source, *, B_hw: float, kappa_hw: float, v_swing: float = 1.0,
                      reason=br.reason),
         notes=[basis_note]))
 
-    # F5 复合：在最终坐标上重推 scaling + mask 不动点
-    sc_final, desc_final_masked, mask_final = _scale_and_mask(desc_final)
+    # F5 复合：在最终坐标上重推 scaling + mask 不动点。identity 赢家时
+    # desc_final 就是第一次 _scale_and_mask 已 mask 的载体（同一个
+    # descriptor、同一个确定性 scaling）⇒ 直接复用，不重复解 Lyapunov
+    # （poisson-2d 256 态实测每次 ~54 s）。非 identity 才重推。
+    if desc_final is desc_m:
+        sc_final, desc_final_masked, mask_final = sc_init, desc_m, mask_used
+    else:
+        sc_final, desc_final_masked, mask_final = _scale_and_mask(desc_final)
     if not np.array_equal(mask_final, mask_used) and coords == "model":
         raise ChainCompositionError("identity-basis mask changed under "
                                     "re-scaling (fixed point unstable)")
@@ -489,7 +502,8 @@ def run_chain(source, *, B_hw: float, kappa_hw: float, v_swing: float = 1.0,
     # ---- 6. cert（评在最终载体 + 最终 scaling 上）----------------------------
     spec_h = HardwareSpec(kappa_hw=kappa_hw, B_hw=B_hw, sigma_req=sigma_req,
                           delta_A_norm=delta_A_norm, tol_l2=tol_l2)
-    cert = evaluate_sys(desc_final_masked, spec_h, scaling=sc_final)
+    cert = evaluate_sys(desc_final_masked, spec_h, scaling=sc_final,
+                        gamma_M=gamma_M, hinf=hinf)
     stages.append(StageRecord(
         "cert", coords + "(physical)", "certificate",
         summary=dict(status=cert.status, binding_axis=cert.binding_axis),

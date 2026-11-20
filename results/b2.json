@@ -1,6 +1,6 @@
 {
-  "n_checks": 24,
-  "n_pass": 24,
+  "n_checks": 26,
+  "n_pass": 26,
   "n_genuine_fail": 0,
   "corners": {
     "tt": {
@@ -1007,5 +1007,15 @@
     "gm_mos": 1.8701018564392298e-06,
     "ron": 7.63906417164079,
     "vos": 0.011333515865374018
+  },
+  "_meta": {
+    "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
+    "git_dirty": true,
+    "bench_module": "bench.run_b2",
+    "command": "python3 -m bench.run_b2",
+    "timestamp_utc": "2026-11-20T06:08:43+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
   }
 }

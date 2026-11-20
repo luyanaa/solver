@@ -82,7 +82,7 @@
       "lam_ind": 1.0700000000000003,
       "lam_mom": 0.9986108860350255,
       "D_hat": 0.9983232590325744,
-      "grid": "0.85\u20131.15 step 0.010"
+      "grid": "0.85–1.15 step 0.010"
     },
     "F_wong_zakai": {
       "mu": 0.0,
@@ -181,22 +181,22 @@
   },
   "contracts": {
     "A_ou_white": {
-      "S_xi": "two-sided 2D/(1+(2\u03c0f\u03c4c)\u00b2), flat = 2D (one-sided = 2\u00d7)",
+      "S_xi": "two-sided 2D/(1+(2πfτc)²), flat = 2D (one-sided = 2×)",
       "tau_c": 0.0,
       "rho": "I",
       "B_noise": "inf (white limit)",
       "mode": "physical",
-      "B_req": "0.1592 Hz = \u03bb/2\u03c0",
+      "B_req": "0.1592 Hz = λ/2π",
       "note": "white limit of ColorNoise, exact AR(1) update",
       "n_traj": 700,
       "T": 300.0,
       "dt": 0.05
     },
     "A_ou_colored": {
-      "S_xi": "two-sided 2D/(1+(2\u03c0f\u03c4c)\u00b2), flat = 2D (one-sided = 2\u00d7)",
+      "S_xi": "two-sided 2D/(1+(2πfτc)²), flat = 2D (one-sided = 2×)",
       "tau_c": 0.05,
-      "rho": "user \u03c1_ij (Cholesky L)",
-      "B_noise": "3.1831 Hz = 1/(2\u03c0\u03c4c)",
+      "rho": "user ρ_ij (Cholesky L)",
+      "B_noise": "3.1831 Hz = 1/(2πτc)",
       "mode": "physical",
       "B_req": "0.1592 Hz",
       "B_over_Breq": "20.0",
@@ -206,53 +206,53 @@
     },
     "A_bandwidth": {
       "S_xi": "two-sided flat 2D, ideal brickwall lowpass at f_c (FFT)",
-      "tau_c": "0 (brickwall; effective 1/(2\u03c0f_c))",
+      "tau_c": "0 (brickwall; effective 1/(2πf_c))",
       "rho": "I",
-      "B_noise": "f_c = 100\u00b7B_req and 10\u00b7B_req",
-      "B_req": "0.1592 Hz = \u03bb/2\u03c0",
-      "mode": "physical (idealized band limit, \u00a72 arctan model)",
+      "B_noise": "f_c = 100·B_req and 10·B_req",
+      "B_req": "0.1592 Hz = λ/2π",
+      "mode": "physical (idealized band limit, §2 arctan model)",
       "n_traj": 120,
       "T": 260.0,
       "dt": 0.0078125
     },
     "B_gbm": {
-      "S_xi": "two-sided flat 2D (unit white \u2192 \u03c3x dW scaled)",
+      "S_xi": "two-sided flat 2D (unit white → σx dW scaled)",
       "tau_c": 0.0,
       "rho": "I (scalar, diagonal G)",
-      "B_noise": "inf; dt = 0.01 \u226a 1/\u03bb_state",
+      "B_noise": "inf; dt = 0.01 ≪ 1/λ_state",
       "mode": "physical",
-      "interpretation": "model Stratonovich; integrator It\u00f4 with f_I = f_S + \u00bd\u03c3\u00b2x (\u00a71.4 direction)",
+      "interpretation": "model Stratonovich; integrator Itô with f_I = f_S + ½σ²x (§1.4 direction)",
       "n_traj": 40000,
       "T": 5.0,
       "dt": 0.01
     },
     "C_doublewell": {
-      "S_xi": "two-sided flat 2T (thermal Langevin bath, \u221a(2T)dW)",
+      "S_xi": "two-sided flat 2T (thermal Langevin bath, √(2T)dW)",
       "tau_c": 0.0,
       "rho": "I (scalar)",
       "B_noise": "inf (white bath)",
       "mode": "physical",
       "n_traj": 1400,
       "T_total": "120.0 per traj (dt=0.005)",
-      "tail_guard": "bins with expected count \u2265 10"
+      "tail_guard": "bins with expected count ≥ 10"
     },
     "D_inverse": {
       "S_xi": "two-sided flat 2D (white limit of ColorNoise)",
       "tau_c": 0.0,
       "rho": "I",
       "B_noise": "inf (white; exact AR(1) update, no dt bias)",
-      "mode": "replay (CRN: capture\u2192replay identical realization; control: independent draws per \u00b1\u03b4)",
+      "mode": "replay (CRN: capture→replay identical realization; control: independent draws per ±δ)",
       "n_traj": 200,
       "T": 20.0,
       "R_reps": 20,
       "adjoint": "GAP: continuous-time adjoint is Phase-6C-later (listed, not faked)"
     },
     "F_wong_zakai": {
-      "S_xi": "two-sided 2D/(1+(2\u03c0f\u03c4c)\u00b2), flat = 2D; D=0.50",
+      "S_xi": "two-sided 2D/(1+(2πfτc)²), flat = 2D; D=0.50",
       "tau_c": 0.04,
       "rho": "I (scalar)",
-      "B_noise": "3.979 Hz = 1/(2\u03c0\u03c4c) (dt = 0.050\u00b7\u03c4c)",
-      "mode": "physical (delay implemented as exact one-pole filter on x\u00b7\u03be, not a pure delay \u2014 deviation from \u03b8(\u03c7) reported per \u03c7)",
+      "B_noise": "3.979 Hz = 1/(2πτc) (dt = 0.050·τc)",
+      "mode": "physical (delay implemented as exact one-pole filter on x·ξ, not a pure delay — deviation from θ(χ) reported per χ)",
       "n_traj": 16000,
       "T": 2.0,
       "dt": 0.002
@@ -262,7 +262,7 @@
       "tau_c": 0.0,
       "rho": "I",
       "B_noise": "n/a (no stochastic driver)",
-      "mode": "adjoint (backward with A\u1d40+\u0394_asym; forward states from A; ideal branch cross-checked to adjoint_ode_gradient)",
+      "mode": "adjoint (backward with Aᵀ+Δ_asym; forward states from A; ideal branch cross-checked to adjoint_ode_gradient)",
       "n_state": 4,
       "T_obs": 1.0,
       "nsteps": 50
@@ -270,67 +270,67 @@
   },
   "checks": [
     {
-      "name": "A OU Var vs D/\u03bb",
+      "name": "A OU Var vs D/λ",
       "got": "0.02 dB (0.50%)",
-      "expected": "within \u00b13 dB",
+      "expected": "within ±3 dB",
       "passed": true
     },
     {
-      "name": "A ACF \u03c4 within \u00b15%",
+      "name": "A ACF τ within ±5%",
       "got": "2.825%",
       "expected": "< 5%",
       "passed": true
     },
     {
-      "name": "A colored Var vs (D/\u03bb)/(1+\u03bb\u03c4c)",
+      "name": "A colored Var vs (D/λ)/(1+λτc)",
       "got": "-1.61%",
-      "expected": "within \u00b13%",
+      "expected": "within ±3%",
       "passed": true
     },
     {
-      "name": "A bandwidth drop 100\u219210 B_req",
+      "name": "A bandwidth drop 100→10 B_req",
       "got": "6.69%",
-      "expected": "\u22486.4% (window 4.5\u20138.3%)",
+      "expected": "≈6.4% (window 4.5–8.3%)",
       "passed": true
     },
     {
       "name": "A Var(f_c=10B)/white",
       "got": "0.9312 (pred 0.9365)",
-      "expected": "\u00b10.025",
+      "expected": "±0.025",
       "passed": true
     },
     {
       "name": "A Var(f_c=100B)/white",
       "got": "0.9980 (pred 0.9936)",
-      "expected": "\u00b10.025",
+      "expected": "±0.025",
       "passed": true
     },
     {
-      "name": "B It\u00f4/Strato separation",
-      "got": "51.9\u03c3",
-      "expected": "> 3\u03c3",
+      "name": "B Itô/Strato separation",
+      "got": "51.9σ",
+      "expected": "> 3σ",
       "passed": true
     },
     {
-      "name": "B It\u00f4 lands e^{\u03bct}",
+      "name": "B Itô lands e^{μt}",
       "got": "0.9820",
-      "expected": "\u00b110%",
+      "expected": "±10%",
       "passed": true
     },
     {
-      "name": "B Strato lands e^{(\u03bc+\u03c3\u00b2/2)t}",
+      "name": "B Strato lands e^{(μ+σ²/2)t}",
       "got": "0.9908",
-      "expected": "\u00b110%",
+      "expected": "±10%",
       "passed": true
     },
     {
       "name": "B E[ln x] sharp",
-      "got": "1.06e-02 (3\u00b7SE 2.01e-02)",
-      "expected": "< 3\u00b7SE",
+      "got": "1.06e-02 (3·SE 2.01e-02)",
+      "expected": "< 3·SE",
       "passed": true
     },
     {
-      "name": "B linear correction A_S\u2212A_I = \u03c3\u00b2/2",
+      "name": "B linear correction A_S−A_I = σ²/2",
       "got": "5.55e-17",
       "expected": "< 1e-12",
       "passed": true
@@ -342,31 +342,31 @@
       "passed": true
     },
     {
-      "name": "C T\u0302 recovery",
+      "name": "C T̂ recovery",
       "got": "0.37%",
       "expected": "< 10%",
       "passed": true
     },
     {
       "name": "D CRN variance ratio",
-      "got": "228743.8\u00d7",
-      "expected": "\u2265 10\u00d7",
+      "got": "228743.8×",
+      "expected": "≥ 10×",
       "passed": true
     },
     {
       "name": "D CRN/IND mean gradients agree",
       "got": "0.065 vs SE 0.235",
-      "expected": "< 4\u00b7SE",
+      "expected": "< 4·SE",
       "passed": true
     },
     {
-      "name": "D CRN recovery \u03bb",
+      "name": "D CRN recovery λ",
       "got": "4.96%",
       "expected": "< 10%",
       "passed": true
     },
     {
-      "name": "D moment/AR(1) recovery \u03bb",
+      "name": "D moment/AR(1) recovery λ",
       "got": "0.14%",
       "expected": "< 10%",
       "passed": true
@@ -380,31 +380,31 @@
     {
       "name": "E noise contract complete per case",
       "got": "0 missing",
-      "expected": "0 missing (\u00a71.3)",
+      "expected": "0 missing (§1.3)",
       "passed": true
     },
     {
-      "name": "F \u03c7=0 lands Stratonovich \u03c3_w\u00b2/2",
+      "name": "F χ=0 lands Stratonovich σ_w²/2",
       "got": "0.491 (pred 0.500)",
-      "expected": "ratio 0.80\u20131.20",
+      "expected": "ratio 0.80–1.20",
       "passed": true
     },
     {
-      "name": "F monotone decreasing in \u03c7",
-      "got": "0.491 \u2192 0.385 \u2192 0.272 \u2192 0.110 \u2192 0.025",
+      "name": "F monotone decreasing in χ",
+      "got": "0.491 → 0.385 → 0.272 → 0.110 → 0.025",
       "expected": "strictly decreasing",
       "passed": true
     },
     {
-      "name": "F strong-suppression limit \u03c7=16",
-      "got": "0.0510 \u00d7 corr(0)",
-      "expected": "\u2208 [0.005, 0.10] (theory 1/17 = 0.0588)",
+      "name": "F strong-suppression limit χ=16",
+      "got": "0.0510 × corr(0)",
+      "expected": "∈ [0.005, 0.10] (theory 1/17 = 0.0588)",
       "passed": true
     },
     {
-      "name": "F interpolant \u03b8(\u03c7)=1/(2(1+\u03c7))",
+      "name": "F interpolant θ(χ)=1/(2(1+χ))",
       "got": "max dev 14.9%",
-      "expected": "\u2264 25% (one-pole, not pure delay)",
+      "expected": "≤ 25% (one-pole, not pure delay)",
       "passed": true
     },
     {
@@ -414,26 +414,36 @@
       "passed": true
     },
     {
-      "name": "G error linear in \u2016\u0394_asym\u2016",
+      "name": "G error linear in ‖Δ_asym‖",
       "got": "1.000",
-      "expected": "log-log slope 0.90\u20131.10",
+      "expected": "log-log slope 0.90–1.10",
       "passed": true
     },
     {
       "name": "G error within bound",
       "got": "max err/bound 0.706",
-      "expected": "\u2264 1",
+      "expected": "≤ 1",
       "passed": true
     },
     {
       "name": "G bound not vacuous",
       "got": "min err/bound 0.706",
-      "expected": "\u2265 0.01",
+      "expected": "≥ 0.01",
       "passed": true
     }
   ],
   "summary": {
     "n_checks": 27,
     "n_passed": 27
+  },
+  "_meta": {
+    "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
+    "git_dirty": true,
+    "bench_module": "bench.run_sde",
+    "command": "python3 -m bench.run_sde",
+    "timestamp_utc": "2026-11-20T05:56:13+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
   }
 }
