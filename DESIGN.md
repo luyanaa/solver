@@ -1000,6 +1000,25 @@ Fail-closed B2 extension（`extract_b2.py`、`results/b2_extract.json` 的 `stat
 
 **全仓验收（2026-11-20）**：`python3 -m bench.run_all` 顺序跑完 25 个套件，无失败、无跳过，1324.6 s；计入 check 计数器的 868/868 项全部通过（`run_twin_experiments` 是无 check 计数器的实验驱动）。记录在 `results/run_all.json`。
 
+### 6.22 运行时误差控制合同：残差驱动校正与有限时间传播（`analysis/error_propagation.py`、`twin/residual.py`、`bench/run_error_control.py`、`results/error_control.json`）
+
+模拟单元的局部误差（噪声/失配/量化/带宽）不可消除，能控制的是误差的**传播、累积与对结果的影响**——精度因此不是 ADC/DAC 的静态属性，而是整个系统在给定时间窗与目标 QoI 下持续维护的**动态合同**。理论：真实系统 ẋ=F(x)，硬件 ẋ=F(x̂)+r(t)，线性化 ė≈J e+r ⟹ e(T)=Φ(T,0)e(0)+∫Φ r；三类情形给出三种合同：**contracting**（误差压在 r_max/γ，只需调度检查）、**neutral**（偏置线性累积 e∝t，需周期校正）、**expanding**（指数放大，有限时窗后只能降级到 QoI/统计量——§1 Level 2 可划归）。泄漏型扰动（ΔA 列和≠0）单独走 `conservation_drift_rate`，不得用 Γ_proj（P0-D 合同的运行时版）。
+
+**合同四件套（已验收，25/25，行为级模型口径：量化+有界噪声+偏置注入，非 SPICE 级）：**
+
+1. **分类 + 有限时间增益**：`classify_propagation` 同时报谱横坐标、μ₂ 对数范数与 ‖Φ(T,0)‖（能量度量可选）——非正规瞬态不能被谱判据覆盖（shear Γ=5.12 的既有案例），合同必须用 Φ 而非特征值。实测：diffusion N=24 ⇒ contracting（λ₁=−0.395）、纯积分器 ⇒ neutral、λ=+0.5 ⇒ expanding；保守 vs 泄漏 dA 的漂移率比 1.06e-18 vs 2.04e-4（Γ_proj 看不见的那一路，率可见）。
+2. **残差 = 注入积累**：窗口积分残差 R_k = x̂(t₁)−x̂(t₀)−∫F(x̂)dt 恰好等于 ∫r dt，直接给出误差递推 ε_{k+1}=G_k ε_k+η_k 的**新增预算 η_k=‖R_k‖**（`twin/residual.py` 只测量；传播在 `error_propagation.py`）。40 窗校正循环（每窗扣除 R_k）：界覆盖 40/40（ε_measured ≤ 1.2×ε_predicted，覆盖率是验收标准，不是误差均值），校正后长期误差 max 8.1e-4 vs 无校正饱和界 r_max/γ=0.397（×488），与长期界 η/(1−ρ)=1.69e-3 同量级。
+3. **校正调度公式**（替代定时校准）：一次校正后残余 e₀、区间扰动上界 r_max、不稳定率 λ，要求区间末 ≤ε ⇒ ΔT ≤ (1/λ)·ln((ε+r_max/λ)/(e₀+r_max/λ))；λ=0 退化为预算式 (ε−e₀)/r_max。实测单调性：λ×10 ⇒ ΔT×0.89，r_max×2 ⇒ ΔT×0.50（扰动越强查越勤）；e₀≥ε 必须 raise（不许静默给∞间隔）。
+4. **Poisson iterative refinement**（低精度核能被修正到高于单核精度的存在性证明）：量化 Richardson 核（u_a=2^-10，n=12 五点 Laplacian，κ=67.8）地板 e=0.127；+float64 残差 +低精度修正解，4 步 IR 后 e=3.08e-3（改进 41×），step-0 收缩率实测 47.2 vs 预测 1/(κ·u_a)=15.1（×3 容差内）。
+
+**三组负对照（合同的前提被逐一抽掉，全部如约失效/判死）：**
+
+- **N1 残差粗量化**（u_r=2^-7）：可达误差 4.26e-2，比主线差 13.8×——残差必须由可信度更高的通路计算是 IR 的前提，不是可选项；残差精度直接决定 attainable。
+- **N2 病态判死**：对角共轭抬 κ 到 61842，κ·u_a=60.4>1 ⇒ 证书**提前**判死，实测 IR 后 e=656 未低于起点 669（不收敛被证实）——不许碰运气。
+- **N3 一致偏移不可见**：path Laplacian 零模态上的常值偏移（真解静态 0，硬件静态 0.5·1），每窗口残差**恒为 0** 而解误差 ‖c‖=1.414 永远持留。残差小≠误差小；`detect_offset` 必须给独立参考，无参考时如实 `detectable=False`——对"用自身输出自监督可以发现一切"的直接否证。
+
+**诚实边界**：本节验证的是误差控制合同的**数学**，不是电路实现；合同数字（ρ 预测、界覆盖、调度单调性）在任何满足同一注入模型的实现上应复现，不复现即证伪。adjoint 加权的 ε_J 与全局 ε 的双轨口径（DWR 的抵消问题）、shock displacement 对 QoI 的界面项、混沌系统的 shadowing/统计响应——是后续阶段，本节不做任何许诺；扩张系统的合同终点是"调度公式 raise"，即诚实地拒绝无限时窗轨迹精度。
+
 ---
 
 ## 7. 分阶段落地（每阶段都有可证伪的验收）
@@ -1300,6 +1319,9 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
         ✅ slack.py       # 六轴 slack 向量（鲁棒拆失配/接口）+ 不可行原因
         ✅ skew.py        # DDE → E=I+A∘T；均匀延迟闭式极点、τ_crit、相位预算
         ✅ sde.py         # Itô/Stratonovich、线性乘性协方差、均方稳定、噪声可实现性、wong_zakai_factor
+        ✅ error_propagation.py  # §6.22 有限时间误差传播：classify_propagation（收缩/中性/扩张
+                          # + 非正规瞬态标注）、μ₂ 对数范数、‖Φ(T,0)‖、泄漏型 dM/dt 率、
+                          # 校正调度 ΔT=(1/λ)ln((ε+r_max/λ)/(e₀+r_max/λ))、长期界 η/(1−ρ)
       lowering/
         ✅ reduce.py      # jet/一阶化、状态增广、rational 化、canonical form
                           # 实测：Lorenz/Duffing polynomial；HH rational；Gamma 拒绝
@@ -1386,6 +1408,9 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
         ✅ transform.py    # §5.7–§5.9：smoothness sensor/σ（相对 ε floor + attack/release）、
                           # lifting wavelet、W_inv/W_star、Gram 右/左标定、transposeable edge
                           # 实测：守恒 2.2e-16；CDF53 W_inv≠W* 0.684；isometry 2.3e-2→3.5e-15
+        ✅ residual.py     # §6.22 窗口积分残差 = 注入积累 ∫r dt → η_k 新增误差预算；
+                          # 源归因（lstsq 相容 ≠ 证明，含 residual_after_fit）、
+                          # detect_offset（一致偏移必须独立参考，无参考 ⇒ detectable=False）
       bench/
         ✅ run_twin_experiments.py  # §6.8 五组对照（3 min）
         ✅ run_phase0.py            # Phase 0 五算例验收（~2 min）
@@ -1401,6 +1426,10 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
         ✅ run_constraint.py        # T10 KCL 松弛孪生验收（44/44）
         ✅ run_constraint_timing.py # T10 ε_c 语义：外部时标显式声明 + 纯稳态 deadline 事实 + 证书可见性（36/36）
         ✅ run_pipeline.py          # 3 锚定基准 e2e（符号→证书→孪生核对）（34/34）
+        ✅ run_error_control.py     # §6.22 误差控制合同：Poisson IR（量化核 0.127→IR 3.1e-3，
+                                    # 改进 41×）/ diffusion 三分类 + 残差驱动 40 窗校正
+                                    # （界覆盖 40/40）/ N1 残差粗量化、N2 病态提前判死、
+                                    # N3 零模态一致偏移残差不可见（25/25）
         ✅ run_stagea.py            # A4/A8/A9 收尾：shear 换基判定（Γ 5.12 /
                                     # scaled / eigvec=1+κ(Φ)=20 税）/ VdP
                                     # （不稳定工点 ⇒ 回退，reduce=poly）/

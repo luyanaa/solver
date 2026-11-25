@@ -250,9 +250,9 @@
         "stable": false
       },
       "lyapunov": {
-        "sigma_y": 3.6323055726292695,
-        "sigma_y2": 13.193643772953644,
-        "rel_residual": 6.756431596076319e-14,
+        "sigma_y": 3.632305572629207,
+        "sigma_y2": 13.19364377295319,
+        "rel_residual": 6.096876552690342e-14,
         "h2_finite": true,
         "n_stable": 127,
         "method": "qz"
@@ -268,7 +268,7 @@
         "omega": 1.7082024275461442e-06,
         "sigma_min": 0.0,
         "method": "sweep",
-        "Gamma_proj": 36.76324217000237,
+        "Gamma_proj": 36.76324216704421,
         "n_proj": 127,
         "projected": true
       },
@@ -277,7 +277,7 @@
           "noise": NaN,
           "bandwidth": 2.7186886014554377e-06,
           "stiffness": 0.0022217215781996065,
-          "robustness_A": 0.3676324217000237,
+          "robustness_A": 0.36763242167044213,
           "robustness_io": 0.06124887252775304,
           "routing": NaN,
           "representation": 2.5733990126494986
@@ -296,9 +296,9 @@
       },
       "projection": {
         "n": 127,
-        "hinf": 6.124893101632984,
+        "hinf": 6.124893092287779,
         "method": "hamiltonian",
-        "sweep": 6.124887260485313
+        "sweep": 6.124887251140117
       },
       "regularity": {
         "p": 1.4385004176399947,
@@ -378,7 +378,7 @@
         ],
         "reasons": {
           "stiffness": "delete modes (QSSA/CSP) or use multirate",
-          "robustness_A": "conservative ΔA only: recondition slow modes, calibrate, or change basis; leakage ΔA needs drift budget, not Γ_proj"
+          "robustness_A": "conservative \u0394A only: recondition slow modes, calibrate, or change basis; leakage \u0394A needs drift budget, not \u0393_proj"
         },
         "status": "infeasible"
       },
@@ -392,7 +392,7 @@
   },
   "checks": [
     {
-      "name": "diffusion N=64 κ",
+      "name": "diffusion N=64 \u03ba",
       "got": 4096.0,
       "expected": 4096.0,
       "log10_err": 0.0,
@@ -401,7 +401,7 @@
       "kind": "log10"
     },
     {
-      "name": "diffusion N=64 Γ",
+      "name": "diffusion N=64 \u0393",
       "got": 1000.0,
       "expected": 1000.0,
       "log10_err": 0.0,
@@ -410,7 +410,7 @@
       "kind": "log10"
     },
     {
-      "name": "diffusion N=64 σ_y",
+      "name": "diffusion N=64 \u03c3_y",
       "got": 22.360679774997898,
       "expected": 22.360679774997898,
       "log10_err": 0.0,
@@ -419,7 +419,7 @@
       "kind": "log10"
     },
     {
-      "name": "diffusion N=64 H∞",
+      "name": "diffusion N=64 H\u221e",
       "got": 1000.0009536742325,
       "expected": 1000.0,
       "log10_err": 4.1417525920240713e-07,
@@ -428,7 +428,7 @@
       "kind": "log10"
     },
     {
-      "name": "diffusion N=64 H∞ ham-vs-sweep",
+      "name": "diffusion N=64 H\u221e ham-vs-sweep",
       "got": 9.5367431640633e-07,
       "expected": 0.0,
       "log10_err": -6.020599913279588,
@@ -437,7 +437,7 @@
       "kind": "rel"
     },
     {
-      "name": "diffusion N=1024 κ",
+      "name": "diffusion N=1024 \u03ba",
       "got": 1048576.0,
       "expected": 1048576.0,
       "log10_err": 0.0,
@@ -446,7 +446,7 @@
       "kind": "log10"
     },
     {
-      "name": "diffusion N=1024 Γ",
+      "name": "diffusion N=1024 \u0393",
       "got": 1000.0,
       "expected": 1000.0,
       "log10_err": 0.0,
@@ -455,7 +455,7 @@
       "kind": "log10"
     },
     {
-      "name": "diffusion N=1024 σ_y",
+      "name": "diffusion N=1024 \u03c3_y",
       "got": 22.360679774997898,
       "expected": 22.360679774997898,
       "log10_err": 0.0,
@@ -464,7 +464,7 @@
       "kind": "log10"
     },
     {
-      "name": "biharmonic N=128 κ",
+      "name": "biharmonic N=128 \u03ba",
       "got": 268435456.0,
       "expected": 268435456.0,
       "log10_err": 0.0,
@@ -473,7 +473,7 @@
       "kind": "log10"
     },
     {
-      "name": "biharmonic N=128 Γ",
+      "name": "biharmonic N=128 \u0393",
       "got": 100000000.0,
       "expected": 100000000.0,
       "log10_err": 0.0,
@@ -482,7 +482,7 @@
       "kind": "log10"
     },
     {
-      "name": "biharmonic N=128 σ_y",
+      "name": "biharmonic N=128 \u03c3_y",
       "got": 7071.067811865475,
       "expected": 7071.067811865475,
       "log10_err": 0.0,
@@ -491,7 +491,7 @@
       "kind": "log10"
     },
     {
-      "name": "biharmonic N=128 H∞",
+      "name": "biharmonic N=128 H\u221e",
       "got": 103810108.8639365,
       "expected": 100000000.0,
       "log10_err": 0.01623964648028557,
@@ -500,7 +500,7 @@
       "kind": "log10"
     },
     {
-      "name": "biharmonic N=128 H∞ ham-vs-sweep",
+      "name": "biharmonic N=128 H\u221e ham-vs-sweep",
       "got": 0.038475036621093715,
       "expected": 0.0,
       "log10_err": -1.4148209581285474,
@@ -560,10 +560,10 @@
       "kind": "finite"
     },
     {
-      "name": "Burgers N=128 H∞ sweep proj vs full",
-      "got": 6.124887260485313,
+      "name": "Burgers N=128 H\u221e sweep proj vs full",
+      "got": 6.124887251140117,
       "expected": 6.124887252775304,
-      "log10_err": -8.90004323434204,
+      "log10_err": -9.573530647119307,
       "tol": 0.001,
       "passed": true,
       "kind": "rel"
@@ -576,7 +576,7 @@
       "kind": "finite"
     },
     {
-      "name": "Robertson t=1e4 H∞ sweep proj vs full",
+      "name": "Robertson t=1e4 H\u221e sweep proj vs full",
       "got": 22.320914130189962,
       "expected": 22.320914130332774,
       "log10_err": -11.193947322733253,
@@ -659,7 +659,7 @@
     {
       "name": "P0-G Z-left reduction wrong (regression trap)",
       "got": "Z-left DC gain 0.7536",
-      "expected": "≠ -1",
+      "expected": "\u2260 -1",
       "log10_err": 0.0,
       "tol": 0.0,
       "passed": true,
@@ -712,7 +712,7 @@
     },
     {
       "name": "sys.D=1 DAE QZ path is inf",
-      "got": "inf (direct-feedthrough (sys.D≠0, ‖D‖=1.00e+00))",
+      "got": "inf (direct-feedthrough (sys.D\u22600, \u2016D\u2016=1.00e+00))",
       "expected": "inf",
       "log10_err": 0.0,
       "tol": 0.0,
@@ -767,7 +767,7 @@
     {
       "name": "Gamma_proj: metric matters post-projection",
       "got": "M/bare = 0.9627",
-      "expected": "≠ 1",
+      "expected": "\u2260 1",
       "log10_err": 0.0,
       "tol": 0.0,
       "passed": true,
@@ -782,15 +782,5 @@
       "passed": true,
       "kind": "metric"
     }
-  ],
-  "_meta": {
-    "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
-    "git_dirty": true,
-    "bench_module": "bench.run_phase0",
-    "command": "python3 -m bench.run_phase0",
-    "timestamp_utc": "2026-11-20T05:54:52+00:00",
-    "python_version": "3.14.7",
-    "numpy_version": "2.5.4",
-    "scipy_version": "1.18.1"
-  }
+  ]
 }

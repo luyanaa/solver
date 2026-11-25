@@ -47,7 +47,7 @@ C. 验收对照（κ: ±0.5 decade；H∞/Γ/σ_y: ±3 dB；+ DAE 噪声注入 P
                             Burgers N=128 verdict                                                              representation     representation       n/a  None  yes
                           Robertson t=1e4 verdict                                                      stiffness,robustness_A          stiffness       n/a  None  yes
                   Burgers N=128 robustness finite                                                                0.368/0.0612             finite       n/a  None  yes
-              Burgers N=128 H∞ sweep proj vs full                                                           6.124887260485313  6.124887252775304      -8.9 0.001  yes
+              Burgers N=128 H∞ sweep proj vs full                                                           6.124887251140117  6.124887252775304     -9.57 0.001  yes
                 Robertson t=1e4 robustness finite                                                                  61.9/0.223             finite       n/a  None  yes
             Robertson t=1e4 H∞ sweep proj vs full                                                          22.320914130189962 22.320914130332774     -11.2 0.001  yes
                        DAE index-1 sigma_y2 = 1/2                                                                         0.5                0.5         0   0.0  yes

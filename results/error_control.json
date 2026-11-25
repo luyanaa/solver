@@ -1,0 +1,184 @@
+{
+ "kind": "error_control",
+ "meta": {
+  "bench": "bench.run_error_control",
+  "section": "DESIGN.md §6.22",
+  "model": "behavioral: quantize + bounded noise + bias"
+ },
+ "poisson_ir": {
+  "kappa": 67.82742906960381,
+  "u_a": 0.0009765625,
+  "rho_pred": 0.06623772370078497,
+  "e_analog": 0.12695995104189947,
+  "e_final": 0.003079742765833892,
+  "improve": 41.22420627150104,
+  "e_lowres_residual": 0.04257625782177605,
+  "kappa_ill": 61842.32901207003,
+  "rho_ill": 60.39289942584964,
+  "e_ill": 655.621375731303
+ },
+ "diffusion": {
+  "gamma": 0.39478417604357435,
+  "dT": 0.056627978567718236,
+  "e_uncorrected": 0.0032816377118511,
+  "bound_sat": 0.39709632009369134,
+  "coverage": 1.0,
+  "e_corrected_max": 0.0008116524192551438,
+  "eta_mean": 0.0016939986964306475,
+  "steady_bound": 0.0016939986964306475,
+  "n3_residual": 0.0,
+  "n3_error": 1.4142135623730951
+ },
+ "checks": [
+  {
+   "name": "IR 前提：rho_pred=kappa*u_a=0.066 < 1（修正闭环合法）",
+   "value": "kappa=67.8 u_a=9.766e-04",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "模拟核地板：e_analog=1.270e-01 显著大于机器精度（低精度前提成立）",
+   "value": "rel=2.548e-03",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "IR step 0: 收缩率实测=47.19 vs 预测 1/rho=15.10（×3 容差）",
+   "value": "e: 1.270e-01 -> 3.080e-03",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "IR steps 1-3: 稳定在修正解量化地板（无发散，尾部率≈1）",
+   "value": "rates=['0.90', '1.03', '0.95']",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "IR 总改进倍数=41.2 ≥ 20（最终精度高于单个单元地板）",
+   "value": "e_analog=1.270e-01 -> e_final=3.080e-03",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "N1 残差粗量化：可达误差 4.258e-02 比主线 3.080e-03 差 ≥3×（残差精度是 attainable 的瓶颈）",
+   "value": "ratio=13.8",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "N2 病态证书：kappa·u_a=60.4 > 1 ⇒ 提前判死（不许碰运气）",
+   "value": "kappa_ill=61842",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "N2 病态实测：IR 后误差 6.556e+02 未低于起点 6.686e+02（不收敛被证实）",
+   "value": "ratio=0.981",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "分类 diffusion ⇒ contracting（谱横坐标=-0.395<0）",
+   "value": "contracting",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "收缩系统对数范数 μ₂=-0.395<0（任意初始误差单调收缩的上界）",
+   "value": "-0.395",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "分类 纯积分器 ⇒ neutral / λ=+0.5 ⇒ expanding",
+   "value": "neutral / expanding",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "泄漏率/保守率 = 191675821896592 ≫ 1（Γ_proj 看不见的那一路，率可见）",
+   "value": "2.04e-04 vs 1.06e-18",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "调度公式：ΔT=0.0566（λ=0.395, r_max=0.157, e0=1e-03, ε=1e-02）",
+   "value": "s",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "调度单调性：λ×10 ⇒ ΔT×0.89↓；r_max×2 ⇒ ΔT×0.50↓（扰动越强查越勤）",
+   "value": "0.0506 / 0.0285",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "调度公式：e0 ≥ ε ⇒ raise（不许静默给∞间隔）",
+   "value": "raise",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "无校正：实测 0.0033 ≤ 饱和界 r_max/γ=0.397 且 ≈ 偏置预测 0.0033（×2）",
+   "value": "ratio_sat=0.008",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "界覆盖：40/40 窗口 ε_measured ≤ 1.2×ε_predicted（覆盖率=100%）",
+   "value": "mean η=1.694e-03",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "校正后长期误差 max=0.0008 ≪ 无校正饱和 0.3971（×5 至少）",
+   "value": "ratio=0.002",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "长期界 η/(1−ρ)=1.694e-03 与实测 max 误差同量级（×5 内）",
+   "value": "1.694e-03 vs 8.117e-04",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "N3 残差不可见：窗口残差 0.00e+00 ≪ 实际误差 1.41e+00（残差小≠误差小）",
+   "value": "ratio=0.0e+00",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "N3 独立参考可见：offset=1.414 被检出；无参考 ⇒ 如实 detectable=False",
+   "value": "True / False",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "neutral 实测斜率=0.0200 ≈ bias=0.0200（线性累积被证实）",
+   "value": "0.0200",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "neutral 调度退化为预算式：ΔT=(ε−e0)/r_max=0.5000",
+   "value": "0.5000",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "expanding 实测 0.0000 ≤ 指数界 0.0344（有限时窗内成立）",
+   "value": "0.0000",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "expanding 终局：e0≥ε ⇒ raise（扩张系统不许诺无限时窗轨迹精度）",
+   "value": "raise",
+   "ok": true,
+   "kind": "error_control"
+  }
+ ]
+}

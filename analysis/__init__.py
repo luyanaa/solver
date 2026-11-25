@@ -5,6 +5,11 @@
 """
 
 from .descriptor import Descriptor
+from .error_propagation import (PropagationClass, classify_propagation,
+                                 conservation_drift_rate,
+                                 correction_interval, error_recursion_bound,
+                                 finite_time_gain, logarithmic_norm,
+                                 steady_bound)
 from .hinf import hinf_norm
 from .lyapunov import LyapunovResult, solve_generalized_lyapunov
 from .regularity import energy_tail, fourier_metrics, shock_sensor, tail_exponent
@@ -21,6 +26,9 @@ from .slack import HardwareSpec, Slack, evaluate
 
 __all__ = [
     "Descriptor", "LyapunovResult", "solve_generalized_lyapunov",
+    "PropagationClass", "classify_propagation", "finite_time_gain",
+    "logarithmic_norm", "conservation_drift_rate", "correction_interval",
+    "steady_bound", "error_recursion_bound",
     "hinf_norm", "resolvent_peak", "peak_with_projection",
     "tail_exponent", "energy_tail", "fourier_metrics", "shock_sensor",
     "delay_mass_matrix", "skew_descriptor", "skew_report",

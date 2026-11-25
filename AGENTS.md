@@ -36,6 +36,7 @@ Plain Python 3 (stdlib + numpy + scipy + matplotlib). No build step, no packagin
     python3 -m bench.run_p7_netlist            # B1 P7 coefficient graph + behavioral netlist round-trip (per-element a_ii / A,B,C graph / eig reconstruction), ~2 s, 26/26 checks
     python3 -m bench.run_route_contract        # B1 per-edge route contracts (four-verdict + feedback omega_c + physical-unit sensitivity contract), ~2 s, 53/53 checks
     python3 -m bench.run_scaling               # P3 输入缩放契约 (B_v = alpha^-1·S·B; external TF/DC-gain/step round-trip that FAILS on the old B_v=S·B bug), ~2 s, 21/21 checks
+    python3 -m bench.run_error_control         # §6.22 运行时误差控制合同 (Poisson IR 41× 改进 + diffusion 残差驱动 40 窗校正界覆盖 40/40 + N1/N2/N3 负对照: 残差粗量化/病态提前判死/零模态偏移残差不可见), ~5 s, 25/25 checks
     python3 -m bench.run_compiler_e2e          # B1 closeout compiler-chain COMPOSE e2e via the real composition layer lowering/compose.py (run_chain: typed boundary + declared per-stage coordinate domains + F1-F5 closed by construction — projected-carrier scaling re-derivation, basis conjugation with eig/TF invariance, p7 a_tol edge-admission mask shared by contracts and coeff graph), ~35 s, 48/48 checks
     python3 -m twin.spice.extract_b2           # B2 SG13G2 primitive extraction: .noise + corners + mismatch MC(48) + PVT(3T×3V) + joint SS/FF×−40/125 °C + transient step/THD + pre-PEX parasitic probe, fail-closed status (~10–25 min load-dependent, 24 ngspice runs)
     python3 -m bench.run_b2                    # B2 acceptance: fail-closed status + gamma_eff + corner≠MC + CalibratedTwin feed + P(workload) + PVT V_T(T) / transient / parasitic-unit checks, ~2 s, 26/26 checks, reads results/b2_extract.json
@@ -43,7 +44,7 @@ Plain Python 3 (stdlib + numpy + scipy + matplotlib). No build step, no packagin
     python3 -m bench.run_b2_joint              # B2 joint closure: corner × MC × calibration-in-the-loop (uncal/no_track/bg_track/full) on the 3 anchors through compose.run_chain, ~5–10 min, 12/12 checks, results/b2_joint.json
     python3 -m bench.run_all                   # full acceptance: 25 suites sequentially, no failures/skips (2026-11-20: 25/25, 868/868 counted checks, 1324.6 s; run_twin_experiments has no check counter)
 
-**Full-suite acceptance (2026-11-20).** `python3 -m bench.run_all` ran all 25 suites with no failures and no skipped benches in 1324.6 s; 868/868 counted checks passed (`run_twin_experiments` is an experiment runner without a check counter). `results/run_all.json` is the machine-readable record; `python3 -m bench.run_all --check-stale` audits the `_meta` provenance stamps against HEAD.
+**Full-suite acceptance (2026-11-20).** `python3 -m bench.run_all` ran all 25 suites with no failures and no skipped benches in 1324.6 s; 868/868 counted checks passed (`run_twin_experiments` is an experiment runner without a check counter). `results/run_all.json` is the machine-readable record; `python3 -m bench.run_all --check-stale` audits the `_meta` provenance stamps against HEAD. Suite count is now 26: `run_error_control` (§6.22 运行时误差控制合同, 2026-11-26) was added to `BENCHES` after `run_scaling`.
 
 In the Trae agent shell, prefix ngspice with `env -u LD_LIBRARY_PATH`. The agent
 injects a libstdc++ that ngspice cannot load (`GLIBCXX_3.4.32` missing). A normal
