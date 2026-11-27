@@ -1,4 +1,4 @@
-"""§6.22 运行时误差控制合同验收（两条基准 + 三组负对照）。
+"""§6.22 运行时误差控制合同验收（基准 + 负对照 + 约束/ε_J/激波/多激波六轮）。
 
 运行：python3 -m bench.run_error_control   → results/error_control.json
 
@@ -688,21 +688,28 @@ def _central_flux(a, b):
     return 0.25 * (np.asarray(a) ** 2 + np.asarray(b) ** 2)
 
 
-def _fv_riemann_run(uL, uR, n, T, flux, bias, r_noise, seed, cfl=0.45):
+def _fv_riemann_run(uL, uR, n, T, flux, bias, r_noise, seed, cfl=0.45,
+                    u0=None):
     """Riemann 初值的周期 FV Euler 步进 + 逐步**守恒型**硬件注入。
 
     注入模型：bias 需满足 Σbias=0（电流镜失配的保守型口径，slack.py
     P0-D 合同）；噪声逐步零均值化（Σξ=0）——两者都是 KCL 式再分配，
     于是 shared flux 使总质量**精确**守恒（浮点级），B3 的盲区声明
-    才成立：守恒量对误差路径零敏感。返回 (x_center, 采样轨迹 {t: u},
-    实测注入 ‖r‖₁dt 累计——与状态更新用同一次采样，不做独立重抽）。
+    才成立：守恒量对误差路径零敏感。u0 可显式给初值剖面（多态
+    Riemann 用），缺省为 (uL,uR) 二态。返回 (x_center, 采样轨迹
+    {t: u}, 实测注入 ‖r‖₁dt 累计——与状态更新用同一次采样)。
     """
     rng = np.random.default_rng(seed)
     dx = 1.0 / n
     dt = cfl * dx / max(abs(uL), abs(uR), 1e-30)
     nst = int(round(T / dt))
     dt = T / nst
-    u = np.where((np.arange(n) + 0.5) * dx < 0.5, uL, uR)
+    if u0 is None:
+        u = np.where((np.arange(n) + 0.5) * dx < 0.5, uL, uR)
+    else:
+        u = np.array(u0, dtype=float)
+        if u.shape[0] != n:
+            raise ValueError("u0 长度必须等于 n")
     x = (np.arange(n) + 0.5) * dx
     snaps = {}
     inj_l1 = 0.0
@@ -1041,6 +1048,151 @@ def case_shock_dwr():
                                       / max(abs(a["dJ"]), 1e-300)))
 
 
+# ------------------------------------------------------------ 多激波相互作用
+
+def _jump_positions(x, u, thresh=0.05, cluster_cells=4):
+    """剖面里的间断位置：超过 thresh 的降落面，4dx 内聚类为一道激波。
+
+    Euler+Godunov 把激波展宽到 2-4 个 cell（每格降幅可低于单格
+    阈值——实测 n=256 时 (1,0.6) 激波三格各降 ~0.07），阈值必须低、
+    且相邻降落面必须聚类，否则一道激波被计成多跳。稀疏波 fan 是
+    平滑上升（diff>0），不会被误计。
+    """
+    d = np.diff(u)
+    merge_dx = cluster_cells * (x[1] - x[0])
+    out = []
+    for i in np.where(d < -thresh)[0]:
+        frac = (u[i] - (u[i] + u[i + 1]) / 2.0) / (u[i] - u[i + 1])
+        pos = float(x[i] + frac * (x[i + 1] - x[i]))
+        if out and pos - out[-1] < merge_dx:
+            out[-1] = 0.5 * (out[-1] + pos)   # 同一道 smeared 激波的相邻面
+        else:
+            out.append(pos)
+    return out
+
+
+def case_multi_shock():
+    """§6.22 续：多激波相互作用界面态——中间态敏感度穿透合并。
+
+    三态周期 Riemann：u=(1, 0.6, 0) 在 x=(0.3, 0.6)（wrap 面 (0,1)
+    是稀疏波 fan，同 B case）。两道激波：s12=(u1+u2)/2=0.8、
+    s23=(u2+u3)/2=0.3，间距闭合率 = (u1−u3)/2 = 0.5（与 u2 无关），
+    解析合并：t_m = 0.3/0.5 = 0.6、x_m = 0.3+0.8·0.6 = 0.78；合并后
+    单激波 (u1,u3) 以 s13=0.5 前进。
+
+    界面态合同的核心命题：**合并把中间态敏感度永久冻结进位置**——
+        ∂X(T)/∂u2 = t_m/2 = 0.3 ≠ 0
+    而"逐个激波独立线性叠加"的界面模型只看终态剖面的相邻态
+    (u1,u3) ⇒ 预测 ∂X/∂u2 = 0。实测 IC 微扰 u2+ε 的合并位置位移
+    直接否证叠加模型（D2 同款教训的相互作用版）。
+
+    诚实边界：u2 微扰取 IC（真 Riemann 态变更）而非运行时源——
+    运行时源在双激波夹层内有 dwell-time 积累效应（cell 被 shock2
+    吞掉前只积累了部分偏差），是显式界面状态演化的后续内容；
+    L1 收缩仍是标量凸通量口径；三态以上/激波相互作用多次的组合
+    敏感度须显式界面状态演化或离散伴随，不外推。
+    """
+    emit("[case_multi_shock]  双激波合并 / 中间态敏感度穿透 / 叠加失效")
+    u1, u2, u3 = 1.0, 0.6, 0.0
+    x2, x3 = 0.3, 0.6
+    n, T = 256, 0.8
+    dx = 1.0 / n
+    s12 = 0.5 * (u1 + u2)
+    s23 = 0.5 * (u2 + u3)
+    s13 = 0.5 * (u1 + u3)
+    t_m = (x3 - x2) / (s12 - s23)
+    x_m = x2 + s12 * t_m
+
+    def exact_shocks(t):
+        """解析激波位置：合并前两道，合并后一道。"""
+        if t < t_m:
+            return [x2 + s12 * t, x3 + s23 * t]
+        return [x_m + s13 * (t - t_m)]
+
+    def exact_profile(x, t):
+        if t < t_m:
+            return np.where(x < t, x / t,
+                            np.where(x < x2 + s12 * t, u1,
+                                     np.where(x < x3 + s23 * t, u2, u3)))
+            # 注意：fan 右缘速度 = u1 = 1，在 t<t_m 时 fan 区 [0,t]
+        xs = exact_shocks(t)[0]
+        return np.where(x < t, x / t, np.where(x < xs, u1, u3))
+
+    add_check("E1 解析合并：t_m=%.3f、x_m=%.3f（闭合率=(u1−u3)/2=0.5，"
+              "与 u2 无关）" % (t_m, x_m),
+              "s12=%.2f s23=%.2f" % (s12, s23),
+              abs(t_m - 0.6) < 1e-12 and abs(x_m - 0.78) < 1e-12)
+
+    centers = (np.arange(n) + 0.5) * dx
+    u0 = np.where(centers < x2, u1, np.where(centers < x3, u2, u3))
+    x, snaps, _ = _fv_riemann_run(u1, u3, n, T, _godunov_flux,
+                                  np.zeros(n), 0.0, seed=71, u0=u0)
+
+    # E2：合并前两道激波位置（T/4=0.2 < t_m=0.6，快照时刻对齐）
+    t_pre = round(T / 4, 6)
+    u_pre = snaps[t_pre]
+    js_pre = _jump_positions(x, u_pre)
+    ex_pre = exact_shocks(t_pre)
+    ok2 = len(js_pre) == 2 and all(abs(js - ex) <= dx
+                                   for js, ex in zip(js_pre, ex_pre))
+    add_check("E2 合并前双激波（t=%.2f）：实测 %s vs 解析 %s（±1 cell）"
+              % (t_pre, ["%.4f" % v for v in js_pre],
+                 ["%.4f" % v for v in ex_pre]),
+              "n_jumps=%d" % len(js_pre), ok2)
+
+    # E3：合并后单激波位置（T=0.8 > t_m）
+    u_T = snaps[round(T, 6)]
+    js_T = _jump_positions(x, u_T)
+    ex_T = exact_shocks(T)[0]
+    ok1 = len(js_T) == 1 and abs(js_T[0] - ex_T) <= dx
+    add_check("E3 合并后单激波：实测 %.4f vs 解析 %.4f（±1 cell，"
+              "合并后走 s13=%.2f）" % (js_T[0] if js_T else -1, ex_T, s13),
+              "n_jumps=%d" % len(js_T), ok1)
+
+    # E4：中间态敏感度穿透合并（IC 微扰 u2+ε）
+    eps = 2e-3
+    u0_p = np.where(centers < x2, u1,
+                    np.where(centers < x3, u2 + eps, u3))
+    _, snaps_p, _ = _fv_riemann_run(u1, u3, n, T, _godunov_flux,
+                                    np.zeros(n), 0.0, seed=71, u0=u0_p)
+    xs_p = _jump_positions(x, snaps_p[round(T, 6)])
+    dX = xs_p[0] - js_T[0]
+    # 解析敏感度：ds12=ds23=ε/2 ⇒ t_m 不变，x_m 平移 ε·t_m/2，
+    # 合并后 s13 与 u2 无关 ⇒ ∂X/∂u2 = t_m/2 = 0.3
+    pred = t_m / 2 * eps
+    add_check("E4 敏感度穿透：δX=%.3e ≈ (t_m/2)·ε=%.3e（±30%%）"
+              "——中间态敏感度被合并永久保留"
+              % (dX, pred),
+              "dX/eps=%.3f (解析 0.3)" % (dX / eps),
+              dX > 0 and abs(dX - pred) <= 0.3 * pred)
+
+    # E5 叠加模型失效：单激波界面模型只看终态相邻态 (u1,u3) ⇒ δX=0
+    fp_floor = 1e-9
+    add_check("E5 叠加失效：单激波模型预测 δX=0，实测 %.3e ≥ 10³×fp 底"
+              "（相互作用界面态不可省略）" % dX,
+              "failure factor: 预测0 vs 实测%.0e" % dX,
+              abs(dX) >= 1e3 * fp_floor)
+
+    # E6 ε_J 证书：跨合并激波窗口的部分质量 QoI
+    win = (x >= 0.82) & (x <= 0.98)             # 含合并激波，避开 fan 缘 0.8
+    J = lambda uu: float(np.sum(uu[win]) * dx)
+    dJ = J(snaps_p[round(T, 6)]) - J(u_T)
+    interface = (u1 - u3) * dX
+    ec = ErrorControlResult(cls="neutral", n_windows=1, coverage_ratio=1.0,
+                            e_measured_max=abs(dJ),
+                            e_predicted_max=abs(dJ),
+                            qoi_estimate=abs(dJ), qoi_tolerance=1e-3,
+                            qoi_cancellation=None).as_dict()
+    from lowering.budget import _error_control_verdict
+    v, _, dv = _error_control_verdict(ec)
+    add_check("E6 ε_J 证书：δJ=%.3e（界面项占比 %.0f%%）≤ ε_J ⇒ pass"
+              % (abs(dJ), 100 * abs(interface) / max(abs(dJ), 1e-300)),
+              v, v == "pass" and "estimate" in dv)
+
+    return dict(t_m=t_m, x_m=x_m, js_pre=js_pre, js_T=js_T,
+                dX=dX, pred=pred, dJ=dJ)
+
+
 # ---------------------------------------------------------------- main
 
 def main():
@@ -1058,6 +1210,8 @@ def main():
     bur = case_burgers_entropy()
     emit("")
     dwr = case_shock_dwr()
+    emit("")
+    mul = case_multi_shock()
     n_pass = sum(1 for c in _checks if c["ok"])
     emit("")
     emit("%d/%d checks passed" % (n_pass, len(_checks)))
@@ -1073,7 +1227,7 @@ def main():
                              model="behavioral: quantize + bounded noise + bias"),
                    poisson_ir=ir, diffusion=dif, constraint_fabric=con,
                    adjoint_qoi=adj, burgers=bur, shock_dwr=dwr,
-                   checks=_checks)
+                   multi_shock=mul, checks=_checks)
     with open(os.path.join(out_dir, "error_control.json"), "w") as fh:
         json.dump(payload, fh, indent=1, ensure_ascii=False)
     return n_pass == len(_checks)

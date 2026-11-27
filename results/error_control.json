@@ -126,6 +126,20 @@
   "dJ_plateau": -1.2204931354453663e-07,
   "interface_share": 1.0499498402795118
  },
+ "multi_shock": {
+  "t_m": 0.6,
+  "x_m": 0.78,
+  "js_pre": [
+   0.4619140625,
+   0.6611328125
+  ],
+  "js_T": [
+   0.88330078125
+  ],
+  "dX": 0.00048828125,
+  "pred": 0.0006,
+  "dJ": 0.0006015624999945665
+ },
  "checks": [
   {
    "name": "IR 前提：rho_pred=kappa*u_a=0.066 < 1（修正闭环合法）",
@@ -519,6 +533,42 @@
   },
   {
    "name": "D6 ε_J 证书：激波 QoI δJ=6.250e-06 ≤ ε_J=1e-3 ⇒ pass（estimate 口径）",
+   "value": "pass",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "E1 解析合并：t_m=0.600、x_m=0.780（闭合率=(u1−u3)/2=0.5，与 u2 无关）",
+   "value": "s12=0.80 s23=0.30",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "E2 合并前双激波（t=0.20）：实测 ['0.4619', '0.6611'] vs 解析 ['0.4600', '0.6600']（±1 cell）",
+   "value": "n_jumps=2",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "E3 合并后单激波：实测 0.8833 vs 解析 0.8800（±1 cell，合并后走 s13=0.50）",
+   "value": "n_jumps=1",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "E4 敏感度穿透：δX=4.883e-04 ≈ (t_m/2)·ε=6.000e-04（±30%）——中间态敏感度被合并永久保留",
+   "value": "dX/eps=0.244 (解析 0.3)",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "E5 叠加失效：单激波模型预测 δX=0，实测 4.883e-04 ≥ 10³×fp 底（相互作用界面态不可省略）",
+   "value": "failure factor: 预测0 vs 实测5e-04",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "E6 ε_J 证书：δJ=6.016e-04（界面项占比 81%）≤ ε_J ⇒ pass",
    "value": "pass",
    "ok": true,
    "kind": "error_control"
