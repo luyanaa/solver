@@ -57,6 +57,22 @@ It needs `results/gf180_extract.json` (G1) for its macro column:
 3. **T9 m-scaling DNL.** INL(FS) −2.19 % vs the λ mechanism's −1.19 %; the extra
    ~1 % is m=16-finger vs 16-single-finger layout difference. Re-measure after layout.
 
+## Trim DAC spec (P0-E, §6.29 — the numbers C1 must build to)
+
+- Two-stage DAC, `range_rel = ±35 %`, `coarse_bits = 4`, `fine_bits = 8`,
+  `overlap = 0.25` -> step **171 ppm**, 1024+ codes, worst code residual **step/2**.
+  ±25 % clamps real chips (6v0 needs ±34.4 %); the 25 % fine/coarse overlap is
+  what absorbs a −25 % fine-gain error (without it the seam opens a 0.25-LSB hole
+  and the worst residual grows 16×).
+- Readout: **12 bit** (LSB 171 ppm, σ = 112 ppm with the 100 ppm floor). realized
+  residual 122 ppm = 1.22× the continuous-trim bound; 10 bit gives 296 ppm (3.0×)
+  and only 1.7σ of margin against the 373 ppm Burgers edge tolerance.
+- Knobs: **two on both rails** (self/gain). One joint knob leaves a 6.12 % (3v3) /
+  16.02 % (6v0) structural residual — 9 of 16 3v3 points exceed a 1 % workload.
+- Retry budget **k_max = 2** (a 3 % actuator error leaves 6300 ppm after one pass;
+  k = 3 is a bit-exact no-op). VERIFY must be a **QoI-space** gate
+  (`tol/(2·Γmax)` per axis), not a coefficient-space one.
+
 ## Two process-data sources that disagree
 
 Target variant is **gf180mcuD**, not A: D's magic tech puts `mimcap` on metal4,

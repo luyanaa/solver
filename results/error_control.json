@@ -1362,11 +1362,11 @@
     }
   ],
   "_meta": {
-    "git_sha": "3abc8a40a8213e5275d44e9606c20e3ba1865fc1",
+    "git_sha": "78e02aef3b4cf35accc5855ad6fd16f841510990",
     "git_dirty": true,
     "bench_module": "bench.run_error_control",
     "command": "python3 -m bench.run_error_control",
-    "timestamp_utc": "2026-11-27T14:02:48+00:00",
+    "timestamp_utc": "2026-11-27T16:29:30+00:00",
     "python_version": "3.14.7",
     "numpy_version": "2.5.4",
     "scipy_version": "1.18.1"

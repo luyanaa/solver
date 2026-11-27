@@ -5,3 +5,6 @@ results/pdk_stage/
 
 # 参考文献 PDF（open-access 本地副本，不入库——ref/README.md 记 DOI/链接）
 ref/pdfs/
+
+# run_all 的原始日志（机器相关、可重生成；run_all.json 才是记录）
+results/.run_all_logs/

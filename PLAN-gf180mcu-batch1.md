@@ -95,7 +95,7 @@ B0-gf180 冻结修订（§7.5 一段） ──► G1 提取 ──► G2 macromo
 | P0-A | PDK 目标 pin 到 **gf180mcuD**（MIM 合法性：batch-1 的 `cap_mim_2f0_m4m5_noshield` 只在 D 合法） | **完成** | §6.25「变体锁定」，A/D 重跑逐字段零差异、D 五层 stack |
 | P0-D | T7 线电容进网表（10 段 π 梯 80.4 fF），把「1 mm 线不可见」限界为「串联 R 不可见、并联 C 收 7.3 %」 | **完成** | §6.27(c)，极点 63.3 → 58.6 kHz（−7.31 % vs 预测 −7.33 %） |
 | P0-C | T5 的 G/C 矩阵直测：g=0.6929 mS、C_ii=1.0603 pF、τ₁=150.8 ns；×2.58 税分解为口径 1.955 × 结电容 1.043 × 栅过驱动 1.27–1.31，**无寄生项** | **完成** | §6.28（19/19，`bench/run_gf180_t5gc.py`） |
-| P0-E | trim 闭环重算 P 表：`k_full=1+MEAS_FLOOR` 是理想上界，需 coarse+fine 两级 DAC + 48 draws → ADC 量化 → 有限 trim 码 → held-out 验证 | 待办 | §6.26 P 表的下一版 |
+| P0-E | trim 闭环重算 P 表：两级 DAC（±35 %、4+6/4+8）+ 48 draws → 读数噪声 → 有限码 → 执行器增益 → **QoI 空间**的 held-out verify | **完成** | §6.29（20/20，`bench/run_gf180_trim.py`）：范围 ±35 %、两轨两旋钮、12 位 DAC/ADC、k_max=2；burgers 1 % 列 0.000（系数 verify）→ **0.79–0.96**（QoI verify + 12 位），推翻 §6.26「3v3 一根旋钮够」 |
 | P0-B/G4 | T1 四旋钮（`a_ii`/leakage/`b_ports`/`STATE_WR`）+ supervisor 拓扑选型 | 待办 | G4 |
 
 架构提案（State Cell → PAB-4 → Island → 64-state die）登记为 **B0-gf180 v2 候选**，不进本批冻结；与现有 compiler 的三条接口映射（四类连接 ↔ `Wire`/`coeff_edge`/`coupling.single_source`/`Buffer+route_contract`；`multiplier: continuous/shareable: conditional` 进 route-contract；MODE/TRIM/STATE_WR/EPOCH + shadow commit ↔ `twin/calib.py` FSM + `lowering/p7.py`，`ε_switch` 挂 `correction.py` 的 CorrectionOperator）已在评审回复中给出。

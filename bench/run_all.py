@@ -104,6 +104,7 @@ BENCHES = [
     ("run_gf180_joint",           "gf180_joint.json",        None,                          "long"),
     ("run_gf180_batch1",          "gf180_batch1.json",       None,                          True),
     ("run_gf180_t5gc",            "gf180_t5gc.json",         None,                          True),
+    ("run_gf180_trim",            "gf180_trim.json",         None,                          "long"),
 ]
 
 # Opt-in only: real ngspice extraction (~70 s per PDK / ~10 min for b2).
