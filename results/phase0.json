@@ -250,9 +250,9 @@
         "stable": false
       },
       "lyapunov": {
-        "sigma_y": 3.632305572629207,
-        "sigma_y2": 13.19364377295319,
-        "rel_residual": 6.096876552690342e-14,
+        "sigma_y": 3.6323055726292695,
+        "sigma_y2": 13.193643772953644,
+        "rel_residual": 6.756431596076319e-14,
         "h2_finite": true,
         "n_stable": 127,
         "method": "qz"
@@ -268,7 +268,7 @@
         "omega": 1.7082024275461442e-06,
         "sigma_min": 0.0,
         "method": "sweep",
-        "Gamma_proj": 36.76324216704421,
+        "Gamma_proj": 36.76324217000237,
         "n_proj": 127,
         "projected": true
       },
@@ -277,7 +277,7 @@
           "noise": NaN,
           "bandwidth": 2.7186886014554377e-06,
           "stiffness": 0.0022217215781996065,
-          "robustness_A": 0.36763242167044213,
+          "robustness_A": 0.3676324217000237,
           "robustness_io": 0.06124887252775304,
           "routing": NaN,
           "representation": 2.5733990126494986
@@ -296,9 +296,9 @@
       },
       "projection": {
         "n": 127,
-        "hinf": 6.124893092287779,
+        "hinf": 6.124893101632984,
         "method": "hamiltonian",
-        "sweep": 6.124887251140117
+        "sweep": 6.124887260485313
       },
       "regularity": {
         "p": 1.4385004176399947,
@@ -561,9 +561,9 @@
     },
     {
       "name": "Burgers N=128 H∞ sweep proj vs full",
-      "got": 6.124887251140117,
+      "got": 6.124887260485313,
       "expected": 6.124887252775304,
-      "log10_err": -9.573530647119307,
+      "log10_err": -8.90004323434204,
       "tol": 0.001,
       "passed": true,
       "kind": "rel"
@@ -784,13 +784,13 @@
     }
   ],
   "_meta": {
-    "git_sha": "be94f64b39dcfaf84821608166c9313d92877908",
+    "git_sha": "95f79c27f1bfef51c1a4b38df339ff116adfd263",
     "git_dirty": true,
     "bench_module": "bench.run_phase0",
     "command": "python3 -m bench.run_phase0",
-    "timestamp_utc": "2026-11-27T02:25:32+00:00",
-    "python_version": "3.13.5",
-    "numpy_version": "2.2.4",
-    "scipy_version": "1.15.3"
+    "timestamp_utc": "2026-11-27T06:45:07+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
   }
 }

@@ -177,7 +177,7 @@
       },
       {
         "name": "dense: round-trip eig error < 1e-8",
-        "got": "3.71e-16",
+        "got": "1.30e-15",
         "expected": "<= 1e-8",
         "passed": true,
         "kind": "p7net-dense",
@@ -208,7 +208,7 @@
     ],
     "summary": {
       "n_edges": 12,
-      "eig_err": 3.7056147840781007e-16,
+      "eig_err": 1.296965174427335e-15,
       "alpha": 1.9894367886486934e-06
     }
   },
@@ -281,13 +281,13 @@
     "n_passed": 26
   },
   "_meta": {
-    "git_sha": "be94f64b39dcfaf84821608166c9313d92877908",
+    "git_sha": "95f79c27f1bfef51c1a4b38df339ff116adfd263",
     "git_dirty": true,
     "bench_module": "bench.run_p7_netlist",
     "command": "python3 -m bench.run_p7_netlist",
-    "timestamp_utc": "2026-11-27T02:50:14+00:00",
-    "python_version": "3.13.5",
-    "numpy_version": "2.2.4",
-    "scipy_version": "1.15.3"
+    "timestamp_utc": "2026-11-27T06:56:35+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
   }
 }

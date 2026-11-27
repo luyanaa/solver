@@ -890,13 +890,13 @@
     "n_passed": 75
   },
   "_meta": {
-    "git_sha": "be94f64b39dcfaf84821608166c9313d92877908",
+    "git_sha": "95f79c27f1bfef51c1a4b38df339ff116adfd263",
     "git_dirty": true,
     "bench_module": "bench.run_route",
     "command": "python3 -m bench.run_route",
-    "timestamp_utc": "2026-11-27T02:26:49+00:00",
-    "python_version": "3.13.5",
-    "numpy_version": "2.2.4",
-    "scipy_version": "1.15.3"
+    "timestamp_utc": "2026-11-27T06:45:30+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
   }
 }

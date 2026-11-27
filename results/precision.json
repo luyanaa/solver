@@ -1,0 +1,136 @@
+{
+  "kind": "precision",
+  "meta": {
+    "bench": "bench.run_precision",
+    "section": "DESIGN.md §6.24",
+    "model": "sensitivity-proportional bit allocation"
+  },
+  "bits": {
+    "bits": [
+      16,
+      15,
+      13,
+      11,
+      10
+    ],
+    "total": 65,
+    "achieved": 3.53485107421875e-05,
+    "uniform": {
+      "uniform_for_eps": 14,
+      "total_for_eps": 70,
+      "uniform_at_equal_bound": 15,
+      "total_at_equal_bound": 75,
+      "total_at_max": 80
+    }
+  },
+  "energy": {
+    "ratio_variable": 0.334375,
+    "ratio_fixed": 1.0
+  },
+  "constraints": {
+    "load": 65000.0,
+    "opt_fs": 1000.0
+  },
+  "quantization": {
+    "mc_max": 2.926564468434586e-05,
+    "bound": 3.53485107421875e-05,
+    "alt_bound": 4.5739746093750004e-05
+  },
+  "checks": [
+    {
+      "name": "P1 位宽表 = [16, 15, 13, 11, 10]（总 65 bit）；统一 max-bit 基线 80 bit",
+      "detail": "65 vs 80",
+      "ok": true
+    },
+    {
+      "name": "P2 量化上界 ΣK_i/2^{b_i+1}=3.535e-05 ≤ ε=1.0e-04（可行的诚实口径）",
+      "detail": "no over-promise",
+      "ok": true
+    },
+    {
+      "name": "P3 均匀对照：满足 ε 的最小均匀 14×5=70 bit；与差分等界 15×5=75 bit；max-bit=80",
+      "detail": "65 < 70/75/80",
+      "ok": true
+    },
+    {
+      "name": "P4 单调性：K=(0.1,1,10) ⇒ b=[9, 13, 16]（灵敏度高的位宽不低）",
+      "detail": "monotone",
+      "ok": true
+    },
+    {
+      "name": "P5 ε 收紧到 1e-6：achieved=3.53e-05 > ε ⇒ feasible=False（不许诺）",
+      "detail": "flag, not promise",
+      "ok": true
+    },
+    {
+      "name": "P6 budget 锚：b=[15, 14, 12, 10, 10]（总 61），achieved=6.53e-05 ≤ ε",
+      "detail": "solve from ε",
+      "ok": true
+    },
+    {
+      "name": "E1 可变精度转换器：差分/统一能耗 = 0.334（省 3.0×）",
+      "detail": "Walden E∝2^b",
+      "ok": true
+    },
+    {
+      "name": "E2 固定精度转换器：比值 = 1.000（不省电，只省链路）",
+      "detail": "honest: no phantom saving",
+      "ok": true
+    },
+    {
+      "name": "E3 位宽和 81% of 80 ⇒ 采样能耗同比例（是）",
+      "detail": "energy tracks bits",
+      "ok": true
+    },
+    {
+      "name": "L1 deadline 采样：fs=1000 Hz，链路负载 65000 bps ≤ 70 kbps ⇒ 可行=True",
+      "detail": "65 kbps @ 1 kHz",
+      "ok": true
+    },
+    {
+      "name": "L2 链路容量 50 kbps < 65 kbit/s ⇒ infeasible（原因：link load 65000.0 bps > capacity 50.0 bps）",
+      "detail": "capacity constraint",
+      "ok": true
+    },
+    {
+      "name": "L3 最小能耗搜索：fs=1000 Hz（=1/T）为最优，E=1.1e+08",
+      "detail": "fs monotone in energy",
+      "ok": true
+    },
+    {
+      "name": "L4 容量 30 kbps 与 deadline 冲突 ⇒ 无可行点（no (fs, bits) point satisfies eps/link/deadline simultaneously）",
+      "detail": "no silent promise",
+      "ok": true
+    },
+    {
+      "name": "L5 ε=1e-6、max=16 ⇒ achieved=1.64e+08，无可行点 ⇒ infeasible",
+      "detail": "budget vs bit limit",
+      "ok": true
+    },
+    {
+      "name": "Q1 5000 次量化抽样 max|δJ|=2.927e-05 ≤ 上界 ΣK_i/2^{b_i+1}=3.535e-05",
+      "detail": "bound holds",
+      "ok": true
+    },
+    {
+      "name": "Q2 抽样均值 7.545e-06 ≈ sqrt(2/π)·sqrt(Σa²/3)=7.342e-06（独立均匀误差）",
+      "detail": "consistency",
+      "ok": true
+    },
+    {
+      "name": "Q3 反向再分配（从 K=0.011 挪 2 bit 给 K=1）⇒ 上界 4.574e-05 > 3.535e-05（灵敏度排序不可颠倒）",
+      "detail": "allocation must follow K",
+      "ok": true
+    }
+  ],
+  "_meta": {
+    "git_sha": "95f79c27f1bfef51c1a4b38df339ff116adfd263",
+    "git_dirty": true,
+    "bench_module": "bench.run_precision",
+    "command": "python3 -m bench.run_precision",
+    "timestamp_utc": "2026-11-27T06:57:37+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
+  }
+}

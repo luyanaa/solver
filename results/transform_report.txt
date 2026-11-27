@@ -75,12 +75,12 @@ none  -            1.0        1.0           -         1.00e+00
 quantity                Haar       CDF53    
 ----------------------  ---------  ---------
 isometry before         2.266e-02  6.512e-01
-isometry after          2.903e-15  3.202e-15
-PR after                3.175e-16  3.398e-16
+isometry after          3.461e-15  3.699e-15
+PR after                3.199e-16  3.296e-16
 adjoint before          2.266e-02  6.935e-01
-adjoint after           2.894e-15  3.187e-15
+adjoint after           3.449e-15  3.697e-15
 naive left isometry     0.032      -        
-left calibration after  3.026e-15  -        
+left calibration after  3.416e-15  -        
 cond(G_T)               1.094      18.649   
 noise gain              1.0231     2.9499   
 
@@ -171,12 +171,12 @@ r_attack/r_release  infeasible  max crossings  mean crossings  mass drift  max Î
 
 4.5E Gram calibration
 [PASS] Haar isometry before: 2.266e-02 (threshold >0.5%)
-[PASS] Haar isometry after: 2.903e-15 (threshold <0.5%)
-[PASS] Haar PR after: 3.175e-16 (threshold <0.2%)
+[PASS] Haar isometry after: 3.461e-15 (threshold <0.5%)
+[PASS] Haar PR after: 3.199e-16 (threshold <0.2%)
 [PASS] Haar noise gain: 1.0231 (threshold <1.05)
-[PASS] Haar adjoint after: 2.894e-15 (threshold <0.5%)
+[PASS] Haar adjoint after: 3.449e-15 (threshold <0.5%)
 [PASS] naive left fails: 0.032 (threshold >0.01)
-[PASS] left calibration after: 3.026e-15 (threshold <0.5%)
-[PASS] CDF adjoint reduced: 6.935e-01 -> 3.187e-15 (threshold >10x)
+[PASS] left calibration after: 3.416e-15 (threshold <0.5%)
+[PASS] CDF adjoint reduced: 6.935e-01 -> 3.697e-15 (threshold >10x)
 
 RESULT: 56/56 checks passed

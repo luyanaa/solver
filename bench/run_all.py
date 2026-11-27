@@ -95,6 +95,8 @@ BENCHES = [
     ("run_scaling",               "scaling.json",            None,                          False),
     ("run_error_control",         "error_control.json",      "error_control_report.txt",    False),
     ("run_compiler_e2e",          "compiler_e2e.json",       "compiler_e2e_report.txt",     False),
+    ("run_composition",           "composition.json",        "composition_report.txt",      False),
+    ("run_precision",             "precision.json",          "precision_report.txt",        False),
     ("run_b2",                    "b2.json",                 None,                          False),
     ("run_b2_behavioral",         "b2_behavioral.json",      None,                          False),
     ("run_b2_joint",              "b2_joint.json",           None,                          "long"),

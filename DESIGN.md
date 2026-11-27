@@ -998,7 +998,7 @@ Fail-closed B2 extension（`extract_b2.py`、`results/b2_extract.json` 的 `stat
 5. **标定环买到什么**：`uncal → no_track` 买"工艺角 + 静态失配"（27 °C 全部恢复）；`no_track → bg_track` 买"温度漂移"（−40/125 °C 的失败基本消失，残余 = 1 °C 刷新粒度 × 温度行程）；`bg_track → full` 买"刷新残差 + 工作点漂移"的上界。三列之差就是 §6.20 标定环的预算，`full` 列是 bracket，不是实测量。
 6. **偏置门优先于模型**：tt_125/ff_p125 的 P=0 不是"模型预测失败"，而是固定偏置网络失效；要先换偏置（或降 Vgs）再谈这一点的角点通过率。
 
-**全仓验收（2026-11-27 刷新）**：`python3 -m bench.run_all` 顺序跑完 **26 个套件**，无失败、无跳过，**2176.5 s**；计入 check 计数器的 21 个套件 **886/886** 项全部通过（无计数器套件：`run_twin_experiments`、`run_scaling`、`run_b2`、`run_b2_behavioral`、`run_b2_joint`）。`run_error_control` 109/109（§6.22 全部十轮合同）纳入全量回归；`git_dirty=True`（本轮改动在跑回归时尚未提交）。记录在 `results/run_all.json`。前次历史记录：2026-11-20，25 套件、1324.6 s、868/868。
+**全仓验收（2026-11-27 末次刷新）**：`python3 -m bench.run_all` 顺序跑完 **28 个套件**，无失败、无跳过，**1033.6 s**；计入 check 计数器的 23 个套件 **987/987** 项全部通过（无计数器套件：`run_twin_experiments`、`run_scaling`、`run_b2`、`run_b2_behavioral`、`run_b2_joint`）。`run_error_control` 172/172（§6.22 全部十轮合同 + 残差双界 + 三种可部署校正器 + P7 物理端口图 + P6∧P7 联合判决）、`run_composition` 21/21、`run_precision` 17/17 均纳入；`run_phase0` 与 `run_reduce`/`run_route` 的计数随本轮扩充为 45/44/75。`git_dirty=True`（本轮改动在跑回归时尚未提交）。记录在 `results/run_all.json`。前次历史记录：2026-11-26，26 套件、2176.5 s、886/886；2026-11-20，25 套件、1324.6 s、868/868。
 
 ### 6.22 运行时误差控制合同：残差驱动校正与有限时间传播（`analysis/error_propagation.py`、`twin/residual.py`、`bench/run_error_control.py`、`results/error_control.json`）
 
@@ -1007,7 +1007,7 @@ Fail-closed B2 extension（`extract_b2.py`、`results/b2_extract.json` 的 `stat
 **合同四件套（已验收，25/25，行为级模型口径：量化+有界噪声+偏置注入，非 SPICE 级）：**
 
 1. **分类 + 有限时间增益**：`classify_propagation` 同时报谱横坐标、μ₂ 对数范数与 ‖Φ(T,0)‖（能量度量可选）——非正规瞬态不能被谱判据覆盖（shear Γ=5.12 的既有案例），合同必须用 Φ 而非特征值。实测：diffusion N=24 ⇒ contracting（λ₁=−0.395）、纯积分器 ⇒ neutral、λ=+0.5 ⇒ expanding；保守 vs 泄漏 dA 的漂移率比 1.06e-18 vs 2.04e-4（Γ_proj 看不见的那一路，率可见）。
-2. **残差 = 注入积累**：窗口积分残差 R_k = x̂(t₁)−x̂(t₀)−∫F(x̂)dt 恰好等于 ∫r dt，直接给出误差递推 ε_{k+1}=G_k ε_k+η_k 的**新增预算 η_k=‖R_k‖**（`twin/residual.py` 只测量；传播在 `error_propagation.py`）。40 窗校正循环（每窗扣除 R_k）：界覆盖 40/40（ε_measured ≤ 1.2×ε_predicted，覆盖率是验收标准，不是误差均值），校正后长期误差 max 8.1e-4 vs 无校正饱和界 r_max/γ=0.397（×488），与长期界 η/(1−ρ)=1.69e-3 同量级。
+2. **残差 = 注入积累**：窗口积分残差 R_k = x̂(t₁)−x̂(t₀)−∫F(x̂)dt 恰好等于 ∫r dt，直接给出误差递推 ε_{k+1}=G_k ε_k+η_k 的**新增预算 η_k=‖R_k‖**（`twin/residual.py` 只测量；传播在 `error_propagation.py`）。40 窗校正循环（每窗扣除 R_k）：界覆盖 40/40（ε_measured ≤ 1.2×ε_predicted，覆盖率是验收标准，不是误差均值），校正后长期误差 max 8.1e-4 vs 无校正饱和界 r_max/γ=0.397（×488），与长期界 η/(1−ρ)=1.69e-3 同量级。**（2026-11-27 更新：该段的 q 由真实误差反推、属离线 characterization；现改为三种可部署校正器 + 模型 q + 声明 ζ + held-out 验证，数字方案 max ε⁺=5.58e-5、长期界 1.12e-3、held-out 覆盖 100%，见本节末「四缺陷收口」。）**
 3. **校正调度公式**（替代定时校准）：一次校正后残余 e₀、区间扰动上界 r_max、不稳定率 λ，要求区间末 ≤ε ⇒ ΔT ≤ (1/λ)·ln((ε+r_max/λ)/(e₀+r_max/λ))；λ=0 退化为预算式 (ε−e₀)/r_max。实测单调性：λ×10 ⇒ ΔT×0.89，r_max×2 ⇒ ΔT×0.50（扰动越强查越勤）；e₀≥ε 必须 raise（不许静默给∞间隔）。
 4. **Poisson iterative refinement**（低精度核能被修正到高于单核精度的存在性证明）：量化 Richardson 核（u_a=2^-10，n=12 五点 Laplacian，κ=67.8）地板 e=0.127；+float64 残差 +低精度修正解，4 步 IR 后 e=3.08e-3（改进 41×），step-0 收缩率实测 47.2 vs 预测 1/(κ·u_a)=15.1（×3 容差内）。
 
@@ -1088,7 +1088,7 @@ analysis/adjoint.nonlinear_adjoint_backward 沿参考轨迹反向 RK4 积分 λ�
 **Euler/NS 外推的必要探针（2026-11-27，路线图④完成，bench case_entropy_system，100/100）：**
 
 对称双曲 u_t+A u_x=0（A=[[0,1],[1,0]]，熵 E=½(a²+b²)）的**半离散熵产生率** dE/dt=−Σ u_i·(F_{i+1/2}−F_{i−1/2})：Tadmor 熵守恒通量实测 0（等式）、Roe/upwind −3（不等式成立）、反耗散 +3（违反被负对照抓住）。**检验半离散率而非 Euler 前向长时间能量**——中心通量+Euler 前向本身无条件不稳定，长时间比较给假阳性（实测翻车入库）。诚实标注：必要探针，不是 Euler/NS 本身；可压缩 Euler 的 entropy-stable DG + 激波界面态仍是 TODO。
-**混沌统计合同（2026-11-27，路线图⑤完成，bench case_chaos_contract，109/109）：**
+**混沌统计合同（2026-11-27，路线图⑤完成，bench case_chaos_contract，当轮全套 109/109）：**
 
 Lorenz (σ=10,ρ=28,β=8/3) 的有限时间 Lyapunov 指数由**双轨发散斜率**实测 λ=0.718（切线重整化口径实测高估到 6.8，一个量级——翻车入库，只报能复现的数）；δ0=1e-8 越过 ε=1 的实测时窗 t=27.8 ≈ ln(ε/δ0)/λ=25.7（±30%）；T=60 时轨迹误差 31.5 ≫ QoI 容限 0.1——逐轨迹预测在时窗外失效。
 
@@ -1111,6 +1111,13 @@ Lorenz (σ=10,ρ=28,β=8/3) 的有限时间 Lyapunov 指数由**双轨发散斜�
 - **审查8 混沌双合同**：trajectory contract 的预测界 δ0·e^{λt}（吸引子尺度封顶）实测覆盖 99%，不再拿 e_measured=e_predicted 恒等自证；statistical contract 用 8 成员独立参考系综（不同 IC）+ burn-in T<20 + 自相关 τ_int=5.9 ⇒ N_eff=33.7 + 置信区间，QoI 差 0.005 ≤ CI 0.126；λ_fit 明确标注为样本内估计、非最坏上界；证书引入 coverage_threshold 字段（默认 1.0，统计合同可显式 0.95）。
 - **审查9 run_chain error-aware**：run_chain 接受 error_control / require_error_control / qoi / eps_J / T_horizon / device_sensitivities，端到端传给 evaluate_sys 与 generate_config；回归确认证书挂动态证据 pass、p7 出 dJ-allocation 预算、缺 evidence 且 workload 要求 ⇒ rejected。
 
+**四缺陷收口与可部署化（2026-11-27，`bench/run_error_control.py` 172/172）：**
+
+- **A 残差积分（数值 bug）**：`twin/residual.py` 改为区间残差 `r̄_i=(x_{i+1}−x_i)/h_i−(F_i+F_{i+1})/2`，L1/传播界覆盖全部 N−1 个区间（旧 `trapezoid(..., t[:-1])` 漏最后一个区间）。最小反例 A=0、t=[0,1]、x=[0,1] ⇒ L1=1、propagated=1、η=1（旧版三者全 0、quad_error=0）。字段拆 `estimated_bound` 与 `certified_bound`：认证需要 μ₂(A)（或 M 度量）+ Lipschitz/包络声明，线性用 ‖Φ(T,t_{i+1})‖·e^{max(μ,0)h}——右端点直接乘 e^{μh} 在 μ<0 时给**假下界**（实测 certified 0.8646 < estimated 0.8655），故指数取 max(μ,0)；非线性需 μ+包络，未声明 ⇒ `certified_bound=None`、eta 标 "ESTIMATED (not certified)"。实测：r_max/μ=0.8647 覆盖 |e(2)|=0.3996 且 ≤L1=2.0008；节点全零而区间内 sin 振荡（采样盲区）⇒ 估计 L1=0、声明包络 ρ=25.133 ⇒ 认证界 25.133 覆盖（盲区只有声明带宽能兜住）。
+- **B 校正算子去真解依赖**：旧 `xh=x_true_end+noise` 与 `q_k=‖e⁺‖/‖e⁻‖` 只配离线 characterization。`analysis/correction.py` 给出三种**可部署**校正器（apply 无真解入口，只吃窗口采样/可信观测）：数字短窗重算（expm(Ah)x₀ 或 RK4）、残差+correction solve（区间 r̄ 与 expm(A(T−t_mid)) 传播加权扣除；负对照 signed 为 x−R）、稀疏观测 observer（L=Cᵀ(CCᵀ)⁻¹，观测必须是独立可信的守恒量/边界/复本，**不能**用硬件自身输出）。q 由模型给：digital/resprop=‖expm(Ah)‖₂=0.978、observer=‖(I−LC)Φ_h‖₂=0.965（全部<1）；ζ 由硬件地板声明（DAC LSB 1e-5·√N + 传感器噪声 3σ/√N）。递推 `ε⁺_{k+1} ≤ q·G·ε⁺_k + h_η·η_k + ζ`（η 不被 q 乘：校正器作用在窗口末，不撤销窗口内已发生的注入传播；h_η=0 / 0.297 / 1.0）。held-out（未参与拟合的种子 + 额定 workload，3×40 窗）覆盖率 100%/100%/100%，最坏比 0.63；数字方案长期界 η̄/(1−ρ)=1.12e-3 罩住实测 max ε⁺=5.58e-5（≤100× 松度），比无校正饱和 0.397 低 7×10³；观测器只观测守恒量 ⇒ 快模态不被校正，误差 1.41e-3 比数字方案大 25×（代价如实记录）；signed 负对照 q≥1000 ⇒ ρ≥977，不承诺任何长期界。
+- **C P7 解析伴随权重 + 物理端口图**：`qoi_adjoint_weights` 在对角实负/E=I 时走闭式 w_i=|c_i|(1−e^{−γ_iT})/γ_i（**不再**解析生成采样点再用 65 点梯形积分）；E≠I 走 descriptor 伴随并夹 ∫|λ_i|/|E_ii|；非对角采样附 γ_maxΔt 自查（>1 ⇒ reliable=False + flag，不静默当可信）。实测刚性 diag(−1,−20,−400,−3000)：闭式与解析式 rel=0，而 65 点梯形把最快模态权重放大 **23×**（1/γ=3.3e-4 的尖峰被 0.5Δt=7.8e-3 替身），p7 路径 γ_maxΔt=785 时逐分量偏差 **294×**——旧路径会系统性错分预算。`analysis/portgraph.py` 把 `device_sensitivities` 从 state-name 映射升级为物理端口图：gm_c / c_bank / gm_edge / offset / DAC / ADC / route_tau 各自 K_rel=|∂J/∂lnθ|（route τ 属相位/时延轴，K_rel=nan，单独给 τ_budget 与 phase_budget，不混进 ppm）。耦合 8 态系统实测 68 个端口、7 类；同节点 gm 20.51 vs offset 0.00625（不再共用 ∫|λ|dt）；端口分配恒等式 ΣK_rel·e=ε_J 精确（残差 0.0）。
+- **D P6∧P7 联合判决**：`run_chain` 末尾 `joint_verdict(p6_feasible, p7_deliverable)`——final = P6 feasible ∧ P7 deliverable，写回 `cert.p7` 并进 `ChainResult.final_feasible/final_status/final_reasons`；P7 不可交付（证书 rejected、逐元素或逐物理端口预算 < 测量底）不再只留 `cfg.flags`。真值表：T∧T=True、T∧F=False（reason 带 P7）、F∧T=False（partial——P6 未全轴评估时不许诺 feasible）。实测同一 8 态耦合系统：ε_J=50 ⇒ 38/68 端口 < 100 ppm 底、deliverability=False；ε_J=5e5 ⇒ 全部可交付；两种情形 P6 都只到 "no violation on evaluated axes"，故 final 分别是 rejected(P7) 与 partial。
+
 **剩余路线（2026-11-27 收口，按依赖序；已完成项见上六轮）：**
 
 1. ~~**运行时源的 dwell-time 界面演化**~~（✅ 2026-11-27 已实现：`evolve_shock_interfaces` 界面状态演化器 + 值带注源 FV 对账，dwell 衰减因子实测 0.26 ≈ 解析 0.3，见上 dwell-time 小节）
@@ -1119,9 +1126,36 @@ Lorenz (σ=10,ρ=28,β=8/3) 的有限时间 Lyapunov 指数由**双轨发散斜�
 4. ~~**Euler/NS 外推**~~（✅ 2026-11-27 完成必要探针：对称双曲半离散熵产生率 EC=0/upwind=−3/反耗散=+3；可压缩 Euler 的 entropy-stable DG + 激波界面态仍是后续，已诚实标注）
 5. ~~**混沌系统合同**~~（✅ 2026-11-27 已实现：双轨发散 λ=0.718、时窗 27.8≈25.7、QoI(z 均值) 误差 0.007 vs 轨迹误差 31.5、expanding+finite_horizon 证书，见上混沌小节）
 6. ~~**ε_J 分配进 P7 校准计划**~~（✅ 2026-11-27 已实现：`p7.allocate_element_budgets` + `generate_config(qoi=, eps_J=, T_horizon=)`，见上 ε_J 分配小节；剩余子项：激波邻域界面敏感度联动需界面态演化先行）
-7. **全量回归**：`bench.run_all` 重跑（套件数 26），刷新 2026-11-20 的全仓验收记录。
+7. **全量回归**（已完成，2026-11-27 末次）：`bench.run_all` 28 套件、987/987、1033.6 s，刷新全仓验收记录（`results/run_all.json`）。
 
 ---
+
+### 6.23 组合误差合同：从单系统到任意多岛（`analysis/composition.py`、`bench/run_composition.py`、`results/composition.json`，21/21）
+
+单系统误差控制（§6.22）的组合版：m 个计算岛
+
+    ẋ_i = F_i(x_i) + Σ_{j≠i} F_ij(x_i, x_j),   D⁺ε_i ≤ μ_i ε_i + Σ g_ij ε_j + d_i
+
+堆成 Metzler 矩阵 H（对角 μ_i、非对角 g_ij=‖M_i^{1/2}A_ijM_j^{-1/2}‖₂）。**H Hurwitz ⇒ limsup ε ⪯ −H⁻¹d**；离散窗口 ε_{k+1} ⪯ K_k ε_k + η_k，固定 K、ρ(K)<1 ⇒ ε_∞ ⪯ (I−K)⁻¹η。
+
+- **岛级界与积分对账**：3 岛（μ=−1/−2/−3，耦合 0.10/0.05/0.02，d=1e-3/2e-3/5e-4）⇒ −H⁻¹d=[0.0011, 0.001004, 0.000174]，与 ε'=Hε+d 的 RK4 limsup 逐分量相等（超出 −5.4e-20，界轨迹单调）；d=0 ⇒ 界为 0。组合界对全系统稳态的松度实测 1.24×（3 岛 6 态、链式耦合）——非空洞但保守。
+- **离散窗口**：K=[[0.60,0.10],[0.05,0.70]]、η=[1e-3,2e-3] ⇒ ρ=0.737，(I−K)⁻¹η=[0.004348,0.007391]，迭代终值逐位相同。
+- **时变拓扑的陷阱（本节最重要的负结果）**：K₁=[[0,0],[2,0]]、K₂=[[0,2],[0,0]] 各自 ρ=0，但乘积 ρ(K₂K₁)=4，交替 10 步把 ε 从 1 放大到 1.02e3。逐窗口 ρ(K_k)<1 **不能**判稳；共同加权范数（∃w>0: K_k w ≤ (1−δ)w，LP 判定）正确拒绝（不可行），收缩序列则有共同度量（δ=0.263）。周期窗口版给 cycle_ρ，ρ≥1 ⇒ bound=None（不许诺），ρ<1 才给 (I−ΠK)⁻¹ηΣ。
+- **守恒系统不能 small-gain 判死**：周期 diffusion Cẋ=−L_Gx（N=8 环）单节点分岛 ⇒ H=−2I+adjacency 或 −I+cycle：谱横坐标 **0**、ρ(H)=2 或 1，small-gain 拒绝；但 passivity（M A+AᵀM=−2L ⪯ 0，岛耗散指数 −2/−1）通过，守恒+投影收缩（μ_⊥=−0.5858=−λ₂(L)，定向环 −0.2929）通过。**ρ(K)=1 不等于不可实现**——这是 solver 相对普通分布式模拟架构的理论特色：e=e_mean+e_⊥，ė_mean=r_leak（守恒漂移单独记账），ė_⊥=A_⊥e_⊥+r_⊥。
+- **两轴分离的实测**：零模态扰动 ‖e_mean(T)‖/‖e_mean(0)‖=1.000000（永不衰减），补空间扰动 0.2459 ≤ e^{−0.5858·2}=0.3099；常值泄漏 r_leak=1e-4 只进均值漂移（不进 ε_⊥）。功率平衡：零模态 x=1 上局部耗散 −16.00 + 耦合注入 +16.00 = 0（随机 x 上总存储 −42.63 < 0）。
+- **诚实边界**：μ_i 是 logarithmic norm（保守），岛划分、g_ij 的度量口径由调用方声明；非线性岛需局部 Lipschitz 上界，本节只做线性/行为级；共同度量判据用对角 W（LP），非对角度量会更强但未实现；AMR 的拓扑变化按"周期序列"处理，事件驱动的非周期序列需要逐步乘积界。
+
+### 6.24 精度作为编译优化变量（`analysis/precision.py`、`bench/run_precision.py`、`results/precision.json`，17/17）
+
+P7 原来只回答"给定 ε_J，每个器件要多准"。反过来：给定器件能力、ADC/DAC 成本与网络容量，选择精度、分区与速度：
+
+    min_θ E_solve(θ)  s.t. ε_global≤ε_x, ε_J≤ε_J,req, T_solve≤T_deadline, A≤A_die, R_link≤R_capacity
+
+- **边界位宽按灵敏度分配**：量化上界 |δJ| ≤ Σ_i K_i·V_FS,i/2^{b_i+1}，K_i=|∂J/∂lnθ_i|（§6.22 的物理端口图直接喂进来）。等贡献连续解 b_i=log2(nK_i/ε_J)−1；整数化两种锚：`max`（最高灵敏度边界取 max_bits，其余按 round(log2 K_i/K_max) 偏移）与 `budget`（由 ε_J 直接解）。示例 K=(1, 0.515, 0.113, 0.0311, 0.011)、ε=1e-4、max=16、min=10 ⇒ **16/15/13/11/10 = 65 bit**，量化上界 3.535e-5 ≤ 1e-4；统一 max-bit 基线 5×16=**80 bit**，满足同一 ε 的最小均匀 14×5=**70 bit**，与差分等界的均匀 15×5=**75 bit**。ε 收紧到 1e-6 ⇒ 上界 3.53e-5 > ε，`feasible=False`（不许诺）。
+- **能耗**：Walden 型 E_conv∝E0·2^b。可变精度转换器下差分/统一 = **0.334（省 3.0×）**；固定精度转换器（仍按 max_bits 工作）比值 **1.000**——降位宽不省电，只省链路，代码如实返回，不假装省电。
+- **约束**：deadline 给 fs≥1/T（1 kHz），链路负载 65 kbit/s；容量 70 kbps 可行、50 kbps 拒绝；30 kbps 与 deadline 冲突 ⇒ 无可行点（不静默许诺）；最小能耗搜索落在 fs=1/T。
+- **量化蒙特卡洛**：5000 组独立均匀量化误差 max|δJ|=2.927e-5 ≤ 确定性上界 3.535e-5；均值 7.545e-6 ≈ sqrt(2/π)·sqrt(Σa²/3)=7.342e-6（5% 内）。反向再分配（从 K=0.011 的边界挪 2 bit 给 K=1）使上界升到 4.574e-5——位宽排序必须跟灵敏度，不能拍脑袋。
+- **诚实边界**：K_i 是线性化（沿标称轨迹）灵敏度，大扰动/饱和不在内；能耗模型是 Walden 型占位（真实 SAR ADC 的 ENOB-能耗曲线是 B3 表征项）；容量约束只算原始位率，不含协议/前向纠错开销；面积约束留接口未建模。
 
 ## 7. 分阶段落地（每阶段都有可证伪的验收）
 
@@ -1560,7 +1594,7 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                                     # MC 覆盖 100/100）/ Euler/NS 必要探针
                                     # （半离散熵产生 0/−3/+3）/ 混沌统计合同
                                     # （λ=0.718、时窗 27.8≈25.7、QoI 0.007 vs
-                                    # 轨迹误差 31.5、finite_horizon 证书）（109/109）
+                                    # 轨迹误差 31.5、finite_horizon 证书）（当轮 109/109）
         ✅ run_stagea.py            # A4/A8/A9 收尾：shear 换基判定（Γ 5.12 /
                                     # scaled / eigvec=1+κ(Φ)=20 税）/ VdP
                                     # （不稳定工点 ⇒ 回退，reduce=poly）/

@@ -1,1170 +1,1374 @@
 {
- "kind": "error_control",
- "meta": {
-  "bench": "bench.run_error_control",
-  "section": "DESIGN.md §6.22",
-  "model": "behavioral: quantize + bounded noise + bias"
- },
- "poisson_ir": {
-  "kappa": 67.82742906960381,
-  "u_a": 0.0009765625,
-  "rho_pred": 0.06623772370078497,
-  "e_analog": 0.12695995104189947,
-  "e_final": 0.003079742765833892,
-  "improve": 41.22420627150104,
-  "e_lowres_residual": 0.04257625782177605,
-  "kappa_ill": 61842.32901207003,
-  "rho_ill": 60.39289942584964,
-  "e_ill": 655.621375731303
- },
- "diffusion": {
-  "gamma": 0.39478417604357435,
-  "dT": 0.056627978567718236,
-  "e_uncorrected": 0.0032816377118511,
-  "bound_sat": 0.39709632009369134,
-  "coverage": 1.0,
-  "e_corrected_max": 0.0008116524192551438,
-  "eta_mean": 0.004744507823921169,
-  "steady_bound": 0.0008838877053542633,
-  "n3_residual": 0.0,
-  "n3_error": 1.4142135623730951
- },
- "constraint_fabric": {
-  "cons_verdict": "PASS",
-  "tau_relax": 2.9365297894371567e-11,
-  "cls": "contracting",
-  "rA": {
-   "e_analog": 2.8659878299569032e-06,
-   "e_final": 2.1192915812145397e-07,
-   "ir_improve": 13.523329471796615,
-   "e_history": [
-    2.8659878299569032e-06,
-    2.9221389001430466e-07,
-    2.2859334667571042e-07,
-    2.1721320621266666e-07,
-    2.1192915812145397e-07
-   ],
-   "kcl_residual_analog": 1.697374862994109e-07,
-   "kcl_residual_final": 1.5964972053761922e-07,
-   "kcl_residual_reduction": 1.063186867648883,
-   "mismatch_floor_inf": 3.0400565887486547e-09,
-   "mismatch_bound_inf": 1.7923215173310621e-07,
-   "mismatch_err": 6.874525598656271e-09,
-   "mismatch_within_bound": true,
-   "final_below_floor": false,
-   "dI_norm": 2.006625576393241e-09,
-   "u_a": 0.0009765625,
-   "u_meas": 0.000244140625,
-   "eps_dev": 0.001
+  "kind": "error_control",
+  "meta": {
+    "bench": "bench.run_error_control",
+    "section": "DESIGN.md §6.22",
+    "model": "behavioral: quantize + bounded noise + bias"
   },
-  "rB": {
-   "e_analog": 3.323335644063903e-06,
-   "e_final": 5.4587519849871786e-08,
-   "ir_improve": 60.88086898257768,
-   "e_history": [
-    3.323335644063903e-06,
-    1.531929342212818e-07,
-    6.964894946701673e-08,
-    5.855490169804629e-08,
-    5.4587519849871786e-08
-   ],
-   "kcl_residual_analog": 2.3639936510346237e-07,
-   "kcl_residual_final": 5.99958698953823e-08,
-   "kcl_residual_reduction": 3.940260646535893,
-   "mismatch_floor_inf": 3.0400565887486545e-07,
-   "mismatch_bound_inf": 1.792321517331062e-05,
-   "mismatch_err": 6.874525598656273e-07,
-   "mismatch_within_bound": true,
-   "final_below_floor": true,
-   "dI_norm": 2.006625576393241e-07,
-   "u_a": 0.000244140625,
-   "u_meas": 0.000244140625,
-   "eps_dev": 0.1
+  "poisson_ir": {
+    "kappa": 67.82742906960381,
+    "u_a": 0.0009765625,
+    "rho_pred": 0.06623772370078497,
+    "e_analog": 0.12695995104189947,
+    "e_final": 0.003079742765833892,
+    "improve": 41.22420627150104,
+    "e_lowres_residual": 0.04257625782177605,
+    "kappa_ill": 61842.32901207003,
+    "rho_ill": 60.39289942584964,
+    "e_ill": 655.621375731303
   },
-  "schedule": {
-   "dT": 9.99,
-   "predicted_residual": 0.001,
-   "calib_consistent": true,
-   "loop_gain": 0.0,
-   "drift_rate": 0.0001,
-   "calib_floor": 1e-06
+  "diffusion": {
+    "gamma": 0.39478417604357435,
+    "dT": 0.056627978567718236,
+    "e_uncorrected": 0.0032816377118511,
+    "bound_sat": 0.39709632009369134,
+    "correction": {
+      "digital recompute": {
+        "q": 0.9779030112519511,
+        "q_identifiable": 0.0,
+        "n_resolvable": 156,
+        "n": 156,
+        "zeta": 4.898979485566356e-05,
+        "eta_factor": 0.0,
+        "rho": 0.9562942994156336,
+        "steady": 0.0011209017176397188,
+        "coverage": 1.0,
+        "coverage_minus": 1.0,
+        "worst_ratio": 0.6296982293396657,
+        "max_err": 5.575390908456322e-05,
+        "max_pred": 0.000933302850795832,
+        "source": "model: ||expm(A h)||_2"
+      },
+      "residual + correction solve": {
+        "q": 0.9779030112519511,
+        "q_identifiable": 0.0,
+        "n_resolvable": 156,
+        "n": 156,
+        "zeta": 4.898979485566356e-05,
+        "eta_factor": 0.2981088439542862,
+        "rho": 0.9562942994156336,
+        "steady": 0.3200999007200638,
+        "coverage": 1.0,
+        "coverage_minus": 1.0,
+        "worst_ratio": 0.0025821281512842086,
+        "max_err": 5.57545136877059e-05,
+        "max_pred": 0.030701843378994682,
+        "source": "model: ||expm(A h)||_2, quadrature factor 0.298"
+      },
+      "sparse observer (mass)": {
+        "q": 0.9648023841271685,
+        "q_identifiable": 1.119644730455841,
+        "n_resolvable": 80,
+        "n": 80,
+        "zeta": 0.00011022703842524302,
+        "eta_factor": 1.0,
+        "rho": 0.9434831567010197,
+        "steady": 0.8294111228782283,
+        "coverage": 1.0,
+        "coverage_minus": 1.0,
+        "worst_ratio": 0.018345972568804183,
+        "max_err": 0.001413941980057491,
+        "max_pred": 0.08364257422858079,
+        "source": "model: ||(I-LC)expm(A h)||_2 (L = LS projection)"
+      },
+      "signed subtraction (control)": {
+        "q": 1000.0,
+        "q_identifiable": 1.261745538337677,
+        "n_resolvable": 82,
+        "n": 82,
+        "zeta": 4.898979485566356e-05,
+        "eta_factor": 1.0,
+        "rho": 977.9030112519512,
+        "steady": Infinity,
+        "coverage": 0.0,
+        "coverage_minus": 1.0,
+        "worst_ratio": Infinity,
+        "max_err": 0.04350377585191766,
+        "max_pred": Infinity,
+        "source": "no certified q (negative control)"
+      }
+    },
+    "n3_residual": 0.0,
+    "n3_error": 1.4142135623730951
+  },
+  "constraint_fabric": {
+    "cons_verdict": "PASS",
+    "tau_relax": 2.9365297894371567e-11,
+    "cls": "contracting",
+    "rA": {
+      "e_analog": 2.8659878299569032e-06,
+      "e_final": 2.1192915812145397e-07,
+      "ir_improve": 13.523329471796615,
+      "e_history": [
+        2.8659878299569032e-06,
+        2.9221389001430466e-07,
+        2.2859334667571042e-07,
+        2.1721320621266666e-07,
+        2.1192915812145397e-07
+      ],
+      "kcl_residual_analog": 1.697374862994109e-07,
+      "kcl_residual_final": 1.5964972053761922e-07,
+      "kcl_residual_reduction": 1.063186867648883,
+      "mismatch_floor_inf": 3.0400565887486547e-09,
+      "mismatch_bound_inf": 1.7923215173310621e-07,
+      "mismatch_err": 6.874525598656271e-09,
+      "mismatch_within_bound": true,
+      "final_below_floor": false,
+      "dI_norm": 2.006625576393241e-09,
+      "u_a": 0.0009765625,
+      "u_meas": 0.000244140625,
+      "eps_dev": 0.001
+    },
+    "rB": {
+      "e_analog": 3.323335644063903e-06,
+      "e_final": 5.4587519849871786e-08,
+      "ir_improve": 60.88086898257768,
+      "e_history": [
+        3.323335644063903e-06,
+        1.531929342212818e-07,
+        6.964894946701673e-08,
+        5.855490169804629e-08,
+        5.4587519849871786e-08
+      ],
+      "kcl_residual_analog": 2.3639936510346237e-07,
+      "kcl_residual_final": 5.99958698953823e-08,
+      "kcl_residual_reduction": 3.940260646535893,
+      "mismatch_floor_inf": 3.0400565887486545e-07,
+      "mismatch_bound_inf": 1.792321517331062e-05,
+      "mismatch_err": 6.874525598656273e-07,
+      "mismatch_within_bound": true,
+      "final_below_floor": true,
+      "dI_norm": 2.006625576393241e-07,
+      "u_a": 0.000244140625,
+      "u_meas": 0.000244140625,
+      "eps_dev": 0.1
+    },
+    "schedule": {
+      "dT": 9.99,
+      "predicted_residual": 0.001,
+      "calib_consistent": true,
+      "loop_gain": 0.0,
+      "drift_rate": 0.0001,
+      "calib_floor": 1e-06
+    }
+  },
+  "adjoint_qoi": {
+    "w": [
+      0.2952699750849632,
+      0.20195475260092122,
+      0.14796680240904994,
+      0.11466108925338317,
+      0.09282156711757514,
+      0.07769411620076118,
+      0.06671084419082934,
+      0.0029208531425167343
+    ],
+    "dJ_hi": 0.001264244985133487,
+    "dJ_lo": 1.2475018069206182e-05,
+    "cancellation": 1.0,
+    "eps_J_pass": true
+  },
+  "burgers": {
+    "tv_godunov": 1.9999999897826506,
+    "tv_central": 33.26858636568533,
+    "l1_godunov": 0.016318328111253774,
+    "l1_central": 0.2227294393414867,
+    "l1_T": 0.00039145569105851957,
+    "bound": 0.0010590404634113852,
+    "dx_s": 0.0007812499999999556,
+    "dT": 0.1616161616161616,
+    "mass_err": 5.551115123125783e-17
+  },
+  "shock_dwr": {
+    "xs_clean": 0.7006015417224343,
+    "dx_s": 6.5621865017462255e-06,
+    "pred": 6.818325877534636e-05,
+    "dJ_shock": 6.249999999999312e-06,
+    "dJ_ur": 0.0,
+    "dJ_plateau": -1.2204931354453663e-07,
+    "interface_share": 1.0499498402795118
+  },
+  "multi_shock": {
+    "t_m": 0.6,
+    "x_m": 0.78,
+    "js_pre": [
+      0.4619140625,
+      0.6611328125
+    ],
+    "js_T": [
+      0.88330078125
+    ],
+    "dX": 0.00048828125,
+    "pred": 0.0006,
+    "dJ": 0.0006015624999945665
+  },
+  "epsj_alloc": {
+    "identity": 5.684341886080802e-14,
+    "b_hi": 241.20278074584263,
+    "b_lo": 1067.5916325915616,
+    "n_flag_p7": 3
+  },
+  "runtime_dwell": {
+    "dX_fv": 0.0001564290607998231,
+    "dX_model": 0.0001405007014014803,
+    "dX_ic": 0.0006015624992133928,
+    "ratio": 0.26003911290114634,
+    "dJ_rt": 0.00015642977885318293,
+    "dJ_ic": 0.0006015624999945665
+  },
+  "descriptor_adjoint": {
+    "dJ_true": 0.00015532113157700562,
+    "est_descriptor": 0.00015443266084270215,
+    "est_naive": 0.0002982619636391017,
+    "rel_descriptor": 0.005720218010792601,
+    "rel_naive": 0.9202922397666694
+  },
+  "nonlinear_dwr": {
+    "dJ_true": 0.0007642918363499618,
+    "estimate": 0.0007644973710224882,
+    "rel": 0.0002689217164845873,
+    "order": 3.8764032354024778,
+    "cancellation": 1.8157257862425347e-05,
+    "coverage": 1.0,
+    "rel_big": 0.06802423951888982
+  },
+  "entropy_system": {
+    "E0": 0.5,
+    "rate_ec": -0.0,
+    "rate_up": -3.0,
+    "rate_bad": 3.0,
+    "u_min_up": 3.4329730160322324e-09,
+    "rel_ec": -0.0,
+    "rel_up": -0.00038545401434483443
+  },
+  "chaos": {
+    "lam": 0.7178363170542339,
+    "t_cross": 27.800000000000004,
+    "t_pred": 25.661394257042932,
+    "qoi_err": 0.004600259573948518,
+    "ci_total": 0.12570225980959118,
+    "tau_int": 5.94729887722383,
+    "n_eff": 33.71278359119433,
+    "traj_coverage": 0.9916805324459235,
+    "traj_error": 31.541611876689146
+  },
+  "residual_semantics": {
+    "signed": 0.00019990453792761986,
+    "l1": 2.000832209113157,
+    "propagated": 0.8654653105392643,
+    "e_true": 0.3998090758555718,
+    "eta_closed": 0.8646647167633873,
+    "recursion": 1.3685120539468798
+  },
+  "residual_quadrature": {
+    "single": 1.0,
+    "certified": 0.8654653105392643,
+    "blind": 0.0,
+    "blind_cert": 25.132741228718345
+  },
+  "certificate_hardening": {
+    "rejected": 7,
+    "status": "rejected"
+  },
+  "device_ports": {
+    "K": {
+      "integrator_offset": 1.264257579087133,
+      "gm_mismatch": 1.1635629508677239,
+      "cap_mismatch": 0.9188028911407233
+    },
+    "identity": 500.0,
+    "ratio": 0.5,
+    "n_infeasible": 8
+  },
+  "five_types": {
+    "types": {
+      "contractive": "contractive",
+      "asymptotically stable": "asymptotically stable",
+      "semistable": "semistable",
+      "polynomially growing": "polynomially growing",
+      "expanding": "expanding"
+    },
+    "mu2": 48.99999999999999,
+    "muM": -0.5
+  },
+  "descriptor_robustness": {
+    "ratio": 3.2877468730909435e+27
+  },
+  "interface_lifecycle": {
+    "merges": 1,
+    "ids": [
+      "m0",
+      "C"
+    ],
+    "sources": [
+      "rC"
+    ]
+  },
+  "error_aware_chain": {
+    "verdict": "pass",
+    "budget_source": "dJ-allocation",
+    "missing_status": "rejected"
+  },
+  "p7_physics": {
+    "closed_form_rel": 0.0,
+    "trap_dev": 21.99301710402074,
+    "kinds": [
+      "adc",
+      "c_bank",
+      "dac",
+      "gm_c",
+      "gm_edge",
+      "offset",
+      "route_tau"
+    ],
+    "n_ports": 68,
+    "tight_ok": false,
+    "loose_ok": true,
+    "final_tight": "rejected: P6 feasibility not established (partial or infeasible certificate); P7: 8/9 per-element budgets below measurement floor; P7: 38/68 physical-port budgets below floor",
+    "final_loose": "partial (P6 not fully established; P7 deliverable)"
+  },
+  "checks": [
+    {
+      "name": "IR 前提：rho_pred=kappa*u_a=0.066 < 1（修正闭环合法）",
+      "value": "kappa=67.8 u_a=9.766e-04",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "模拟核地板：e_analog=1.270e-01 显著大于机器精度（低精度前提成立）",
+      "value": "rel=2.548e-03",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "IR step 0: 收缩率实测=47.19 vs 预测 1/rho=15.10（×3 容差）",
+      "value": "e: 1.270e-01 -> 3.080e-03",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "IR steps 1-3: 稳定在修正解量化地板（无发散，尾部率≈1）",
+      "value": "rates=['0.90', '1.03', '0.95']",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "IR 总改进倍数=41.2 ≥ 20（最终精度高于单个单元地板）",
+      "value": "e_analog=1.270e-01 -> e_final=3.080e-03",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "N1 残差粗量化：可达误差 4.258e-02 比主线 3.080e-03 差 ≥3×（残差精度是 attainable 的瓶颈）",
+      "value": "ratio=13.8",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "N2 病态证书：kappa·u_a=60.4 > 1 ⇒ 提前判死（不许碰运气）",
+      "value": "kappa_ill=61842",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "N2 病态实测：IR 后误差 6.556e+02 未低于起点 6.686e+02（不收敛被证实）",
+      "value": "ratio=0.981",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "分类 diffusion ⇒ contracting（谱横坐标=-0.395<0）",
+      "value": "contracting",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "收缩系统对数范数 μ₂=-0.395<0（任意初始误差单调收缩的上界）",
+      "value": "-0.395",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "分类 纯积分器 ⇒ neutral / λ=+0.5 ⇒ expanding",
+      "value": "neutral / expanding",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "泄漏率/保守率 = 191675821896592 ≫ 1（Γ_proj 看不见的那一路，率可见）",
+      "value": "2.04e-04 vs 1.06e-18",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "调度公式：ΔT=0.0566（λ=0.395, r_max=0.157, e0=1e-03, ε=1e-02）",
+      "value": "s",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "调度单调性：λ×10 ⇒ ΔT×0.89↓；r_max×2 ⇒ ΔT×0.50↓（扰动越强查越勤）",
+      "value": "0.0506 / 0.0285",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "调度公式：e0 ≥ ε ⇒ raise（不许静默给∞间隔）",
+      "value": "raise",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "无校正：实测 0.0033 ≤ 饱和界 r_max/γ=0.397 且 ≈ 偏置预测 0.0033（×2）",
+      "value": "ratio_sat=0.008",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "B1 q 由模型给出（不读真解）：digital=0.978、resprop=0.978、observer=0.965 全部 <1",
+      "value": "signed 无认证 q=1000.00",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "B2 held-out 覆盖（未参与拟合的 workload）：digital 100%、resprop 100%、observer 100%（最坏比 0.63）",
+      "value": "真解只在评估里出现",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "B3 负对照 signed：q=1000.00 > 1 ⇒ ρ=977.90，无长期界（不许诺）",
+      "value": "x−R 不是传播加权扣除",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "B4 digital 长期界 η̄/(1−ρ)=1.12e-03 罩住实测 max ε⁺=5.58e-05（≤100× 松度）",
+      "value": "η̄=4.90e-05, ρ=0.956",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "B5 稀疏观测的代价：observer max ε⁺=1.41e-03 比 digital 5.58e-05 大 ≥10×（只观测守恒量 ⇒ 快模态误差不被校正）",
+      "value": "q 观测 0.965 vs 0.978",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "B6 校正前界覆盖：digital 120/120 窗口 ε⁻ ≤ 1.2×ε⁻_pred",
+      "value": "100%",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "B7 校正后长期误差 max=5.58e-05 ≪ 无校正饱和 3.97e-01（×5 至少）",
+      "value": "ratio=1.40e-04",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "N3 残差不可见：窗口残差 0.00e+00 ≪ 实际误差 1.41e+00（残差小≠误差小）",
+      "value": "ratio=0.0e+00",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "N3 独立参考可见：offset=1.414 被检出；无参考 ⇒ 如实 detectable=False",
+      "value": "True / False",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "neutral 实测斜率=0.0200 ≈ bias=0.0200（线性累积被证实）",
+      "value": "0.0200",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "neutral 调度退化为预算式：ΔT=(ε−e0)/r_max=0.5000",
+      "value": "0.5000",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "expanding 实测 0.0000 ≤ 指数界 0.0344（有限时窗内成立）",
+      "value": "0.0000",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "expanding 终局：e0≥ε ⇒ raise（扩张系统不许诺无限时窗轨迹精度）",
+      "value": "raise",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "T10 前级事实：verdict=PASS（非 SINGULAR），τ_relax=2.937e-11 s",
+      "value": "kappa_G=116.5",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "C1 约束网分类 ⇒ contracting（μ₂=-3.41e+10<0，τ_relax 内检查）",
+      "value": "contracting",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "C2-A 量化主导：IR 改进 13.5× ≥10（e 2.866e-06→2.119e-07）",
+      "value": "kcl_res=1.596e-07",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "C2-A mismatch 分量被 bound 覆盖（保守 sup 范数）",
+      "value": "6.875e-09 ≤ 1.792e-07",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "C2-B mismatch 可见：e_analog 3.323e-06 ≥ 5×地板 3.040e-07",
+      "value": "ratio=10.9",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "C2-B 自校准：IR 后 5.459e-08 **低于** mismatch 地板 3.040e-07（KCL 残差暴露 δI，修正解扣除）",
+      "value": "improve=60.9×",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "C3 调度：ΔT=9.99 s，calib 语义对账 residual=1.000e-03 ≤ ε",
+      "value": "consistent=True",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "C3 地板 ≥ ε ⇒ raise（调度无解不许静默）",
+      "value": "raise",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "证书聚合：合法覆盖证据 ⇒ pass",
+      "value": "pass",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "证书聚合：覆盖 0.9<1 ⇒ rejected（界未罩住实测）",
+      "value": "rejected",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "证书聚合：expanding 无 finite_horizon ⇒ rejected",
+      "value": "rejected",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "证书聚合：畸形证据 ⇒ rejected（不冒充可行）",
+      "value": "rejected",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "evaluate_sys 转发：error_control 进 items（verdict=pass）",
+      "value": "cert.error_control=True",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "证书聚合：纯 IR 静态事实 ⇒ pass 但声明非动态判决",
+      "value": "pass",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "A1 终端条件：λ(T)=c（伴随场构造正确）",
+      "value": "max dev=0.00e+00",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "A1 权重排序：w ∝ 1/γ（慢模态主导），w_high/w_low=101.1",
+      "value": "w=[0.295, 0.202, 0.148, 0.115, 0.093, 0.078, 0.067, 0.003]",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "A2 恒等式（纯 bias）：δJ₁=2.140e-03 vs 实测 2.141e-03，相对误差 0.0% < 5%",
+      "value": "cancellation=1.00",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "A2 恒等式（bias+noise）：偏差 2.309e-06 ≤ 0.3×Σ|贡献|=2.094e-03",
+      "value": "δJ₁=2.094e-03 actual=2.096e-03",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "A3 精度分配：同范数 bias 的 δJ 比 101.3× ≈ w 比 101.1×（×2.5 内）",
+      "value": "δJ_hi=1.264e-03 δJ_lo=1.248e-05",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "A4 双轨：δJ=1.250e-05 < ε_J=1e-04（QoI 合同通过）而 ε_global=2.499e-04 > ε_J（场失真只能靠全局轨兜住）",
+      "value": "budget 节省：节点 7 免校正",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "A4 反面：高 w 节点同范数 bias ⇒ δJ=1.264e-03 > ε_J（必须校正）",
+      "value": "dJ_hi/dJ_lo=101×",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "证书聚合：ε_J 声明且 δJ ≤ ε_J ⇒ pass（cancellation 进 detail）",
+      "value": "pass",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "证书聚合：δJ > ε_J ⇒ rejected（ε_J 合同违反）",
+      "value": "rejected",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "证书聚合：声明 ε_J 但缺 δJ ⇒ rejected（malformed）",
+      "value": "rejected",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "B1 Godunov TVD：TV(u_T)=2.0000 ≤ TV(u_0)=2.0000（周期双跳，熵产生以 TV 不增为代理实测）",
+      "value": "xs=0.6992",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "B1 激波位置：干净运行误差 7.812e-04 ≤ 1 cell=7.812e-03",
+      "value": "xs=0.6992 exact=0.7000",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "B1 中心通量负对照（T=0.10）：TV=33.269 > TV0（熵产生为正被 TV 抓住）且 L1 2.227e-01 > Godunov 1.200e-02",
+      "value": "ratio=18.6",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "B2 L1 收缩覆盖：注入诱发 ‖u_hw−u_clean‖₁=0.0004 ≤ 实测 ∫‖r‖₁dx=0.0011（Crandall–Tartar，激波不放大注入）",
+      "value": "ratio=0.37",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "B2 双项分解：总 L1=0.0165 ≤ ν_num 基线 0.0163 + 注入项 0.0004（三角不等式，两项预算分立）",
+      "value": "基线占比=99%",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "B2 中性累积：后半程斜率 8.397e-04 ≈ 全程 9.786e-04（×2 内，线性非指数）",
+      "value": "L1(T/2)=0.0002 L1(T)=0.0004",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "B2 调度：预算式 ΔT=0.162 s（r_max=0.006，ε₁=1e-03），预报注入量 r_max·ΔT=0.001 ≥ 实测注入诱发 L1=0.0004",
+      "value": "s",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "B3 质量精确守恒（shared flux + 守恒注入）：误差 5.55e-17 ~ 浮点级，而注入诱发 ‖e‖₁=3.915e-04 持续累积——守恒量对误差路径零敏感",
+      "value": "观测极限：位置只能靠锚点",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "B3 激波位置被合同罩住：δx_s=0.0008 ≤ 1 cell + 1.5·‖e‖₁/(uL−uR)=0.0084（FV 间断的位置观测极限 = 1 cell）",
+      "value": "xs=0.6992 exact=0.7000",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "证书聚合：激波 L1 中性合同 ⇒ pass（预算式调度进 detail）",
+      "value": "pass",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "D0 子 cell 估计器：|xs_clean−exact|=6.02e-04 ≤ dx/4=1.95e-03",
+      "value": "xs=0.70060",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "D1 界面项主导：|Δu·δx_s|=6.562e-06 ≥ 5×|光滑余项|=3.122e-07（激波问题的 δJ 主体是位移项，Δu=解析跳变 uL−uR）",
+      "value": "dJ=6.250e-06 dx_s=6.562e-06",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "D2 跳变条件上界：δx_s 实测 6.562e-06 ≤ 光滑预测 ∫(δuL+δuR)/2 dt=6.818e-05（实测低 10×：FV 位置响应被 cell 平均簿记量化/粘滞——光滑跳变条件只作保守上界，界面项用同一估计器的相对位移）",
+      "value": "jump: ds=(δuL+δuR)/2",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "D4 镜像偶极：δx_s 反号同幅（-6.570e-06 vs -6.562e-06，×1.5 内）",
+      "value": "pred=-6.817e-05",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "D3 空间分配：激波邻域 |δJ|=6.250e-06 ≥ 100× uR 远场 0.000e+00（扰动传播速度 ~0，T 内到不了激波）",
+      "value": "dx_s(d)=0.000e+00",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "D5 plateau 远场：|δJ|=1.220e-07 ≤ 0.3×激波邻域（追赶时间 0.7>T；更长时间会到达——界面项是瞬态非永久豁免）",
+      "value": "dx_s(c)=-1.131e-07",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "D6 ε_J 证书：激波 QoI δJ=6.250e-06 ≤ ε_J=1e-3 ⇒ pass（estimate 口径）",
+      "value": "pass",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "E1 解析合并：t_m=0.600、x_m=0.780（闭合率=(u1−u3)/2=0.5，与 u2 无关）",
+      "value": "s12=0.80 s23=0.30",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "E2 合并前双激波（t=0.20）：实测 ['0.4619', '0.6611'] vs 解析 ['0.4600', '0.6600']（±1 cell）",
+      "value": "n_jumps=2",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "E3 合并后单激波：实测 0.8833 vs 解析 0.8800（±1 cell，合并后走 s13=0.50）",
+      "value": "n_jumps=1",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "E4 敏感度穿透：δX=4.883e-04 ≈ (t_m/2)·ε=6.000e-04（±30%）——中间态敏感度被合并永久保留",
+      "value": "dX/eps=0.244 (解析 0.3)",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "E5 叠加失效：单激波模型预测 δX=0，实测 4.883e-04 ≥ 10³×fp 底（相互作用界面态不可省略）",
+      "value": "failure factor: 预测0 vs 实测5e-04",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "E6 ε_J 证书：δJ=6.016e-04（界面项占比 81%）≤ ε_J ⇒ pass",
+      "value": "pass",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "A 分配恒等式：|Σ s_i·e_i − ε_J|=5.68e-14（fp 级，ε_J 合同总账）",
+      "value": "n_alloc=7",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "A 预算反比权重：e_0/e_6=0.226 ≈ w_6/w_0=0.226（1% 内）",
+      "value": "b_0=241.2 b_6=1067.6 ppm",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "A 零权重元素：不分配（budget=None，误差只进 ε_global）",
+      "value": "zero dJ weight: not allocated (error goes to eps_global only)",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "A 背景间隔：高权重元素更短（2824.3 < 19353.8，重标更勤）",
+      "value": "interval ∝ budget−floor",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "A 可行性对账：budget 241.2 < floor 400 ⇒ flagged（不许诺）",
+      "value": "n_infeasible=1",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P7 集成：per_element_budgets 发射（65 项，3 flagged），budget_source=dJ-allocation",
+      "value": "eps_J=500",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P7 集成：计划层恒等式 |Σ s_i·e_i − ε_J|=0.00e+00",
+      "value": "flagged 预算仍计入恒等式（分配数学 vs 可交付性分立）",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "A 采样陷阱：γ_max·Δt=125663.7 ≫ 1 ⇒ 采样权重比 1.0（端点伪影，近均匀）vs 解析 4096（集中慢模态）——刚性系统必须走闭式",
+      "value": "γ_max=5.03e+06",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "向后兼容：不声明 ε_J ⇒ per_element_budgets=None，budget_source=none（启发式不变）",
+      "value": "run_calib 62/62 回归保障",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "G1 模型 clean 界面（t=0.20）：x_a=0.4600 x_b=0.6600 vs 解析 (0.46, 0.66)（±1 cell）",
+      "value": "merges=[('0.600', '0.780')]",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "F1 δX(T)：FV 1.564e-04 vs 界面演化模型 1.405e-04（±50%，质量等价位置，材料已耗尽无在途污染）",
+      "value": "clean p=0.8829",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "F2 dwell 衰减：δJ_runtime/δJ_IC=0.26 ∈ [0.1, 0.5]（解析 0.3——运行时源 ≠ IC 微扰，dwell time 是衰减根源）",
+      "value": "δJ_IC=6.016e-04 δJ_rt=1.564e-04",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "F3 ε_J 证书：运行时源 δJ=1.564e-04 ≤ ε_J ⇒ pass（estimate 口径）",
+      "value": "pass",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "D1 终端条件：λ(T)=c（descriptor 伴随构造正确）",
+      "value": "max dev=0.00e+00",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "D1 E=I 退化：descriptor 伴随 == adjoint_field（×1e-12）",
+      "value": "max dev=0.00e+00",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "D1 E 奇异 ⇒ raise（代数约束须先投影，不静默伪逆）",
+      "value": "raise",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "D2 descriptor 端口权重：δJ₁=1.544e-04 vs 实测 1.553e-04（相对误差 0.6%）",
+      "value": "naive=2.983e-04",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "D2 naive 无 E⁻¹ 偏差 161×（κ(E)=100 的度量陷阱）",
+      "value": "rel_naive=0.92",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "N0 终端条件：λ(T)=c（沿轨迹反向积分正确）",
+      "value": "lambda(0)=0.5443",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "N1 小注入：δJ₁=7.645e-04 vs 实测 7.643e-04（相对误差 0.0% < 10%）",
+      "value": "eps=1e-03",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "N2 二阶余项：注入减半 ⇒ 估计误差 ×3.9 ∈ [2.5, 6]（一阶应 ×2）",
+      "value": "err_full=2.06e-07 err_half=5.30e-08",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "N3 抵消：δJ₁≈1.18e-08（cancellation=0.00）而真误差 6.18e-08 更高",
+      "value": "Σ|贡献|=6.50e-04",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "N4 MC 覆盖：100/100=1.00 ≥ 声明 0.9（B=1.3×Σ|λR|，非严格界）",
+      "value": "统计口径：100 组随机二元注入",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "N4 训练/验证分离：训练分位 0.95 ⇒ 独立验证覆盖 0.92 ≥ 0.85（非严格界，无 Hessian/Lipschitz 保证）",
+      "value": "50 train / 50 val",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "N5 大注入 ε=0.2：相对误差 7% ≫ 小注入 0.0%（不承诺）",
+      "value": "非线性 DWR 有界非线性区间",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "S1 熵守恒通量：|dE/dt|=0.00e+00 ≤ 1e-10（Tadmor 等式）",
+      "value": "E0=0.5000",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "S2 upwind 耗散：dE/dt=-3.0000 < 0（半离散熵不等式成立）",
+      "value": "熵产生为负",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "S3 反耗散负对照：dE/dt=3.0000 > 0（不等式被违反被抓住）",
+      "value": "熵产生为正",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "S4 熵产生排序：bad 3.0000 > ec -0.0000 > upwind -3.0000",
+      "value": "系统结构的必要条件实测",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查7 保正性：upwind min=0.0000∈[0,1]（CFL=0.4）",
+      "value": "max=1.0000",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查7 保正性负对照：反耗散 min=-2.009e+31 < 0（被抓住）",
+      "value": "n_neg=64",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查7 相对熵半离散率：EC=-0.00e+00、upwind=-0.000 ≤0、bad=0.000 ≥0",
+      "value": "两解差值的能量不等式",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "K1 正 Lyapunov（双轨发散斜率）：λ=0.718 ∈ [0.4, 1.5]",
+      "value": "切线重整化高估 6.8 已弃用",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "K2 有限时窗：δ 越过 ε=1 实测 t=27.8 ≈ ln(ε/δ0)/λ=25.7（±30%）",
+      "value": "δ0=1e-08",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "K2 时窗外无轨迹精度：T=60 时 δ=31.54 ≫ QoI 容限 0.1",
+      "value": "逐轨迹预测已失效",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "K2 调度收缩：e0 从 0.1ε 到 0.9ε ⇒ ΔT 2.174 → 0.128（越来越短）",
+      "value": "正 λ 的调度公式",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "K2 e0≥ε ⇒ raise（混沌合同终点：拒绝无限时窗轨迹精度）",
+      "value": "raise",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "K3 统计签核：差 0.005 ≤ CI 0.126（τ_int=5.9，N_eff=33.7，独立参考系综）",
+      "value": "burn-in T<20",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "K3 统计稳健 ≠ 轨迹稳健：QoI 差 0.005 小而轨迹误差 31.54",
+      "value": "Level 2 统计可划归成立",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "K4 轨迹合同覆盖：99%（预测 δ0·e^{λt} 封顶，非实测自证）",
+      "value": "λ_fit 样本内，非最坏上界",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "K4 证书：expanding + finite_horizon=True + QoI 稳健 ⇒ pass",
+      "value": "pass",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "K4 负对照：expanding 无 finite_horizon ⇒ rejected",
+      "value": "rejected",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-2 反例：signed |∫r|=0.0002 ≈ 0 而真实 |e(2)|=0.3998（诊断非界）",
+      "value": "解析 e(2)=0.3996",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-2 l1 预算 ∫‖r‖=2.001 ≥ |e(2)|=0.400（收缩前提下的界）",
+      "value": "比传播界松 2.3×",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-2 传播预算 ∫‖Φ‖‖r‖=0.8655 ≥ |e(2)|=0.3998（保守动态界）",
+      "value": "eta=2.0008（含求积误差）",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-2 lognorm 闭式：r_max(e^{μΔT}−1)/μ=0.8647 ≈ 传播积分 0.8655",
+      "value": "μ=−1, r_max=1, ΔT=2",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-2 递推：ε(2)=1.3685 ≥ |e(2)|=0.3998（signed 预算会给 0）",
+      "value": "G=e^{-1}, η=传播积分",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "区间记账反例：A=0,t=[0,1],x=[0,1] ⇒ L1=1、传播=1、η=1",
+      "value": "旧实现全 0；真解 e(1)=1",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "同一反例走一般 F 路径 ⇒ L1=1（不再漏最后区间）",
+      "value": "1.000000",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "多区间常数 r：Σ‖r̄‖h=2.2361 = ‖r‖=2.2361（区间均值口径）",
+      "value": "2.2361",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "认证界（r-Lipschitz=0 + quad_bound）0.8655 ≥ |e(2)|=0.3996，且 ≤ L1 2.0008",
+      "value": "cert=interval-gain+r-lipschitz+quad-bound",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "未声明 ⇒ certified_bound=None、eta 标注 ESTIMATED",
+      "value": "none",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "采样盲区：节点全零 ⇒ 估计 L1=0.0e+00（看不见区间内振荡），声明包络 ρ=25.133 ⇒ 认证界 25.133 覆盖",
+      "value": "估计不是界，声明才是合同",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-4 拒绝：qoi 负方向大误差 ⇒ rejected",
+      "value": "error_control eps_J violated: |qoi_estimate| 100 + B_remaind",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-4 拒绝：e_measured NaN ⇒ rejected",
+      "value": "error_control e_measured_max non-finite: not a pass",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-4 拒绝：e_predicted NaN ⇒ rejected",
+      "value": "error_control e_predicted_max non-finite: not a pass",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-4 拒绝：coverage inf ⇒ rejected",
+      "value": "error_control coverage_ratio inf not finite in [0,1]",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-4 拒绝：finite_horizon 无时窗 ⇒ rejected",
+      "value": "error_control finite_horizon=True without a concrete positiv",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-4 拒绝：预测 101 > ε_global 100 ⇒ rejected",
+      "value": "error_control eps_global accuracy violated: predicted 101 > ",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-4 拒绝：余项推高 δJ ⇒ rejected",
+      "value": "error_control eps_J violated: |qoi_estimate| 0.009 + B_remai",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-4 合法 expanding + finite_horizon + horizon_T=2 ⇒ pass",
+      "value": "pass",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-4 缺 evidence 且 workload 要求 ⇒ 证书 rejected",
+      "value": "error-control evidence required by workload but not supplied: dynamic ",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-4 默认不要求 evidence ⇒ 向后兼容（不误拒）",
+      "value": "no evidence evaluated",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-5 三端口 K_i 不同：offset 1.264、gm 1.164、cap 0.919",
+      "value": "同一节点不能共用一份灵敏度",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-5 绝对恒等式：Σ K_i·e_i=500.0000 ≈ ε_J（ΣK=1.164 保留）",
+      "value": "非归一化口径",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-5 K 翻倍 ⇒ 预算减半：429.71 → 214.86（归一化会漏掉 ΣK）",
+      "value": "ratio=0.500",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-5 ε_J 过小 ⇒ 8 元素 budget < floor（不可行）",
+      "value": "flag + 拒绝",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "P0-5 P6 拒绝不可行分配：verdict=rejected",
+      "value": "error_control P7 allocation infeasible for 8 elements (budget < measur",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查6 分类 contractive ⇒ contractive",
+      "value": "contractive",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查6 分类 asymptotically stable ⇒ asymptotically stable",
+      "value": "asymptotically stable",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查6 分类 semistable ⇒ semistable",
+      "value": "semistable",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查6 分类 polynomially growing ⇒ polynomially growing",
+      "value": "polynomially growing",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查6 分类 expanding ⇒ expanding",
+      "value": "expanding",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查6 能量度量统一：μ₂=49.0 vs μ_M=-0.5（C bank 跨 10⁴ 时不同）",
+      "value": "finite_time_gain 同 M",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查6 能量度量预条件：无 M 为 asymptotically stable，有 M 变 contractive（μ_M=-0.5<0 收缩）",
+      "value": "同一口径 gain 与 μ_M",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查7 E=1e-3 I_64（det=1e-192）不误判：λ(T)=c 且有限",
+      "value": "max|λ(T)−c|=0.0e+00",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查7 相对奇异值 1e-15 ⇒ raise（cond 判据，非 det）",
+      "value": "raise",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查7 P7 伴随口径：E≠I 时 λ_last 改变 3.29e+27×（E⁻¹ 端口权重）",
+      "value": "descriptor 而非 adjoint_field",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查7 merge 事件：A+B→m0，t=0.858，3×6 Jacobian",
+      "value": "shape=(3, 6)",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查7 源生命周期：消失区域 rB 的源被移除",
+      "value": "sources={'rC': 0.002}",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查7 存活源按 id 重绑：rC=2.000e-03 未绑错（下标已变）",
+      "value": "ids=['m0', 'C']",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查9 证书挂动态证据：error_control verdict=pass",
+      "value": "pass",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查9 p7 出 dJ 分配预算：source=dJ-allocation，4 项",
+      "value": "eps_J=500.0",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "审查9 缺 evidence 且 workload 要求 ⇒ 证书 rejected",
+      "value": "rejected",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "C1 刚性对角：闭式权重与解析式一致（rel=0.00e+00），而 65 点梯形偏差 21.99（γ_max·Δt=47）",
+      "value": "method=closed-form",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "C1b 最快模态权重被梯形放大 23.0×（慢模态 0.981×）：1/γ=3.3e-04 的尖峰被 0.5Δt=7.8e-03 替身",
+      "value": "endpoint artefact",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "C2 run_chain 的 dJ 权重走闭式：method=closed-form，γΔt=785.4，逐分量梯形偏差 294.4×（旧路径会失真）",
+      "value": "closed-form",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "C3 物理端口图分型：adc/c_bank/dac/gm_c/gm_edge/offset/route_tau（gm/C/offset/DAC/ADC/route 各自 K）",
+      "value": "no state-name sharing",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "C3b 同一节点的 gm 与 offset 灵敏度不同（20.51 vs 0.00625）",
+      "value": "物理端口分开",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "C3c route τ 端口存在：14 条，带 τ_budget=3.55e-01 s / 相位 0.00°",
+      "value": "phase axis separate from ppm",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "C4 端口分配恒等式：Σ K_rel·e = 50.0000 ≈ ε_J=50.0（残差 0.0e+00）",
+      "value": "relative-sensitivity contract",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "C5 紧 ε_J ⇒ 38/68 端口低于测量底，deliverability=False",
+      "value": "8/9 per-element budgets below measurement floor; 38/68 physi",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "C5b 松 ε_J ⇒ 全部端口可交付（P7 deliverable=True）",
+      "value": "n_ports=68",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "D1 真值表：T∧T=True、T∧F=False（reason=rejected: P7: 3 ports < floo）、F∧T=False（partial (P6 not fully ）",
+      "value": "∧ semantics",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "D2 联合判决回传到证书：cert.status=no violation on evaluated axes、cert.p7.final=False、chain.final=False",
+      "value": "P7 undeliverable ⇒ chain rejected",
+      "ok": true,
+      "kind": "error_control"
+    },
+    {
+      "name": "D2b 松 ε_J 下 chain 状态为 partial（P6 未全轴评估，不许诺 feasible）：partial (P6 not fully established; P7 de",
+      "value": "partial",
+      "ok": true,
+      "kind": "error_control"
+    }
+  ],
+  "_meta": {
+    "git_sha": "95f79c27f1bfef51c1a4b38df339ff116adfd263",
+    "git_dirty": true,
+    "bench_module": "bench.run_error_control",
+    "command": "python3 -m bench.run_error_control",
+    "timestamp_utc": "2026-11-27T06:57:20+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
   }
- },
- "adjoint_qoi": {
-  "w": [
-   0.2952699750849632,
-   0.20195475260092122,
-   0.14796680240904994,
-   0.11466108925338317,
-   0.09282156711757514,
-   0.07769411620076118,
-   0.06671084419082934,
-   0.0029208531425167343
-  ],
-  "dJ_hi": 0.001264244985133487,
-  "dJ_lo": 1.2475018069206182e-05,
-  "cancellation": 1.0,
-  "eps_J_pass": true
- },
- "burgers": {
-  "tv_godunov": 1.9999999897826506,
-  "tv_central": 33.26858636568533,
-  "l1_godunov": 0.016318328111253774,
-  "l1_central": 0.2227294393414867,
-  "l1_T": 0.00039145569105851957,
-  "bound": 0.0010590404634113852,
-  "dx_s": 0.0007812499999999556,
-  "dT": 0.1616161616161616,
-  "mass_err": 5.551115123125783e-17
- },
- "shock_dwr": {
-  "xs_clean": 0.7006015417224343,
-  "dx_s": 6.5621865017462255e-06,
-  "pred": 6.818325877534636e-05,
-  "dJ_shock": 6.249999999999312e-06,
-  "dJ_ur": 0.0,
-  "dJ_plateau": -1.2204931354453663e-07,
-  "interface_share": 1.0499498402795118
- },
- "multi_shock": {
-  "t_m": 0.6,
-  "x_m": 0.78,
-  "js_pre": [
-   0.4619140625,
-   0.6611328125
-  ],
-  "js_T": [
-   0.88330078125
-  ],
-  "dX": 0.00048828125,
-  "pred": 0.0006,
-  "dJ": 0.0006015624999945665
- },
- "epsj_alloc": {
-  "identity": 5.684341886080802e-14,
-  "b_hi": 241.20278074584263,
-  "b_lo": 1067.5916325915616,
-  "n_flag_p7": 1
- },
- "runtime_dwell": {
-  "dX_fv": 0.0001564290607998231,
-  "dX_model": 0.0001405007014014803,
-  "dX_ic": 0.0006015624992133928,
-  "ratio": 0.26003911290114634,
-  "dJ_rt": 0.00015642977885318293,
-  "dJ_ic": 0.0006015624999945665
- },
- "descriptor_adjoint": {
-  "dJ_true": 0.00015532113157700562,
-  "est_descriptor": 0.00015443266084270215,
-  "est_naive": 0.0002982619636391017,
-  "rel_descriptor": 0.005720218010792601,
-  "rel_naive": 0.9202922397666694
- },
- "nonlinear_dwr": {
-  "dJ_true": 0.0007642918363499618,
-  "estimate": 0.0007644973710224882,
-  "rel": 0.0002689217164845873,
-  "order": 3.8764032354024778,
-  "cancellation": 1.8157257862425347e-05,
-  "coverage": 1.0,
-  "rel_big": 0.06802423951888982
- },
- "entropy_system": {
-  "E0": 0.5,
-  "rate_ec": -0.0,
-  "rate_up": -3.0,
-  "rate_bad": 3.0,
-  "u_min_up": 3.4329730160322324e-09,
-  "rel_ec": -0.0,
-  "rel_up": -0.00038545401434483443
- },
- "chaos": {
-  "lam": 0.7178363170542339,
-  "t_cross": 27.800000000000004,
-  "t_pred": 25.661394257042932,
-  "qoi_err": 0.004600259573948518,
-  "ci_total": 0.12570225980959118,
-  "tau_int": 5.94729887722383,
-  "n_eff": 33.71278359119433,
-  "traj_coverage": 0.9916805324459235,
-  "traj_error": 31.541611876689146
- },
- "residual_semantics": {
-  "signed": 0.00019990453792761986,
-  "l1": 1.9990000000000003,
-  "propagated": 0.8636652885688629,
-  "e_true": 0.3998090758555718,
-  "eta_closed": 0.8646647167633873,
-  "recursion": 0.8632978429984748
- },
- "certificate_hardening": {
-  "rejected": 7,
-  "status": "rejected"
- },
- "device_ports": {
-  "K": {
-   "integrator_offset": 1.264257579087133,
-   "gm_mismatch": 1.1635629508677239,
-   "cap_mismatch": 0.9188028911407233
-  },
-  "identity": 500.0,
-  "ratio": 0.5,
-  "n_infeasible": 8
- },
- "five_types": {
-  "types": {
-   "contractive": "contractive",
-   "asymptotically stable": "asymptotically stable",
-   "semistable": "semistable",
-   "polynomially growing": "polynomially growing",
-   "expanding": "expanding"
-  },
-  "mu2": 48.99999999999999,
-  "muM": -0.5
- },
- "descriptor_robustness": {
-  "ratio": 3.2877468730909435e+27
- },
- "interface_lifecycle": {
-  "merges": 1,
-  "ids": [
-   "m0",
-   "C"
-  ],
-  "sources": [
-   "rC"
-  ]
- },
- "error_aware_chain": {
-  "verdict": "pass",
-  "budget_source": "dJ-allocation",
-  "missing_status": "rejected"
- },
- "checks": [
-  {
-   "name": "IR 前提：rho_pred=kappa*u_a=0.066 < 1（修正闭环合法）",
-   "value": "kappa=67.8 u_a=9.766e-04",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "模拟核地板：e_analog=1.270e-01 显著大于机器精度（低精度前提成立）",
-   "value": "rel=2.548e-03",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "IR step 0: 收缩率实测=47.19 vs 预测 1/rho=15.10（×3 容差）",
-   "value": "e: 1.270e-01 -> 3.080e-03",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "IR steps 1-3: 稳定在修正解量化地板（无发散，尾部率≈1）",
-   "value": "rates=['0.90', '1.03', '0.95']",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "IR 总改进倍数=41.2 ≥ 20（最终精度高于单个单元地板）",
-   "value": "e_analog=1.270e-01 -> e_final=3.080e-03",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "N1 残差粗量化：可达误差 4.258e-02 比主线 3.080e-03 差 ≥3×（残差精度是 attainable 的瓶颈）",
-   "value": "ratio=13.8",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "N2 病态证书：kappa·u_a=60.4 > 1 ⇒ 提前判死（不许碰运气）",
-   "value": "kappa_ill=61842",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "N2 病态实测：IR 后误差 6.556e+02 未低于起点 6.686e+02（不收敛被证实）",
-   "value": "ratio=0.981",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "分类 diffusion ⇒ contracting（谱横坐标=-0.395<0）",
-   "value": "contracting",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "收缩系统对数范数 μ₂=-0.395<0（任意初始误差单调收缩的上界）",
-   "value": "-0.395",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "分类 纯积分器 ⇒ neutral / λ=+0.5 ⇒ expanding",
-   "value": "neutral / expanding",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "泄漏率/保守率 = 191675821896592 ≫ 1（Γ_proj 看不见的那一路，率可见）",
-   "value": "2.04e-04 vs 1.06e-18",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "调度公式：ΔT=0.0566（λ=0.395, r_max=0.157, e0=1e-03, ε=1e-02）",
-   "value": "s",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "调度单调性：λ×10 ⇒ ΔT×0.89↓；r_max×2 ⇒ ΔT×0.50↓（扰动越强查越勤）",
-   "value": "0.0506 / 0.0285",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "调度公式：e0 ≥ ε ⇒ raise（不许静默给∞间隔）",
-   "value": "raise",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "无校正：实测 0.0033 ≤ 饱和界 r_max/γ=0.397 且 ≈ 偏置预测 0.0033（×2）",
-   "value": "ratio_sat=0.008",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-3 负对照：signed 扣除校正 q_max=53.5 > 1 ⇒ 不满足收缩合同（不许诺长期有界）",
-   "value": "独立参考是状态复位的前提",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-3 校正算子：参考回注 q_max=0.157、ζ=1e-05 ⇒ ρ=sup(qG)=0.153 < 1",
-   "value": "不再假设 q=0",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-3 校正后覆盖：40/40 窗口 ε⁺_measured ≤ 1.2×ε⁺_predicted",
-   "value": "递推 η̄/(1−ρ)",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-3 长期界：η̄/(1−ρ)=8.839e-04 ≥ max ε⁺=3.530e-05（不再是 mean(η)）",
-   "value": "eta_bar=7.484e-04",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "界覆盖：40/40 窗口 ε_measured ≤ 1.2×ε_predicted（覆盖率=100%）",
-   "value": "mean η=4.745e-03",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "校正后长期误差 max=0.0008 ≪ 无校正饱和 0.3971（×5 至少）",
-   "value": "ratio=0.002",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "长期界 η̄/(1−ρ)=8.839e-04 罩住校正后 ε⁺ max=3.530e-05（保守 ≤100×，传播加权 η 带来的松度）",
-   "value": "8.839e-04 vs 3.530e-05",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "N3 残差不可见：窗口残差 0.00e+00 ≪ 实际误差 1.41e+00（残差小≠误差小）",
-   "value": "ratio=0.0e+00",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "N3 独立参考可见：offset=1.414 被检出；无参考 ⇒ 如实 detectable=False",
-   "value": "True / False",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "neutral 实测斜率=0.0200 ≈ bias=0.0200（线性累积被证实）",
-   "value": "0.0200",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "neutral 调度退化为预算式：ΔT=(ε−e0)/r_max=0.5000",
-   "value": "0.5000",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "expanding 实测 0.0000 ≤ 指数界 0.0344（有限时窗内成立）",
-   "value": "0.0000",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "expanding 终局：e0≥ε ⇒ raise（扩张系统不许诺无限时窗轨迹精度）",
-   "value": "raise",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "T10 前级事实：verdict=PASS（非 SINGULAR），τ_relax=2.937e-11 s",
-   "value": "kappa_G=116.5",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "C1 约束网分类 ⇒ contracting（μ₂=-3.41e+10<0，τ_relax 内检查）",
-   "value": "contracting",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "C2-A 量化主导：IR 改进 13.5× ≥10（e 2.866e-06→2.119e-07）",
-   "value": "kcl_res=1.596e-07",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "C2-A mismatch 分量被 bound 覆盖（保守 sup 范数）",
-   "value": "6.875e-09 ≤ 1.792e-07",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "C2-B mismatch 可见：e_analog 3.323e-06 ≥ 5×地板 3.040e-07",
-   "value": "ratio=10.9",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "C2-B 自校准：IR 后 5.459e-08 **低于** mismatch 地板 3.040e-07（KCL 残差暴露 δI，修正解扣除）",
-   "value": "improve=60.9×",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "C3 调度：ΔT=9.99 s，calib 语义对账 residual=1.000e-03 ≤ ε",
-   "value": "consistent=True",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "C3 地板 ≥ ε ⇒ raise（调度无解不许静默）",
-   "value": "raise",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "证书聚合：合法覆盖证据 ⇒ pass",
-   "value": "pass",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "证书聚合：覆盖 0.9<1 ⇒ rejected（界未罩住实测）",
-   "value": "rejected",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "证书聚合：expanding 无 finite_horizon ⇒ rejected",
-   "value": "rejected",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "证书聚合：畸形证据 ⇒ rejected（不冒充可行）",
-   "value": "rejected",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "evaluate_sys 转发：error_control 进 items（verdict=pass）",
-   "value": "cert.error_control=True",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "证书聚合：纯 IR 静态事实 ⇒ pass 但声明非动态判决",
-   "value": "pass",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "A1 终端条件：λ(T)=c（伴随场构造正确）",
-   "value": "max dev=0.00e+00",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "A1 权重排序：w ∝ 1/γ（慢模态主导），w_high/w_low=101.1",
-   "value": "w=[0.295, 0.202, 0.148, 0.115, 0.093, 0.078, 0.067, 0.003]",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "A2 恒等式（纯 bias）：δJ₁=2.140e-03 vs 实测 2.141e-03，相对误差 0.0% < 5%",
-   "value": "cancellation=1.00",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "A2 恒等式（bias+noise）：偏差 2.309e-06 ≤ 0.3×Σ|贡献|=2.094e-03",
-   "value": "δJ₁=2.094e-03 actual=2.096e-03",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "A3 精度分配：同范数 bias 的 δJ 比 101.3× ≈ w 比 101.1×（×2.5 内）",
-   "value": "δJ_hi=1.264e-03 δJ_lo=1.248e-05",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "A4 双轨：δJ=1.250e-05 < ε_J=1e-04（QoI 合同通过）而 ε_global=2.499e-04 > ε_J（场失真只能靠全局轨兜住）",
-   "value": "budget 节省：节点 7 免校正",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "A4 反面：高 w 节点同范数 bias ⇒ δJ=1.264e-03 > ε_J（必须校正）",
-   "value": "dJ_hi/dJ_lo=101×",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "证书聚合：ε_J 声明且 δJ ≤ ε_J ⇒ pass（cancellation 进 detail）",
-   "value": "pass",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "证书聚合：δJ > ε_J ⇒ rejected（ε_J 合同违反）",
-   "value": "rejected",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "证书聚合：声明 ε_J 但缺 δJ ⇒ rejected（malformed）",
-   "value": "rejected",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "B1 Godunov TVD：TV(u_T)=2.0000 ≤ TV(u_0)=2.0000（周期双跳，熵产生以 TV 不增为代理实测）",
-   "value": "xs=0.6992",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "B1 激波位置：干净运行误差 7.812e-04 ≤ 1 cell=7.812e-03",
-   "value": "xs=0.6992 exact=0.7000",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "B1 中心通量负对照（T=0.10）：TV=33.269 > TV0（熵产生为正被 TV 抓住）且 L1 2.227e-01 > Godunov 1.200e-02",
-   "value": "ratio=18.6",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "B2 L1 收缩覆盖：注入诱发 ‖u_hw−u_clean‖₁=0.0004 ≤ 实测 ∫‖r‖₁dx=0.0011（Crandall–Tartar，激波不放大注入）",
-   "value": "ratio=0.37",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "B2 双项分解：总 L1=0.0165 ≤ ν_num 基线 0.0163 + 注入项 0.0004（三角不等式，两项预算分立）",
-   "value": "基线占比=99%",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "B2 中性累积：后半程斜率 8.397e-04 ≈ 全程 9.786e-04（×2 内，线性非指数）",
-   "value": "L1(T/2)=0.0002 L1(T)=0.0004",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "B2 调度：预算式 ΔT=0.162 s（r_max=0.006，ε₁=1e-03），预报注入量 r_max·ΔT=0.001 ≥ 实测注入诱发 L1=0.0004",
-   "value": "s",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "B3 质量精确守恒（shared flux + 守恒注入）：误差 5.55e-17 ~ 浮点级，而注入诱发 ‖e‖₁=3.915e-04 持续累积——守恒量对误差路径零敏感",
-   "value": "观测极限：位置只能靠锚点",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "B3 激波位置被合同罩住：δx_s=0.0008 ≤ 1 cell + 1.5·‖e‖₁/(uL−uR)=0.0084（FV 间断的位置观测极限 = 1 cell）",
-   "value": "xs=0.6992 exact=0.7000",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "证书聚合：激波 L1 中性合同 ⇒ pass（预算式调度进 detail）",
-   "value": "pass",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "D0 子 cell 估计器：|xs_clean−exact|=6.02e-04 ≤ dx/4=1.95e-03",
-   "value": "xs=0.70060",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "D1 界面项主导：|Δu·δx_s|=6.562e-06 ≥ 5×|光滑余项|=3.122e-07（激波问题的 δJ 主体是位移项，Δu=解析跳变 uL−uR）",
-   "value": "dJ=6.250e-06 dx_s=6.562e-06",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "D2 跳变条件上界：δx_s 实测 6.562e-06 ≤ 光滑预测 ∫(δuL+δuR)/2 dt=6.818e-05（实测低 10×：FV 位置响应被 cell 平均簿记量化/粘滞——光滑跳变条件只作保守上界，界面项用同一估计器的相对位移）",
-   "value": "jump: ds=(δuL+δuR)/2",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "D4 镜像偶极：δx_s 反号同幅（-6.570e-06 vs -6.562e-06，×1.5 内）",
-   "value": "pred=-6.817e-05",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "D3 空间分配：激波邻域 |δJ|=6.250e-06 ≥ 100× uR 远场 0.000e+00（扰动传播速度 ~0，T 内到不了激波）",
-   "value": "dx_s(d)=0.000e+00",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "D5 plateau 远场：|δJ|=1.220e-07 ≤ 0.3×激波邻域（追赶时间 0.7>T；更长时间会到达——界面项是瞬态非永久豁免）",
-   "value": "dx_s(c)=-1.131e-07",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "D6 ε_J 证书：激波 QoI δJ=6.250e-06 ≤ ε_J=1e-3 ⇒ pass（estimate 口径）",
-   "value": "pass",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "E1 解析合并：t_m=0.600、x_m=0.780（闭合率=(u1−u3)/2=0.5，与 u2 无关）",
-   "value": "s12=0.80 s23=0.30",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "E2 合并前双激波（t=0.20）：实测 ['0.4619', '0.6611'] vs 解析 ['0.4600', '0.6600']（±1 cell）",
-   "value": "n_jumps=2",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "E3 合并后单激波：实测 0.8833 vs 解析 0.8800（±1 cell，合并后走 s13=0.50）",
-   "value": "n_jumps=1",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "E4 敏感度穿透：δX=4.883e-04 ≈ (t_m/2)·ε=6.000e-04（±30%）——中间态敏感度被合并永久保留",
-   "value": "dX/eps=0.244 (解析 0.3)",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "E5 叠加失效：单激波模型预测 δX=0，实测 4.883e-04 ≥ 10³×fp 底（相互作用界面态不可省略）",
-   "value": "failure factor: 预测0 vs 实测5e-04",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "E6 ε_J 证书：δJ=6.016e-04（界面项占比 81%）≤ ε_J ⇒ pass",
-   "value": "pass",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "A 分配恒等式：|Σ s_i·e_i − ε_J|=5.68e-14（fp 级，ε_J 合同总账）",
-   "value": "n_alloc=7",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "A 预算反比权重：e_0/e_6=0.226 ≈ w_6/w_0=0.226（1% 内）",
-   "value": "b_0=241.2 b_6=1067.6 ppm",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "A 零权重元素：不分配（budget=None，误差只进 ε_global）",
-   "value": "zero dJ weight: not allocated (error goes to eps_global only)",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "A 背景间隔：高权重元素更短（2824.3 < 19353.8，重标更勤）",
-   "value": "interval ∝ budget−floor",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "A 可行性对账：budget 241.2 < floor 400 ⇒ flagged（不许诺）",
-   "value": "n_infeasible=1",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P7 集成：per_element_budgets 发射（65 项，1 flagged），budget_source=dJ-allocation",
-   "value": "eps_J=500",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P7 集成：计划层恒等式 |Σ s_i·e_i − ε_J|=0.00e+00",
-   "value": "flagged 预算仍计入恒等式（分配数学 vs 可交付性分立）",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "A 采样陷阱：γ_max·Δt=125663.7 ≫ 1 ⇒ 采样权重比 1.0（端点伪影，近均匀）vs 解析 4096（集中慢模态）——刚性系统必须走闭式",
-   "value": "γ_max=5.03e+06",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "向后兼容：不声明 ε_J ⇒ per_element_budgets=None，budget_source=none（启发式不变）",
-   "value": "run_calib 62/62 回归保障",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "G1 模型 clean 界面（t=0.20）：x_a=0.4600 x_b=0.6600 vs 解析 (0.46, 0.66)（±1 cell）",
-   "value": "merges=[('0.600', '0.780')]",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "F1 δX(T)：FV 1.564e-04 vs 界面演化模型 1.405e-04（±50%，质量等价位置，材料已耗尽无在途污染）",
-   "value": "clean p=0.8829",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "F2 dwell 衰减：δJ_runtime/δJ_IC=0.26 ∈ [0.1, 0.5]（解析 0.3——运行时源 ≠ IC 微扰，dwell time 是衰减根源）",
-   "value": "δJ_IC=6.016e-04 δJ_rt=1.564e-04",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "F3 ε_J 证书：运行时源 δJ=1.564e-04 ≤ ε_J ⇒ pass（estimate 口径）",
-   "value": "pass",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "D1 终端条件：λ(T)=c（descriptor 伴随构造正确）",
-   "value": "max dev=0.00e+00",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "D1 E=I 退化：descriptor 伴随 == adjoint_field（×1e-12）",
-   "value": "max dev=0.00e+00",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "D1 E 奇异 ⇒ raise（代数约束须先投影，不静默伪逆）",
-   "value": "raise",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "D2 descriptor 端口权重：δJ₁=1.544e-04 vs 实测 1.553e-04（相对误差 0.6%）",
-   "value": "naive=2.983e-04",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "D2 naive 无 E⁻¹ 偏差 161×（κ(E)=100 的度量陷阱）",
-   "value": "rel_naive=0.92",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "N0 终端条件：λ(T)=c（沿轨迹反向积分正确）",
-   "value": "lambda(0)=0.5443",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "N1 小注入：δJ₁=7.645e-04 vs 实测 7.643e-04（相对误差 0.0% < 10%）",
-   "value": "eps=1e-03",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "N2 二阶余项：注入减半 ⇒ 估计误差 ×3.9 ∈ [2.5, 6]（一阶应 ×2）",
-   "value": "err_full=2.06e-07 err_half=5.30e-08",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "N3 抵消：δJ₁≈1.18e-08（cancellation=0.00）而真误差 6.18e-08 更高",
-   "value": "Σ|贡献|=6.50e-04",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "N4 MC 覆盖：100/100=1.00 ≥ 声明 0.9（B=1.3×Σ|λR|，非严格界）",
-   "value": "统计口径：100 组随机二元注入",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "N4 训练/验证分离：训练分位 0.95 ⇒ 独立验证覆盖 0.92 ≥ 0.85（非严格界，无 Hessian/Lipschitz 保证）",
-   "value": "50 train / 50 val",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "N5 大注入 ε=0.2：相对误差 7% ≫ 小注入 0.0%（不承诺）",
-   "value": "非线性 DWR 有界非线性区间",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "S1 熵守恒通量：|dE/dt|=0.00e+00 ≤ 1e-10（Tadmor 等式）",
-   "value": "E0=0.5000",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "S2 upwind 耗散：dE/dt=-3.0000 < 0（半离散熵不等式成立）",
-   "value": "熵产生为负",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "S3 反耗散负对照：dE/dt=3.0000 > 0（不等式被违反被抓住）",
-   "value": "熵产生为正",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "S4 熵产生排序：bad 3.0000 > ec -0.0000 > upwind -3.0000",
-   "value": "系统结构的必要条件实测",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查7 保正性：upwind min=0.0000∈[0,1]（CFL=0.4）",
-   "value": "max=1.0000",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查7 保正性负对照：反耗散 min=-2.009e+31 < 0（被抓住）",
-   "value": "n_neg=64",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查7 相对熵半离散率：EC=-0.00e+00、upwind=-0.000 ≤0、bad=0.000 ≥0",
-   "value": "两解差值的能量不等式",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "K1 正 Lyapunov（双轨发散斜率）：λ=0.718 ∈ [0.4, 1.5]",
-   "value": "切线重整化高估 6.8 已弃用",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "K2 有限时窗：δ 越过 ε=1 实测 t=27.8 ≈ ln(ε/δ0)/λ=25.7（±30%）",
-   "value": "δ0=1e-08",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "K2 时窗外无轨迹精度：T=60 时 δ=31.54 ≫ QoI 容限 0.1",
-   "value": "逐轨迹预测已失效",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "K2 调度收缩：e0 从 0.1ε 到 0.9ε ⇒ ΔT 2.174 → 0.128（越来越短）",
-   "value": "正 λ 的调度公式",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "K2 e0≥ε ⇒ raise（混沌合同终点：拒绝无限时窗轨迹精度）",
-   "value": "raise",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "K3 统计签核：差 0.005 ≤ CI 0.126（τ_int=5.9，N_eff=33.7，独立参考系综）",
-   "value": "burn-in T<20",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "K3 统计稳健 ≠ 轨迹稳健：QoI 差 0.005 小而轨迹误差 31.54",
-   "value": "Level 2 统计可划归成立",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "K4 轨迹合同覆盖：99%（预测 δ0·e^{λt} 封顶，非实测自证）",
-   "value": "λ_fit 样本内，非最坏上界",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "K4 证书：expanding + finite_horizon=True + QoI 稳健 ⇒ pass",
-   "value": "pass",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "K4 负对照：expanding 无 finite_horizon ⇒ rejected",
-   "value": "rejected",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-2 反例：signed |∫r|=0.0002 ≈ 0 而真实 |e(2)|=0.3998（诊断非界）",
-   "value": "解析 e(2)=0.3996",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-2 l1 预算 ∫‖r‖=1.999 ≥ |e(2)|=0.400（收缩前提下的界）",
-   "value": "比传播界松 2.3×",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-2 传播预算 ∫‖Φ‖‖r‖=0.8637 ≥ |e(2)|=0.3998（保守动态界）",
-   "value": "eta=0.8637（含求积误差）",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-2 lognorm 闭式：r_max(e^{μΔT}−1)/μ=0.8647 ≈ 传播积分 0.8637",
-   "value": "μ=−1, r_max=1, ΔT=2",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-2 递推：ε(2)=0.8633 ≥ |e(2)|=0.3998（signed 预算会给 0）",
-   "value": "G=e^{-1}, η=传播积分",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-4 拒绝：qoi 负方向大误差 ⇒ rejected",
-   "value": "error_control eps_J violated: |qoi_estimate| 100 + B_remaind",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-4 拒绝：e_measured NaN ⇒ rejected",
-   "value": "error_control e_measured_max non-finite: not a pass",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-4 拒绝：e_predicted NaN ⇒ rejected",
-   "value": "error_control e_predicted_max non-finite: not a pass",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-4 拒绝：coverage inf ⇒ rejected",
-   "value": "error_control coverage_ratio inf not finite in [0,1]",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-4 拒绝：finite_horizon 无时窗 ⇒ rejected",
-   "value": "error_control finite_horizon=True without a concrete positiv",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-4 拒绝：预测 101 > ε_global 100 ⇒ rejected",
-   "value": "error_control eps_global accuracy violated: predicted 101 > ",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-4 拒绝：余项推高 δJ ⇒ rejected",
-   "value": "error_control eps_J violated: |qoi_estimate| 0.009 + B_remai",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-4 合法 expanding + finite_horizon + horizon_T=2 ⇒ pass",
-   "value": "pass",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-4 缺 evidence 且 workload 要求 ⇒ 证书 rejected",
-   "value": "error-control evidence required by workload but not supplied: dynamic ",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-4 默认不要求 evidence ⇒ 向后兼容（不误拒）",
-   "value": "no evidence evaluated",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-5 三端口 K_i 不同：offset 1.264、gm 1.164、cap 0.919",
-   "value": "同一节点不能共用一份灵敏度",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-5 绝对恒等式：Σ K_i·e_i=500.0000 ≈ ε_J（ΣK=1.164 保留）",
-   "value": "非归一化口径",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-5 K 翻倍 ⇒ 预算减半：429.71 → 214.86（归一化会漏掉 ΣK）",
-   "value": "ratio=0.500",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-5 ε_J 过小 ⇒ 8 元素 budget < floor（不可行）",
-   "value": "flag + 拒绝",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "P0-5 P6 拒绝不可行分配：verdict=rejected",
-   "value": "error_control P7 allocation infeasible for 8 elements (budget < measur",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查6 分类 contractive ⇒ contractive",
-   "value": "contractive",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查6 分类 asymptotically stable ⇒ asymptotically stable",
-   "value": "asymptotically stable",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查6 分类 semistable ⇒ semistable",
-   "value": "semistable",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查6 分类 polynomially growing ⇒ polynomially growing",
-   "value": "polynomially growing",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查6 分类 expanding ⇒ expanding",
-   "value": "expanding",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查6 能量度量统一：μ₂=49.0 vs μ_M=-0.5（C bank 跨 10⁴ 时不同）",
-   "value": "finite_time_gain 同 M",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查6 能量度量预条件：无 M 为 asymptotically stable，有 M 变 contractive（μ_M=-0.5<0 收缩）",
-   "value": "同一口径 gain 与 μ_M",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查7 E=1e-3 I_64（det=1e-192）不误判：λ(T)=c 且有限",
-   "value": "max|λ(T)−c|=0.0e+00",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查7 相对奇异值 1e-15 ⇒ raise（cond 判据，非 det）",
-   "value": "raise",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查7 P7 伴随口径：E≠I 时 λ_last 改变 3.29e+27×（E⁻¹ 端口权重）",
-   "value": "descriptor 而非 adjoint_field",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查7 merge 事件：A+B→m0，t=0.858，3×6 Jacobian",
-   "value": "shape=(3, 6)",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查7 源生命周期：消失区域 rB 的源被移除",
-   "value": "sources={'rC': 0.002}",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查7 存活源按 id 重绑：rC=2.000e-03 未绑错（下标已变）",
-   "value": "ids=['m0', 'C']",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查9 证书挂动态证据：error_control verdict=pass",
-   "value": "pass",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查9 p7 出 dJ 分配预算：source=dJ-allocation，4 项",
-   "value": "eps_J=500.0",
-   "ok": true,
-   "kind": "error_control"
-  },
-  {
-   "name": "审查9 缺 evidence 且 workload 要求 ⇒ 证书 rejected",
-   "value": "rejected",
-   "ok": true,
-   "kind": "error_control"
-  }
- ]
 }

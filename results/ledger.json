@@ -52,7 +52,7 @@
    "display": "\u6821\u51c6\u6b8b\u5dee\uff08Gram \u6807\u5b9a\uff09",
    "nominal_value": 0.02,
    "sensitivity": 17.1,
-   "sensitivity_definition": "isometry after right-Gram 2.90e-15; at 2% calibration residual 0.342 (\u00a76.16 measured) \u2192 d(isometry)/d(residual)\u224817/unit; left-multiply trap: naive isometry 0.032",
+   "sensitivity_definition": "isometry after right-Gram 3.46e-15; at 2% calibration residual 0.342 (\u00a76.16 measured) \u2192 d(isometry)/d(residual)\u224817/unit; left-multiply trap: naive isometry 0.032",
    "source": "results/transform.json gram case + DESIGN \u00a76.16 measured 0.342@2%",
    "falsification_observation": "\u00a79 risk 2: \u03b8(t) drifts with temperature \u21d2 \u0394A time-varying, H2/H\u221e need periodic recompute; wrong left-Gram multiplication leaves isometry at 0.032 silently"
   },

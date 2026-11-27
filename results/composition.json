@@ -1,0 +1,188 @@
+{
+  "kind": "composition",
+  "meta": {
+    "bench": "bench.run_composition",
+    "section": "DESIGN.md §6.23",
+    "model": "island-level Metzler / discrete window / conservation split"
+  },
+  "metzler": {
+    "H": [
+      [
+        -1.0,
+        0.1,
+        0.0
+      ],
+      [
+        0.0,
+        -2.0,
+        0.05
+      ],
+      [
+        0.02,
+        0.0,
+        -3.0
+      ]
+    ],
+    "bound": [
+      0.001100435007250121,
+      0.0010043500725012084,
+      0.00017400290004833418
+    ],
+    "simulated": [
+      0.0011004350072501199,
+      0.001004350072501208,
+      0.00017400290004833413
+    ]
+  },
+  "discrete": {
+    "rho": 0.7366025403784439,
+    "bound": [
+      0.004347826086956522,
+      0.007391304347826087
+    ],
+    "counterexample_rho": 4.0,
+    "counterexample_e10": 1024.0,
+    "common_metric": false,
+    "contraction": 0.26339746041023127
+  },
+  "conservation": {
+    "mu_perp": -0.5857864376269045,
+    "mu_full": 1.0160837529279597e-16,
+    "mean_decay": 1.0000000000000004,
+    "perp_ratio": 0.24588999288011013,
+    "leak_rate": 1.7786851157383927e-08
+  },
+  "criteria": {
+    "directed_abscissa": null
+  },
+  "accuracy": {
+    "bound": [
+      0.0016216733311090773,
+      0.0019140203829070106,
+      0.00035443727956661295
+    ],
+    "measured": [
+      0.0013456932048425988,
+      0.0015519655316063629,
+      0.0002853178052628332
+    ],
+    "looseness": 1.2422543319373542
+  },
+  "checks": [
+    {
+      "name": "C1 H 是 Metzler 且 Hurwitz：非对角=0.100/0.050/0.020，谱横坐标=-1.000",
+      "detail": "μ=(-1.0,-2.0,-3.0)",
+      "ok": true
+    },
+    {
+      "name": "C2 界与积分一致：−H⁻¹d=[0.0011, 0.001004, 0.000174]，模拟 limsup=[0.0011, 0.001004, 0.000174]，超出 -5.4e-20",
+      "detail": "bound ≥ sim",
+      "ok": true
+    },
+    {
+      "name": "C3 d=0 ⇒ 界为 0（纯收缩，无残余误差）",
+      "detail": "max(bound)=0.0e+00",
+      "ok": true
+    },
+    {
+      "name": "W1 ρ(K)=0.737<1 ⇒ (I−K)⁻¹η=[0.004348, 0.007391]，迭代终值=[0.004348, 0.007391]",
+      "detail": "bound ≥ sim",
+      "ok": true
+    },
+    {
+      "name": "W2 反例：逐窗口 ρ=(0, 0)，乘积 ρ=4 —— 交替 10 步把 ε 放大到 1.02e+03（单看 ρ(K_k) 会漏）",
+      "detail": "AMR/时变拓扑必须用乘积/共同度量",
+      "ok": true
+    },
+    {
+      "name": "W3 共同加权范数正确拒绝：feasible=False（不存在 w>0 使 K_k w ≤ (1−δ)w）",
+      "detail": "product ρ=4.0",
+      "ok": true
+    },
+    {
+      "name": "W4 收缩序列有共同度量：δ=0.263，w=[1.0, 1.366]",
+      "detail": "LP feasible",
+      "ok": true
+    },
+    {
+      "name": "W5 周期窗口：cycle_ρ=4.0 ⇒ bound=None（不许诺长期界）",
+      "detail": "window contract",
+      "ok": true
+    },
+    {
+      "name": "K1 零模态 μ_full=1.0e-16（=0 ⇒ 全局不收缩），补空间 μ_⊥=-0.5858 = −λ₂(L)=-0.5858",
+      "detail": "两轴分开",
+      "ok": true
+    },
+    {
+      "name": "K2 零模态扰动不衰减：‖e_mean(T)‖/‖e_mean(0)‖=1.000000（守恒漂移）",
+      "detail": "ε_conservation 单独记账",
+      "ok": true
+    },
+    {
+      "name": "K3 补空间扰动按 e^{μ⊥T} 衰减：实测 0.2459 ≤ e^{-0.5858·2.0}=0.3099",
+      "detail": "μ⊥ 是有效收缩率",
+      "ok": true
+    },
+    {
+      "name": "K4 常值泄漏 r_leak=1e-4 ⇒ 均值漂移率 1.78e-08/时间单位（ε_mean 线性增长，不进 ε_⊥）",
+      "detail": "separate budget",
+      "ok": true
+    },
+    {
+      "name": "T1 无向环：small-gain 拒绝（H 谱横坐标 0.000，ρ(H)=4.000）",
+      "detail": "H 非 Hurwitz",
+      "ok": true
+    },
+    {
+      "name": "T2 无向环：passivity 通过（岛耗散指数 max=-2.0e+00）",
+      "detail": "MA+AᵀM ⪯ 0",
+      "ok": true
+    },
+    {
+      "name": "T3 无向环：守恒+投影 通过（μ_⊥=-0.5858）",
+      "detail": "projected contraction",
+      "ok": true
+    },
+    {
+      "name": "T1 定向环：small-gain 拒绝（H 谱横坐标 -0.000，ρ(H)=2.000）",
+      "detail": "H 非 Hurwitz",
+      "ok": true
+    },
+    {
+      "name": "T2 定向环：passivity 通过（岛耗散指数 max=-1.0e+00）",
+      "detail": "MA+AᵀM ⪯ 0",
+      "ok": true
+    },
+    {
+      "name": "T3 定向环：守恒+投影 通过（μ_⊥=-0.2929）",
+      "detail": "projected contraction",
+      "ok": true
+    },
+    {
+      "name": "T4 功率平衡：零模态 x=1 上局部耗散 -16.00 + 耦合注入 16.00 = 0.0e+00（恰为 0）；随机 x 上总存储 -42.63 < 0",
+      "detail": "local dissipation cancels coupling on the null mode",
+      "ok": true
+    },
+    {
+      "name": "A1 岛级界 ≥ 全系统实测：bound=[0.00162, 0.00191, 0.00035]，实测=[0.00135, 0.00155, 0.00029]，松度 max=1.24×",
+      "detail": "非空洞但保守",
+      "ok": true
+    },
+    {
+      "name": "A2 组合规模：m=3 个岛 vs n=6 个态（比较矩阵 m×m，不必对 n×n 稠密矩阵反复 expm）",
+      "detail": "scalability",
+      "ok": true
+    }
+  ],
+  "_meta": {
+    "git_sha": "95f79c27f1bfef51c1a4b38df339ff116adfd263",
+    "git_dirty": true,
+    "bench_module": "bench.run_composition",
+    "command": "python3 -m bench.run_composition",
+    "timestamp_utc": "2026-11-27T06:57:35+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
+  }
+}

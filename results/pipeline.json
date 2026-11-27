@@ -145,12 +145,12 @@
               "projected": false
             },
             "verdict": "pass",
-            "detail": "\u0393_proj=0.0008149"
+            "detail": "Γ_proj=0.0008149"
           },
           "hinf": {
             "value": 1000.0009536742323,
             "verdict": "pass",
-            "detail": "\u2016H\u2016\u221e"
+            "detail": "‖H‖∞"
           },
           "lyapunov": {
             "value": {
@@ -160,16 +160,17 @@
               "method": "direct"
             },
             "verdict": "pass",
-            "detail": "\u03c3_y=2.477e+04 (direct)"
+            "detail": "σ_y=2.477e+04 (direct)"
           }
         },
         "binding_axis": "robustness_A",
         "constraint": null,
         "error_control": null,
+        "p7": null,
         "rejection_reasons": [],
         "assumptions": [
-          "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
-          "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
+          "τ_c/τ_min≪1 white-noise approx (§1.4: finite τ_c gives O(τ_c) Itô bias; σ_y² from generalized Lyapunov assumes white injection)",
+          "ΔA declared conservative — leakage ΔA needs drift budget not Γ_proj (§1.2/P0-D: robustness_A axis only valid for column-sum-preserving ΔA)"
         ]
       },
       "p6_binding_axis": "robustness_A",
@@ -403,8 +404,8 @@
         "slack": {
           "values": {
             "noise": NaN,
-            "bandwidth": 0.08000000000000071,
-            "stiffness": 0.0001166173080467883,
+            "bandwidth": 0.08000000000000068,
+            "stiffness": 0.0001166173080467753,
             "robustness_A": NaN,
             "robustness_io": NaN,
             "routing": NaN,
@@ -425,8 +426,8 @@
           "slack": {
             "value": {
               "noise": NaN,
-              "bandwidth": 0.08000000000000071,
-              "stiffness": 0.0001166173080467883,
+              "bandwidth": 0.08000000000000068,
+              "stiffness": 0.0001166173080467753,
               "robustness_A": NaN,
               "robustness_io": NaN,
               "routing": NaN,
@@ -441,37 +442,38 @@
               "metric": "caller-supplied"
             },
             "verdict": "pass",
-            "detail": "\u0393_proj=inf"
+            "detail": "Γ_proj=inf"
           },
           "hinf": {
-            "value": 14.702420309406595,
+            "value": 14.702434330727211,
             "verdict": "pass",
-            "detail": "\u2016H\u2016\u221e"
+            "detail": "‖H‖∞"
           },
           "lyapunov": {
             "value": {
-              "sigma_y": 6320.730755533549,
-              "sigma_y2": 39951637.283947706,
+              "sigma_y": 6320.7307555335165,
+              "sigma_y2": 39951637.2839473,
               "h2_finite": true,
               "method": "direct"
             },
             "verdict": "pass",
-            "detail": "\u03c3_y=6321 (direct)"
+            "detail": "σ_y=6321 (direct)"
           }
         },
         "binding_axis": "bandwidth",
         "constraint": null,
         "error_control": null,
+        "p7": null,
         "rejection_reasons": [],
         "assumptions": [
-          "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
-          "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
+          "τ_c/τ_min≪1 white-noise approx (§1.4: finite τ_c gives O(τ_c) Itô bias; σ_y² from generalized Lyapunov assumes white injection)",
+          "ΔA declared conservative — leakage ΔA needs drift budget not Γ_proj (§1.2/P0-D: robustness_A axis only valid for column-sum-preserving ΔA)"
         ]
       },
       "p6_binding_axis": "bandwidth",
       "scaling": {
         "alpha": 1577990.2760159757,
-        "scaled_bandwidth_hz": 800000.0000000071,
+        "scaled_bandwidth_hz": 800000.0000000069,
         "bandwidth_pass": true
       },
       "twin": {
@@ -1014,7 +1016,7 @@
         "external_state_timescale": 1e-08,
         "cert_status": "rejected",
         "cert_feasible": false,
-        "res_at_tau_external": 11.28341255064362
+        "res_at_tau_external": 11.283412550643622
       },
       "constraint_coupled_pass": {
         "eps_c": 0.001,
@@ -1023,10 +1025,10 @@
         "cert_status": "no violation on evaluated axes"
       },
       "reconciliation": {
-        "predicted": "eps_c=1.47e+03 >= 0.01 against declared external \u03c4=1e-08 \u21d2 FAIL (elliptic becomes parabolic for the coupled state)",
-        "measured": "res(\u03c4_external)=1.128e+01 (\u03c4_relax(1e-6)=1.470e-05, pure-steady converged at T=1e-9: res=3.658e-14)",
-        "verdict": "bound-holds: coupled FAIL surfaced in certificate; pure-steady judged on deadline+residual, no bogus \u03b5_c",
-        "cert_note": "cert on P3 physical-time descriptor (eig=lambda/alpha): bandwidth = B_hw*margin within window; robustness_A unevaluated (delta_A_norm =None \u2014 mismatch is a leakage/drift perturbation judged by floor_bound, not Gamma_proj); feasible on evaluated axes. Constraint timing: poisson-2d is pure steady-state (no external dynamic timescale declared) \u2014 no eps_c is fabricated from the constraint's own poles; the steady verdict is a deadline+residual fact, and a coupled negative control (declared fast external tau) surfaces as a rejected certificate via the constraint field"
+        "predicted": "eps_c=1.47e+03 >= 0.01 against declared external τ=1e-08 ⇒ FAIL (elliptic becomes parabolic for the coupled state)",
+        "measured": "res(τ_external)=1.128e+01 (τ_relax(1e-6)=1.470e-05, pure-steady converged at T=1e-9: res=3.658e-14)",
+        "verdict": "bound-holds: coupled FAIL surfaced in certificate; pure-steady judged on deadline+residual, no bogus ε_c",
+        "cert_note": "cert on P3 physical-time descriptor (eig=lambda/alpha): bandwidth = B_hw*margin within window; robustness_A unevaluated (delta_A_norm =None — mismatch is a leakage/drift perturbation judged by floor_bound, not Gamma_proj); feasible on evaluated axes. Constraint timing: poisson-2d is pure steady-state (no external dynamic timescale declared) — no eps_c is fabricated from the constraint's own poles; the steady verdict is a deadline+residual fact, and a coupled negative control (declared fast external tau) surfaces as a rejected certificate via the constraint field"
       }
     },
     "burgers-1d": {
@@ -1041,7 +1043,7 @@
           "T": 0.3
         },
         "cfl": 0.2,
-        "rhs_func": "<function _burgers_fv.<locals>.rhs_func at 0x7feb00ca8ae0>",
+        "rhs_func": "<function _burgers_fv.<locals>.rhs_func at 0x7f95b513d2d0>",
         "u0": "0.5+0.5 sin(2 pi x) point values (run_phase0/run_transform convention)",
         "reg": {
           "p": 1.4385004176399947,
@@ -1200,7 +1202,7 @@
         "alpha": 3.3983607518192975e-05,
         "method": "rms3sigma",
         "gamma_before": Infinity,
-        "gamma_after": Infinity,
+        "gamma_after": 586.3142773169596,
         "notes": [],
         "bandwidth_pass": true
       },
@@ -1210,9 +1212,9 @@
         "slack": {
           "values": {
             "noise": NaN,
-            "bandwidth": 0.0795243582371315,
-            "stiffness": 0.00220720825709568,
-            "robustness_A": 0.02782890626450904,
+            "bandwidth": 0.0802418285047454,
+            "stiffness": 0.0022279823748737825,
+            "robustness_A": 0.02782890629126389,
             "robustness_io": NaN,
             "routing": NaN,
             "representation": 2.5733990126494986
@@ -1234,9 +1236,9 @@
           "slack": {
             "value": {
               "noise": NaN,
-              "bandwidth": 0.0795243582371315,
-              "stiffness": 0.00220720825709568,
-              "robustness_A": 0.02782890626450904,
+              "bandwidth": 0.0802418285047454,
+              "stiffness": 0.0022279823748737825,
+              "robustness_A": 0.02782890629126389,
               "robustness_io": NaN,
               "routing": NaN,
               "representation": 2.5733990126494986
@@ -1246,43 +1248,44 @@
           },
           "resolvent": {
             "value": {
-              "Gamma": Infinity,
-              "Gamma_proj": 0.0009463614856910498,
+              "Gamma": 586.3142773169596,
+              "Gamma_proj": 0.0009463614866008874,
               "method": "sweep",
               "projected": true
             },
             "verdict": "pass",
-            "detail": "\u0393_proj=0.0009464"
+            "detail": "Γ_proj=0.0009464"
           },
           "hinf": {
-            "value": 6.124887257026839,
+            "value": 6.124887262136152,
             "verdict": "pass",
-            "detail": "\u2016H\u2016\u221e"
+            "detail": "‖H‖∞"
           },
           "lyapunov": {
             "value": {
-              "sigma_y": 623.0854892891681,
-              "sigma_y2": 388235.52696272207,
+              "sigma_y": 623.0854892891787,
+              "sigma_y2": 388235.5269627352,
               "h2_finite": true,
               "method": "qz"
             },
             "verdict": "pass",
-            "detail": "\u03c3_y=623.1 (qz)"
+            "detail": "σ_y=623.1 (qz)"
           }
         },
         "binding_axis": "representation",
         "constraint": null,
         "error_control": null,
+        "p7": null,
         "rejection_reasons": [],
         "assumptions": [
-          "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
-          "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
+          "τ_c/τ_min≪1 white-noise approx (§1.4: finite τ_c gives O(τ_c) Itô bias; σ_y² from generalized Lyapunov assumes white injection)",
+          "ΔA declared conservative — leakage ΔA needs drift budget not Γ_proj (§1.2/P0-D: robustness_A axis only valid for column-sum-preserving ΔA)"
         ]
       },
       "p6_binding_axis": "representation",
       "scaling": {
         "alpha": 3.3983607518192975e-05,
-        "scaled_bandwidth_hz": 795243.582371315,
+        "scaled_bandwidth_hz": 802418.285047454,
         "bandwidth_pass": true
       },
       "twin": {
@@ -1750,8 +1753,8 @@
     },
     {
       "problem": "diffusion-1d",
-      "name": "diffusion-1d: meas_sigma vs Lyapunov sigma_y (\u00d72)",
-      "got": "2.249e+01 vs 2.236e+01 (\u00d71.01)",
+      "name": "diffusion-1d: meas_sigma vs Lyapunov sigma_y (×2)",
+      "got": "2.249e+01 vs 2.236e+01 (×1.01)",
       "expected": "within factor 2",
       "passed": true,
       "kind": "recon"
@@ -1808,21 +1811,21 @@
       "problem": "poisson-2d",
       "name": "poisson-2d: floor_meas <= deterministic bound",
       "got": "1.381e-04 vs 3.627e-03",
-      "expected": "measured \u2264 bound",
+      "expected": "measured ≤ bound",
       "passed": true,
       "kind": "recon"
     },
     {
       "problem": "poisson-2d",
       "name": "poisson-2d: tau_fit vs C/lambda_min (5%)",
-      "got": "1.47e-11 vs 1.47e-11 (\u03940.00%)",
+      "got": "1.47e-11 vs 1.47e-11 (Δ0.00%)",
       "expected": "within 5%",
       "passed": true,
       "kind": "recon"
     },
     {
       "problem": "poisson-2d",
-      "name": "poisson-2d: pure steady-state: no \u03b5_c fabricated from own poles",
+      "name": "poisson-2d: pure steady-state: no ε_c fabricated from own poles",
       "got": "None",
       "expected": "None (deadline+residual path)",
       "passed": true,
@@ -1926,7 +1929,7 @@
     },
     {
       "problem": "burgers-1d",
-      "name": "burgers-1d: l2_blend / l2_weno5 (\u00a76.16 ~1.34x)",
+      "name": "burgers-1d: l2_blend / l2_weno5 (§6.16 ~1.34x)",
       "got": "1.088",
       "expected": "in [1.0, 2.0]",
       "passed": true,
@@ -1943,14 +1946,14 @@
     {
       "problem": "burgers-1d",
       "name": "burgers-1d: E_tail^(1/2) ~ l2_blend (order-of-magnitude, <=1 decade)",
-      "got": "1.604e-02 vs 2.334e-02 (\u03940.16 dec)",
+      "got": "1.604e-02 vs 2.334e-02 (Δ0.16 dec)",
       "expected": "within 1 decade",
       "passed": true,
       "kind": "recon"
     },
     {
       "problem": "negative-control",
-      "name": "diffusion \u03ba_hw=1e3 \u2192 infeasible",
+      "name": "diffusion κ_hw=1e3 → infeasible",
       "got": "status=infeasible axis=stiffness",
       "expected": "infeasible, binding_axis=stiffness",
       "passed": true,
@@ -1976,5 +1979,15 @@
   "summary": {
     "n_checks": 34,
     "n_passed": 34
+  },
+  "_meta": {
+    "git_sha": "95f79c27f1bfef51c1a4b38df339ff116adfd263",
+    "git_dirty": true,
+    "bench_module": "bench.run_pipeline",
+    "command": "python3 -m bench.run_pipeline",
+    "timestamp_utc": "2026-11-27T06:54:57+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
   }
 }

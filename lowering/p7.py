@@ -92,6 +92,12 @@ class CalibPlan:
     eps_J_ppm: float | None = None            # QoI 总误差合同（ppm）
     allocation_infeasible: int = 0            # 预算 < 测量底的元素数（P0-5 拒绝）
     sensitivity_total: float | None = None    # ΣK_i（绝对口径）
+    # --- C 修复：解析伴随权重 + 物理端口预算 ---
+    adjoint: dict | None = None               # qoi_adjoint_weights 的记录
+    port_budgets: list | None = None          # 逐物理端口的 {port,kind,K,unit,
+                                              #   residual_budget_ppm,feasible}
+    n_infeasible_ports: int = 0
+    port_graph: dict | None = None            # 端口图摘要（kind 计数）
 
     def as_dict(self) -> dict:
         return dict(foreground=[dict(f) for f in self.foreground],
@@ -105,7 +111,14 @@ class CalibPlan:
                                          else None),
                     eps_J_ppm=self.eps_J_ppm,
                     allocation_infeasible=int(self.allocation_infeasible),
-                    sensitivity_total=self.sensitivity_total)
+                    sensitivity_total=self.sensitivity_total,
+                    adjoint=(dict(self.adjoint) if self.adjoint is not None
+                             else None),
+                    port_budgets=([dict(x) for x in self.port_budgets]
+                                  if self.port_budgets is not None else None),
+                    n_infeasible_ports=int(self.n_infeasible_ports),
+                    port_graph=(dict(self.port_graph)
+                                if self.port_graph is not None else None))
 
 
 def allocate_element_budgets(sens, eps_J_ppm: float, floors=None,
@@ -217,6 +230,10 @@ class Config:
     cal_bindings: list = field(default_factory=list)
     # 每元素一条：{element, quantity, method, reference}——哪个元素锁哪个
     # 前台量/哪个后台参考。
+    deliverability: dict = field(default_factory=dict)
+    # 联合判决的 P7 半边：{ok, reasons, n_infeasible_ports,
+    #   n_infeasible_elements, port_graph}。P6 的 cert.feasible 与这里的
+    # ok 共同构成 run_chain 的 final_feasible（P7 不可交付必须回传）。
 
     def as_dict(self) -> dict:
         return dict(elements=[e.as_dict() for e in self.elements],
@@ -226,7 +243,8 @@ class Config:
                     coeff_edges=[dict(e) for e in self.coeff_edges],
                     b_ports=[dict(p) for p in self.b_ports],
                     c_taps=[dict(t) for t in self.c_taps],
-                    cal_bindings=[dict(b) for b in self.cal_bindings])
+                    cal_bindings=[dict(b) for b in self.cal_bindings],
+                    deliverability=dict(self.deliverability))
 
 
 # ---------------------------------------------------------------------------
@@ -256,6 +274,146 @@ def qoi_adjoint_for_config(A_v, E_v, qoi, T, t_grid=None) -> np.ndarray:
             lam[:, k] = q * np.exp(-gamma * (float(T) - tk))
         return lam
     return adjoint_field(A_v, q, t)
+
+
+def qoi_adjoint_weights(A_v, E_v, qoi, T, t_grid=None) -> dict:
+    """P7 的 dJ 权重：对角实负走**解析积分**，其余走采样 + 分辨率自查。
+
+    审查 C：`qoi_adjoint_for_config` 只生成采样点，调用方再用 65 点梯形
+    积分——γ_max·Δt ≫ 1 时快模态的 1/γ 尖峰被漏掉（
+    analysis.adjoint.dJ_weights_exact 的陷阱记录），权重退化成端点伪影。
+    这里把积分一次做对：
+
+      * 对角、实负、c≥0、E=I：
+            w_i = |c_i|·(1 − e^{−γ_i T})/γ_i ，归一化后返回；
+      * E≠I（descriptor）：w_i = ∫|λ_i(t)|dt / |E_ii|（端口夹 E⁻¹）；
+      * 其余：采样 + γ_max·Δt 自查，>1 时 reliable=False。
+
+    返回 dict(weights=归一化, weights_abs=未归一化, method=,
+    gamma_max_dt=, sampled_deviation=, reliable=)；`sampled_deviation` 是
+    65 点梯形与闭式的**逐分量**最大相对偏差——它是"刚性陷阱"在本
+    workload 上的实测证据，不是装饰（快速模态的 1/γ 尖峰被 0.5Δt 替身，
+    相对误差 ~γΔt，归一化后仍可达 10× 以上）。
+    """
+    from analysis.adjoint import dJ_weights_exact
+
+    A_v = np.asarray(A_v, dtype=float)
+    q = np.asarray(qoi, dtype=float).ravel()
+    n = A_v.shape[0]
+    if q.size != n:
+        raise ValueError("qoi 维度 %d != 状态数 %d" % (q.size, n))
+    T = float(T)
+    t = (np.asarray(t_grid, dtype=float) if t_grid is not None
+         else np.linspace(0.0, T, 65))
+    diag = np.diag(A_v)
+    diag_only = np.abs(A_v - np.diag(diag)).max() <= 1e-9 * max(
+        1.0, float(np.abs(diag).max()))
+    E_id = (E_v is None or np.all(np.abs(np.asarray(E_v, dtype=float)
+                                        - np.eye(n)) <= 1e-12))
+    gamma = -diag
+
+    if diag_only and E_id and np.all(gamma > 0) and np.all(q >= 0):
+        w = dJ_weights_exact(A_v, q, T)              # 归一化
+        w_abs = q * (1.0 - np.exp(-gamma * T)) / gamma
+        gmax_dt = float(np.max(gamma) * np.max(np.diff(t))) if t.size > 1 else 0.0
+        # 同一网格上的 65 点梯形（作为陷阱证据；不参与分配）
+        lam = np.array([q * np.exp(-gamma * (T - tk)) for tk in t]).T
+        w_s = np.array([np.trapezoid(np.abs(lam[i]), t) for i in range(n)])
+        w_s = w_s / max(float(w_s.sum()), 1e-300)
+        # 逐分量相对偏差：梯形在 γΔt≫1 的模态上把 1/γ 尖峰换成 0.5Δt，
+        # 快速模态的权重可放大 ~Δt·γ 倍（归一化后仍远超慢模态的相对误差）
+        dev = float(np.max(np.abs(w_s - w)
+                           / np.maximum(w, 1e-12 * float(np.max(w)))))
+        return dict(weights=w, weights_abs=w_abs, method="closed-form",
+                    gamma_max_dt=gmax_dt, sampled_deviation=dev,
+                    reliable=True)
+
+    if not diag_only and np.all(np.real(np.linalg.eigvals(A_v)) < 0):
+        gmax = float(np.max(-np.real(np.linalg.eigvals(A_v)))
+                     * np.max(np.diff(t)))
+    else:
+        gmax = float("nan")
+    from analysis.adjoint import adjoint_field, descriptor_adjoint_field
+    if E_v is not None and not E_id:
+        lam = descriptor_adjoint_field(E_v, A_v, q, t)
+        w_abs = np.array([np.trapezoid(np.abs(lam[i]), t)
+                          for i in range(lam.shape[0])])
+        w_abs = w_abs / np.abs(np.diag(np.asarray(E_v, dtype=float)))
+        method = "descriptor-sampled"
+        reliable = bool(np.isfinite(gmax) and gmax <= 1.0)
+    else:
+        lam = adjoint_field(A_v, q, t)
+        w_abs = np.array([np.trapezoid(np.abs(lam[i]), t)
+                          for i in range(lam.shape[0])])
+        method = "sampled"
+        reliable = bool(np.isfinite(gmax) and gmax <= 1.0)
+    tot = float(w_abs.sum())
+    if tot <= 0:
+        raise ValueError("伴随权重全零：c=0 或时窗过短")
+    return dict(weights=w_abs / tot, weights_abs=w_abs, method=method,
+                gamma_max_dt=(gmax if np.isfinite(gmax) else float("inf")),
+                sampled_deviation=0.0, reliable=reliable)
+
+
+def allocate_port_budgets(ports, eps_J_ppm: float,
+                          floor_ppm: float = 100.0,
+                          loop_gain: float = 1e4,
+                          drift_rate=None) -> dict:
+    """按**物理端口**做 ε_J 等贡献分配（§6.22 P0-5 完整版）。
+
+    每个端口用**相对**灵敏度 K_rel = |∂J/∂lnθ|（= K_abs·θ_ref），预算单位
+    是 ppm of θ_ref：gm/C 误差、C mismatch、edge gain、offset 满摆、DAC/
+    ADC 增益——这才是与 cal 残差 ppm 同一口径的可交付数字。绝对 K 保留
+    在端口记录里（K），供位宽映射（V_FS/2^{b+1}）使用。
+
+    route τ 端口是**相位/时延**预算（K_rel=nan，单位 per second），不参与
+    ppm 等贡献分配，单独给出 τ_budget；这是诚实的分轴处理，不是漏项。
+
+    等贡献 K_rel,p·e_p = ε_J/n_alloc ⇒ e_p = ε_J/(n_alloc·K_rel,p)。
+    预算 < floor ⇒ infeasible，如实记录。
+    """
+    items, n_alloc, n_inf = [], 0, 0
+    alloc_ports = [p for p in ports
+                   if np.isfinite(getattr(p, "K_rel", float("nan")))
+                   and p.K_rel > 0]
+    n_alloc = len(alloc_ports)
+    total = float(sum(p.K_rel for p in alloc_ports))
+    for p in ports:
+        k = getattr(p, "K_rel", float("nan"))
+        rec = dict(port=p.name, kind=p.kind, K=float(p.K),
+                   K_rel=(float(k) if np.isfinite(k) else None),
+                   theta_ref=p.theta_ref, unit=p.unit, element=p.element,
+                   edge=p.edge, residual_budget_ppm=None,
+                   floor_ppm=float(p.floor_ppm) if p.floor_ppm is not None
+                   else float(floor_ppm), feasible=False,
+                   update_interval=None, reason="")
+        if not (np.isfinite(k) and k > 0):
+            rec["reason"] = ("not a ppm-allocatable port (phase/delay axis)"
+                             if p.kind == "route_tau" else
+                             "zero K_rel: QoI-unobservable port")
+            if p.kind == "route_tau" and float(p.K) > 0:
+                rec["tau_budget_s"] = float(eps_J_ppm) / float(p.K)
+                rec["phase_budget_deg"] = float(
+                    np.degrees(float(eps_J_ppm) / float(p.K) * p.theta_ref))
+            items.append(rec)
+            continue
+        e = eps_J_ppm / (n_alloc * k)
+        rec["residual_budget_ppm"] = float(e)
+        rec["feasible"] = bool(e >= rec["floor_ppm"])
+        if not rec["feasible"]:
+            n_inf += 1
+            rec["reason"] = ("budget %.4g ppm < floor %.4g ppm: undeliverable"
+                             % (e, rec["floor_ppm"]))
+        elif drift_rate is not None and float(drift_rate) > 0:
+            from twin.calib import update_interval_for_budget
+            rec["update_interval"] = update_interval_for_budget(
+                float(drift_rate), e, rec["floor_ppm"], loop_gain)
+        items.append(rec)
+    acc = sum(it["K_rel"] * it["residual_budget_ppm"] for it in items
+              if it["residual_budget_ppm"] is not None)
+    return dict(items=items, n_allocated=n_alloc, n_infeasible=n_inf,
+                identity_residual=abs(acc - float(eps_J_ppm)),
+                sensitivity_total=total, eps_J_ppm=float(eps_J_ppm))
 
 
 def generate_config(discretized, cert, scaling,
@@ -498,38 +656,56 @@ def generate_config(discretized, cert, scaling,
     per_element_budgets = None
     eps_J_used = None
     alloc = None                     # 未声明 ε_J 时保持 None（向后兼容）
+    port_alloc = None
+    port_graph = None
+    adjoint_record = None
+    if device_sensitivities is not None and eps_J is None:
+        raise ValueError("device_sensitivities 需要 eps_J（绝对端口预算的合同）")
     if (qoi is not None and eps_J is not None and T_horizon is not None
             and A_v is not None) or device_sensitivities is not None:
+        from analysis.portgraph import PortGraph
         absolute = device_sensitivities is not None
-        if absolute:
-            # P0-5：器件参数绝对灵敏度 K_i（不同端口各算各的），
-            # |δJ| ≤ Σ K_i·δθ_i ≤ eps_J —— 保留前置因子 ΣK_i。
+        E_v = getattr(scaled, "E", None)
+        if absolute and isinstance(device_sensitivities, PortGraph):
+            # 物理参数图：逐端口 K（gm/C/offset/DAC/ADC/route τ），
+            # 不再按 state name 共用一份灵敏度。
+            port_graph = device_sensitivities
+            sens = port_graph.element_totals(len(states))
+            if float(sum(sens)) <= 0:
+                raise ValueError("PortGraph 全零灵敏度：无分配对象")
+            port_alloc = allocate_port_budgets(
+                port_graph.ports, float(eps_J), floor_ppm=meas_noise_ppm,
+                drift_rate=(bg_rate if bg_rate > 0.0 else None))
+        elif absolute:
+            # 旧口径：{state_name: K}（向后兼容；按元素聚合的绝对 K）
             sens = [float(device_sensitivities.get(states[i], 0.0))
                     if i < len(states) else None
                     for i in range(len(elements))]
             if sum(float(v) for v in sens if v is not None) <= 0:
                 raise ValueError("device_sensitivities 全零：无分配对象")
         else:
-            # 审查7：E≠I 走 descriptor 伴随；源端口夹 E⁻¹（积分器 offset）。
-            qoi_arr = np.asarray(qoi, dtype=float)
-            t_grid = np.linspace(0.0, float(T_horizon), 65)
-            E_v = getattr(scaled, "E", None)
-            lam = qoi_adjoint_for_config(A_v, E_v, qoi_arr,
-                                        float(T_horizon), t_grid)
-            w_abs = np.array([np.trapezoid(np.abs(lam[i]), t_grid)
-                              for i in range(lam.shape[0])])
-            if E_v is not None and np.any(np.abs(np.asarray(E_v, dtype=float)
-                                                 - np.eye(A_v.shape[0])) > 1e-12):
-                diag_E = np.diag(np.asarray(E_v, dtype=float))
-                if np.abs(np.asarray(E_v) - np.diag(diag_E)).max() > 1e-9:
-                    raise ValueError("非对角 E 的端口权重需完整 E⁻¹ 投影，"
-                                     "本配置路径只支持对角电容度量")
-                w_abs = w_abs / np.abs(diag_E)
-            w = w_abs / max(float(w_abs.sum()), 1e-300)
+            # C 修复：解析积分（对角闭式，非对角采样 + γΔt 自查），
+            # 不再"解析生成采样点 + 65 点梯形"。
+            adjoint_record = qoi_adjoint_weights(
+                A_v, E_v, np.asarray(qoi, dtype=float), float(T_horizon))
+            w_abs = np.asarray(adjoint_record["weights_abs"], dtype=float)
+            w = np.asarray(adjoint_record["weights"], dtype=float)
             if w.shape[0] != len(states):
                 raise ValueError("qoi 维度必须等于状态数 %d" % len(states))
             sens = [float(w[i]) if i < len(states) else None
                     for i in range(len(elements))]
+            notes.append(
+                "adjoint weights: method=%s, gamma_max*dt=%.3g, "
+                "65-pt trapezoid deviation=%.3g, reliable=%s"
+                % (adjoint_record["method"],
+                   adjoint_record["gamma_max_dt"],
+                   adjoint_record["sampled_deviation"],
+                   adjoint_record["reliable"]))
+            if not adjoint_record["reliable"]:
+                flags.append("adjoint sampled weights unreliable "
+                             "(gamma_max*dt=%.3g > 1): allocation is "
+                             "ESTIMATED, not certified"
+                             % adjoint_record["gamma_max_dt"])
         drift = ([bg_rate] * len(elements)) if bg_rate > 0.0 else None
         alloc = allocate_element_budgets(sens, float(eps_J), floors=None,
                                          drift_rates=drift,
@@ -557,6 +733,48 @@ def generate_config(discretized, cert, scaling,
             flags.append("P0-5: %d dJ-allocated element budgets below "
                          "measurement floor — infeasible, redesign devices "
                          "or relax eps_J" % alloc["n_infeasible"])
+        if port_alloc is not None:
+            notes.append(
+                "physical port graph: %d ports, %d allocated, %d below floor "
+                "(identity residual %.2e) — gm_c/c_bank/gm_edge/offset/dac/"
+                "adc/route_tau are separate K, no state-name sharing"
+                % (len(port_alloc["items"]), port_alloc["n_allocated"],
+                   port_alloc["n_infeasible"],
+                   port_alloc["identity_residual"]))
+            if port_alloc["n_infeasible"] > 0:
+                kinds = sorted({it["kind"] for it in port_alloc["items"]
+                                if not it["feasible"] and it["K"] > 0})
+                flags.append("P0-5: %d physical-port budgets below floor (%s) "
+                             "— the physical config is undeliverable at "
+                             "eps_J=%.4g" % (port_alloc["n_infeasible"],
+                                              "/".join(kinds), eps_J))
+    # per-element 分配之外，若声明了 ε_J 且系数图可用，始终尝试构建
+    # 物理端口图（PortGraph 未显式传入时）。
+    if (port_graph is None and eps_J_used is not None and A_v is not None
+            and bg_rate >= 0.0):
+        try:
+            from analysis.portgraph import build_port_graph
+            report_for_tau = report
+            port_graph = build_port_graph(
+                A_v, B_v, C_v, qoi=np.asarray(qoi, dtype=float)
+                if qoi is not None else None,
+                T=float(T_horizon) if T_horizon is not None else 1.0,
+                E=getattr(scaled, "E", None),
+                route_contracts=report_for_tau, C_bank=C_bank)
+            port_alloc = allocate_port_budgets(
+                port_graph.ports, float(eps_J_used),
+                floor_ppm=meas_noise_ppm,
+                drift_rate=(bg_rate if bg_rate > 0.0 else None))
+            notes.append(
+                "physical port graph (default): %d ports, %d below floor"
+                % (len(port_graph.ports), port_alloc["n_infeasible"]))
+            if port_alloc["n_infeasible"] > 0:
+                flags.append("P0-5: %d physical-port budgets below floor — "
+                             "undeliverable at eps_J=%.4g"
+                             % (port_alloc["n_infeasible"], eps_J_used))
+        except Exception as exc:      # 图不可建时如实记录，不假装有证据
+            notes.append("physical port graph unavailable: %s"
+                         % type(exc).__name__ + ": " + str(exc))
 
     plan = CalibPlan(foreground=foreground, background=background,
                      residual_budget_ppm=budget, budget_source=budget_source,
@@ -565,7 +783,14 @@ def generate_config(discretized, cert, scaling,
                      allocation_infeasible=(alloc["n_infeasible"]
                                             if alloc is not None else 0),
                      sensitivity_total=(alloc["sensitivity_total"]
-                                        if alloc is not None else None))
+                                        if alloc is not None else None),
+                     adjoint=adjoint_record,
+                     port_budgets=(port_alloc["items"]
+                                   if port_alloc is not None else None),
+                     n_infeasible_ports=(port_alloc["n_infeasible"]
+                                         if port_alloc is not None else 0),
+                     port_graph=(port_graph.as_dict()
+                                 if port_graph is not None else None))
 
     src = dict(alpha=alpha, lam_max=lam_max,
                cert_status=status, binding_axis=binding,
@@ -584,9 +809,40 @@ def generate_config(discretized, cert, scaling,
         src["a_ii_spread"] = (float(nz.max() / nz.min())
                               if nz.size and nz.min() > 0 else None)
 
+    # ---- P7 可交付性（D 修复：与 P6 feasible 组成联合判决）----
+    deliver_reasons = []
+    if infeasible:
+        deliver_reasons.append("certificate status %r: elements flagged, "
+                               "no physical plan promised" % status)
+    if alloc is not None and alloc["n_infeasible"] > 0:
+        deliver_reasons.append(
+            "%d/%d per-element budgets below measurement floor"
+            % (alloc["n_infeasible"], len(elements)))
+    if port_alloc is not None and port_alloc["n_infeasible"] > 0:
+        deliver_reasons.append(
+            "%d/%d physical-port budgets below floor"
+            % (port_alloc["n_infeasible"],
+               max(1, len(port_alloc["items"]))))
+    unclaimed = []
+    if budget is None and not infeasible:
+        unclaimed.append("residual budget not promised (noise axis "
+                         "not evaluated or > 1)")
+    deliverability = dict(
+        ok=not deliver_reasons,
+        reasons=deliver_reasons,
+        unclaimed=unclaimed,
+        n_infeasible_elements=(alloc["n_infeasible"]
+                               if alloc is not None else 0),
+        n_infeasible_ports=(port_alloc["n_infeasible"]
+                            if port_alloc is not None else 0),
+        n_ports=(len(port_alloc["items"]) if port_alloc is not None else 0),
+        port_kinds=(port_graph.as_dict()["kinds"]
+                    if port_graph is not None else None),
+    )
     return Config(elements=elements, plan=plan, flags=flags, source=src,
                   route_contracts=report.contracts, coeff_edges=coeff_edges,
-                  b_ports=b_ports, c_taps=c_taps, cal_bindings=cal_bindings)
+                  b_ports=b_ports, c_taps=c_taps, cal_bindings=cal_bindings,
+                  deliverability=deliverability)
 
 
 def _finite(v) -> bool:

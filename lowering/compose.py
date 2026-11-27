@@ -68,7 +68,7 @@ import numpy as np
 from analysis import Descriptor
 
 __all__ = ["TypedBoundaryError", "ChainCompositionError", "StageRecord",
-           "ChainResult", "run_chain"]
+           "ChainResult", "run_chain", "joint_verdict"]
 
 _DUST_REL = 1e-12        # 共轭尘埃清理 + p7 a_tol 同一相对约定
 _MASK_ITERS = 4
@@ -125,6 +125,9 @@ class ChainResult:
     eig_invariance: float | None    # F5: |eig(final scaled) - eig(carried scaled)|
     tf_invariance: float | None     # F5: 外部传递函数最大偏差（cond 归一）
     edge_sets_equal: bool | None    # F5: 契约边集 == coeff 边集
+    final_feasible: bool | None = None   # D: P6 feasible ∧ P7 deliverable
+    final_status: str | None = None      # "feasible" | "rejected: <reasons>"
+    final_reasons: list = field(default_factory=list)
     notes: list = field(default_factory=list)
 
     def as_dict(self) -> dict:
@@ -153,6 +156,9 @@ class ChainResult:
             eig_invariance=self.eig_invariance,
             tf_invariance=self.tf_invariance,
             edge_sets_equal=self.edge_sets_equal,
+            final_feasible=self.final_feasible,
+            final_status=self.final_status,
+            final_reasons=list(self.final_reasons),
             notes=list(self.notes),
         )
 
@@ -260,6 +266,35 @@ def _eig_cmp(lam_a, lam_b, scale):
 # ---------------------------------------------------------------------------
 # 主入口
 # ---------------------------------------------------------------------------
+def joint_verdict(p6_feasible: bool, p7_rec: dict) -> dict:
+    """联合判决：final = P6 feasible ∧ P7 deliverable（D 修复的单一入口）。
+
+    P6 的 `feasible` 只在**所有六轴都评估过且无违约**时为真；部分评估
+    （"no violation on evaluated axes"）是 partial，不是 true。P7 的
+    deliverability 覆盖：证书 rejected ⇒ 元素 flagged；逐元素/逐物理端口
+    预算 < 测量底。两者都真才交付；否则把原因回传（不再只留 cfg.flags）。
+    """
+    p6 = bool(p6_feasible)
+    p7_ok = bool(p7_rec.get("ok", False))
+    reasons = []
+    if not p6:
+        reasons.append("P6 feasibility not established (partial or "
+                       "infeasible certificate)")
+    if not p7_ok:
+        reasons += ["P7: " + r for r in p7_rec.get("reasons", [])]
+    final = bool(p6 and p7_ok)
+    if final:
+        status = "feasible"
+    elif p7_ok:
+        status = "partial (P6 not fully established; P7 deliverable)"
+    else:
+        status = "rejected: " + "; ".join(reasons)
+    return dict(p6_feasible=p6, p7_deliverable=p7_ok,
+                final_feasible=final, final_status=status,
+                final_reasons=reasons,
+                n_infeasible_ports=p7_rec.get("n_infeasible_ports", 0))
+
+
 def run_chain(source, *, B_hw: float, kappa_hw: float, v_swing: float = 1.0,
               margin: float = 0.8, k_head: float = 3.0,
               closure_N: int | None = None,
@@ -614,13 +649,38 @@ def run_chain(source, *, B_hw: float, kappa_hw: float, v_swing: float = 1.0,
         notes=["F5 closed: coeff edge set == contract edge set (same (i,j) "
                "pairs, same masked descriptor)"]))
 
+    # ---- D：P6 ∧ P7 联合判决（P7 不可交付必须回传，不能只留在 cfg.flags）
+    jv = joint_verdict(bool(getattr(cert, "feasible", False)),
+                       cfg.deliverability)
+    final_feasible = jv["final_feasible"]
+    final_status = jv["final_status"]
+    final_reasons = list(jv["final_reasons"])
+    if cert is not None:
+        cert.p7 = dict(cfg.deliverability, **{
+            k: jv[k] for k in ("p6_feasible", "final_feasible",
+                               "final_status", "final_reasons")})
+    if not final_feasible:
+        notes.append("JOINT VERDICT %s: P6 feasible=%s, P7 deliverable=%s"
+                     % (final_status, jv["p6_feasible"],
+                        jv["p7_deliverable"]))
+    stages.append(StageRecord(
+        "joint-verdict", "certificate", "verdict",
+        summary=dict(p6_feasible=jv["p6_feasible"],
+                     p7_deliverable=jv["p7_deliverable"],
+                     final_feasible=final_feasible,
+                     n_infeasible_ports=jv["n_infeasible_ports"]),
+        notes=["final feasibility = P6 feasibility ∧ P7 deliverability "
+               "(undeliverable budgets propagate back to the certificate)"]))
+
     return ChainResult(
         stages=stages, descriptor=desc_final_masked, coords=coords,
         scaling=sc_final, scaling_full_record=scaling_ledger, cert=cert,
         closure=cl, closure_carried=carried, split=sp, basis=br,
         interface=ir, interface_status=interface_status, contracts=rep,
         config=cfg, eig_invariance=eig_inv, tf_invariance=tf_inv,
-        edge_sets_equal=equal, notes=notes)
+        edge_sets_equal=equal, final_feasible=final_feasible,
+        final_status=final_status, final_reasons=final_reasons,
+        notes=notes)
 
 
 # ---------------------------------------------------------------------------

@@ -90,6 +90,7 @@ class Certificate:
     binding_axis: str | None     # slack 里 >1 或最接近 1 的轴名
     constraint: dict | None = None   # T10 约束时序 verdict（constraint 证据）
     error_control: dict | None = None   # §6.22 误差控制合同 verdict
+    p7: dict | None = None              # P7 可交付性（D：P6∧P7 联合判决）
     rejection_reasons: list[str] = field(default_factory=list)
     assumptions: list[str] = field(default_factory=list)
 
@@ -100,6 +101,7 @@ class Certificate:
             binding_axis=self.binding_axis,
             constraint=(dict(self.constraint) if self.constraint is not None else None),
             error_control=(dict(self.error_control) if self.error_control is not None else None),
+            p7=(dict(self.p7) if self.p7 is not None else None),
             rejection_reasons=list(self.rejection_reasons),
             assumptions=list(self.assumptions),
         )

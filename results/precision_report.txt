@@ -1,0 +1,29 @@
+========================================================================
+§6.24 精度作为编译优化变量验收
+========================================================================
+[case_bits]  灵敏度位宽分配（示例 16/15/13/11/10）
+  [PASS] P1 位宽表 = [16, 15, 13, 11, 10]（总 65 bit）；统一 max-bit 基线 80 bit   65 vs 80
+  [PASS] P2 量化上界 ΣK_i/2^{b_i+1}=3.535e-05 ≤ ε=1.0e-04（可行的诚实口径）   no over-promise
+  [PASS] P3 均匀对照：满足 ε 的最小均匀 14×5=70 bit；与差分等界 15×5=75 bit；max-bit=80   65 < 70/75/80
+  [PASS] P4 单调性：K=(0.1,1,10) ⇒ b=[9, 13, 16]（灵敏度高的位宽不低）   monotone
+  [PASS] P5 ε 收紧到 1e-6：achieved=3.53e-05 > ε ⇒ feasible=False（不许诺）   flag, not promise
+  [PASS] P6 budget 锚：b=[15, 14, 12, 10, 10]（总 61），achieved=6.53e-05 ≤ ε   solve from ε
+
+[case_energy]  能耗与可变精度
+  [PASS] E1 可变精度转换器：差分/统一能耗 = 0.334（省 3.0×）   Walden E∝2^b
+  [PASS] E2 固定精度转换器：比值 = 1.000（不省电，只省链路）   honest: no phantom saving
+  [PASS] E3 位宽和 81% of 80 ⇒ 采样能耗同比例（是）   energy tracks bits
+
+[case_constraints]  约束：deadline / 链路容量 / 多目标
+  [PASS] L1 deadline 采样：fs=1000 Hz，链路负载 65000 bps ≤ 70 kbps ⇒ 可行=True   65 kbps @ 1 kHz
+  [PASS] L2 链路容量 50 kbps < 65 kbit/s ⇒ infeasible（原因：link load 65000.0 bps > capacity 50.0 bps）   capacity constraint
+  [PASS] L3 最小能耗搜索：fs=1000 Hz（=1/T）为最优，E=1.1e+08   fs monotone in energy
+  [PASS] L4 容量 30 kbps 与 deadline 冲突 ⇒ 无可行点（no (fs, bits) point satisfies eps/link/deadline simultaneously）   no silent promise
+  [PASS] L5 ε=1e-6、max=16 ⇒ achieved=1.64e+08，无可行点 ⇒ infeasible   budget vs bit limit
+
+[case_quantization]  量化蒙特卡洛 vs 确定性上界
+  [PASS] Q1 5000 次量化抽样 max|δJ|=2.927e-05 ≤ 上界 ΣK_i/2^{b_i+1}=3.535e-05   bound holds
+  [PASS] Q2 抽样均值 7.545e-06 ≈ sqrt(2/π)·sqrt(Σa²/3)=7.342e-06（独立均匀误差）   consistency
+  [PASS] Q3 反向再分配（从 K=0.011 挪 2 bit 给 K=1）⇒ 上界 4.574e-05 > 3.535e-05（灵敏度排序不可颠倒）   allocation must follow K
+
+17/17 checks passed

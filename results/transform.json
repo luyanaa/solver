@@ -45,8 +45,8 @@
           "entropy_rate_min": 0.06928294340353365,
           "entropy_rate_max": 0.44400587274671227,
           "entropy_analytic": 0.08333333333333333,
-          "nu_num": 0.0014331123713617795,
-          "width_10_90": 0.012595944443467212,
+          "nu_num": 0.0014331123714984417,
+          "width_10_90": 0.012595944444645468,
           "tanh_ok": true,
           "u_final": [
             1.0000000000043099,
@@ -325,8 +325,8 @@
           "entropy_rate_min": 0.06928294340349812,
           "entropy_rate_max": 0.44400587274673003,
           "entropy_analytic": 0.08333333333333333,
-          "nu_num": 0.0007165982584099778,
-          "width_10_90": 0.00629822280629384,
+          "nu_num": 0.0007165982586085138,
+          "width_10_90": 0.006298222808027891,
           "tanh_ok": true,
           "u_final": [
             1.0000000000043114,
@@ -861,8 +861,8 @@
           "entropy_rate_min": 0.06928294340349812,
           "entropy_rate_max": 0.4440058727467478,
           "entropy_analytic": 0.08333333333333333,
-          "nu_num": 0.00035830927397220193,
-          "width_10_90": 0.003149171830431116,
+          "nu_num": 0.0003583092739761556,
+          "width_10_90": 0.003149171830465745,
           "tanh_ok": true,
           "u_final": [
             1.0000000000043117,
@@ -1909,8 +1909,8 @@
           "entropy_rate_min": 0.07499089086797757,
           "entropy_rate_max": 0.4654471637324165,
           "entropy_analytic": 0.08333333333333333,
-          "nu_num": 0.0017654041293507312,
-          "width_10_90": 0.015514731788258145,
+          "nu_num": 0.001765404129681058,
+          "width_10_90": 0.015514731791143007,
           "tanh_ok": true,
           "u_final": [
             0.9924373738258926,
@@ -2189,8 +2189,8 @@
           "entropy_rate_min": 0.07541012144043908,
           "entropy_rate_max": 0.46544716373240763,
           "entropy_analytic": 0.08333333333333333,
-          "nu_num": 0.0008889769160886236,
-          "width_10_90": 0.007812825542927285,
+          "nu_num": 0.0008889769158644263,
+          "width_10_90": 0.00781282554095652,
           "tanh_ok": true,
           "u_final": [
             0.9925719646369651,
@@ -2725,8 +2725,8 @@
           "entropy_rate_min": 0.07558690487068039,
           "entropy_rate_max": 0.4654471637324254,
           "entropy_analytic": 0.08333333333333333,
-          "nu_num": 0.00044649282781708283,
-          "width_10_90": 0.0039241208281016035,
+          "nu_num": 0.0004464928279179461,
+          "width_10_90": 0.003924120828984998,
           "tanh_ok": true,
           "u_final": [
             0.9926434462393421,
@@ -3833,11 +3833,11 @@
       "dx": 0.00390625,
       "s_shock": 0.5,
       "dsigma_hyst": 0.08,
-      "nu_num": 0.0008889769160886236,
+      "nu_num": 0.0008889769158644263,
       "nu_source": "fit_tanh (riemann adaptive N=256)",
       "r_attack_min": 128.0,
-      "r_release_max": 46.00024522290691,
-      "r_release_max_review_dsigma008": 4.600024522290691,
+      "r_release_max": 46.000245211305796,
+      "r_release_max_review_dsigma008": 4.60002452113058,
       "r_attack_grid": [
         50,
         200,
@@ -12306,21 +12306,21 @@
     },
     "gram": {
       "haar_isometry_before": 0.02265702803946109,
-      "haar_isometry_after": 2.9034297793019228e-15,
-      "haar_pr_after": 3.1746408472928935e-16,
+      "haar_isometry_after": 3.460831209866647e-15,
+      "haar_pr_after": 3.198534293342009e-16,
       "haar_noise_gain": 1.023112766652848,
       "haar_cond": 1.093560929230544,
       "haar_adjoint_before": 0.02265885110444191,
-      "haar_adjoint_after": 2.893947823524182e-15,
-      "naive_left_isometry": 0.032032012507597,
-      "haar_left_isometry_after": 3.026278680331415e-15,
+      "haar_adjoint_after": 3.4493954391546508e-15,
+      "naive_left_isometry": 0.032032012507597026,
+      "haar_left_isometry_after": 3.416206516777404e-15,
       "cdf_isometry_before": 0.6511551362465882,
-      "cdf_isometry_after": 3.2021553305707515e-15,
-      "cdf_pr_after": 3.3981710034610207e-16,
+      "cdf_isometry_after": 3.699390494571444e-15,
+      "cdf_pr_after": 3.29584825800458e-16,
       "cdf_noise_gain": 2.9498781984727827,
       "cdf_cond": 18.648954793618756,
       "cdf_adjoint_before": 0.6935048577724705,
-      "cdf_adjoint_after": 3.1865736121674543e-15
+      "cdf_adjoint_after": 3.696553050858616e-15
     }
   },
   "checks": [
@@ -12670,14 +12670,14 @@
     {
       "name": "Haar isometry after",
       "ok": true,
-      "value": "2.903e-15",
+      "value": "3.461e-15",
       "threshold": "<0.5%",
       "case": "gram"
     },
     {
       "name": "Haar PR after",
       "ok": true,
-      "value": "3.175e-16",
+      "value": "3.199e-16",
       "threshold": "<0.2%",
       "case": "gram"
     },
@@ -12691,7 +12691,7 @@
     {
       "name": "Haar adjoint after",
       "ok": true,
-      "value": "2.894e-15",
+      "value": "3.449e-15",
       "threshold": "<0.5%",
       "case": "gram"
     },
@@ -12705,14 +12705,14 @@
     {
       "name": "left calibration after",
       "ok": true,
-      "value": "3.026e-15",
+      "value": "3.416e-15",
       "threshold": "<0.5%",
       "case": "gram"
     },
     {
       "name": "CDF adjoint reduced",
       "ok": true,
-      "value": "6.935e-01 -> 3.187e-15",
+      "value": "6.935e-01 -> 3.697e-15",
       "threshold": ">10x",
       "case": "gram"
     }
@@ -12720,13 +12720,13 @@
   "passed": 56,
   "total": 56,
   "_meta": {
-    "git_sha": "be94f64b39dcfaf84821608166c9313d92877908",
+    "git_sha": "95f79c27f1bfef51c1a4b38df339ff116adfd263",
     "git_dirty": true,
     "bench_module": "bench.run_transform",
     "command": "python3 -m bench.run_transform",
-    "timestamp_utc": "2026-11-27T02:28:10+00:00",
-    "python_version": "3.13.5",
-    "numpy_version": "2.2.4",
-    "scipy_version": "1.15.3"
+    "timestamp_utc": "2026-11-27T06:45:55+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
   }
 }

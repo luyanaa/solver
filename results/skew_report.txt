@@ -6,15 +6,15 @@ Phase 1.5 验收：互连延迟 → E=I+A∘T
 ==============================================================================
 A. 均匀延迟：闭式极点与一阶展开
 ==============================================================================
-              quantity                 value
-               ideal λ [-0.951191 -3.048809]
-          descriptor λ [-0.960326 -3.144684]
-           formula err              3.47e-16
-      leading −τλ² err              3.14e-02
-        κ ideal → skew         3.205 → 3.275
-        Γ ideal → skew         1.057 → 1.057
-               cond(E)                 1.022
-  τ_crit (first order)                0.3280
+              quantity                         value
+               ideal λ [-0.951191+0.j -3.048809+0.j]
+          descriptor λ [-0.960326+0.j -3.144684+0.j]
+           formula err                      2.31e-16
+      leading −τλ² err                      3.14e-02
+        κ ideal → skew                 3.205 → 3.275
+        Γ ideal → skew                 1.057 → 1.057
+               cond(E)                         1.022
+  τ_crit (first order)                        0.3280
 
 ==============================================================================
 B. 标量 DDE：一阶展开的误差与稳定边界
@@ -67,7 +67,7 @@ F. 非正规 shear
 G. 验收
 ==============================================================================
                             check             got         expected PASS
-             uniform pole formula        3.47e-16          < 1e-12  yes
+             uniform pole formula        2.31e-16          < 1e-12  yes
              uniform leading −τλ²        3.14e-02           < 5e-2  yes
                scalar DDE τ=1e-03        5.01e-07          < 1e-05  yes
                scalar DDE τ=1e-02        5.12e-05          < 1e-03  yes

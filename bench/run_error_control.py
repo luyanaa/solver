@@ -232,6 +232,48 @@ def _hw_sim(A, x0, T, dt, bias, r_max, rng):
     return xs
 
 
+def _correction_episode(A, corrector, seed, x0, bias_v, r_amp, K, sub, dt,
+                        Phi_w, write_amp, obs_C=None, obs_sigma=0.0):
+    """一个校正闭环 run。**真解只用于离线评估**：corrector.apply 只吃
+    窗口采样（+可选可信观测 y），没有任何真解入口。
+
+    返回逐窗口 (η, e_prev, e_minus, e_plus)——e_prev 是窗口起点
+    （上次校正后）的误差，e_minus 是窗口末校正前的误差，e_plus 是
+    校正后误差。q 的合同作用在 e_prev→e_plus 上（校正器是窗口末
+    作用，不改变窗口内传播）。
+    """
+    rng = np.random.default_rng(seed)
+    from analysis.correction import CorrectionWindow
+    x = np.asarray(x0, dtype=float).copy()
+    truth = x.copy()
+    etas, e_prev, e_minus, e_plus = [], [], [], []
+    for _w in range(K):
+        truth_start = truth.copy()
+        e_prev.append(float(np.linalg.norm(x - truth_start)))
+        xs = np.empty((sub + 1, A.shape[0]))
+        xs[0] = x
+        for s in range(sub):
+            x = x + dt * (A @ x + bias_v + r_amp * rng.uniform(-1.0, 1.0,
+                                                              size=A.shape[0]))
+            xs[s + 1] = x
+        tloc = np.arange(sub + 1) * dt
+        res = linear_window_residual(A, tloc, xs)
+        truth = Phi_w @ truth_start
+        em = float(np.linalg.norm(x - truth))
+        y = None
+        if obs_C is not None:
+            y = obs_C @ truth + obs_sigma * rng.standard_normal(obs_C.shape[0])
+        xp = corrector.apply(CorrectionWindow(tloc, xs), y)
+        xp = xp + write_amp * rng.uniform(-1.0, 1.0, size=A.shape[0])
+        ep = float(np.linalg.norm(xp - truth))
+        etas.append(float(res.eta))
+        e_minus.append(em)
+        e_plus.append(ep)
+        x = xp
+    return dict(eta=np.array(etas), e_prev=np.array(e_prev),
+                e_minus=np.array(e_minus), e_plus=np.array(e_plus))
+
+
 def case_diffusion_windows():
     """diffusion 三分类 + 残差驱动分段校正 + 界覆盖 + 一致偏移负对照。"""
     emit("[case_diffusion_windows]  三分类实测 / 调度公式 / 界覆盖 / N3")
@@ -307,73 +349,170 @@ def case_diffusion_windows():
               "ratio_sat=%.3f" % (e_unc / bound_unc),
               e_unc <= bound_unc and e_unc < 2.0 * pred_bias)
 
-    # 有校正运行：每窗口 [残差测量 → 界传播 → 状态回注扣除]
+    # --- 可部署校正（B 修复）：三种方案 + 模型 q / 声明 ζ + held-out 验证 ---
+    # 旧版把硬件状态回注到解析真解、再用真解反推 q——那只配做离线
+    # characterization。现在三个 corrector 全部只吃窗口采样/可信观测
+    # （apply 没有真解入口）；q 由**模型**给出（线性校正器可解析），
+    # ζ 由硬件地板声明（DAC 回写 LSB / 传感器噪声增益），真解只在
+    # 离线覆盖率评估里出现。递推 ε⁺_{k+1} ≤ q·G·ε⁺_k + h_η·η_k + ζ
+    # 与 corrected_recursion 的差别是 η 不被 q 乘（校正器作用在窗口末，
+    # 不撤销窗口内已发生的注入传播；h_η 逐方案声明）。
+    from analysis.correction import (DigitalRecompute, ObserverCorrection,
+                                     ResidualPropagation, SignedSubtraction,
+                                     characterize_q, heldout_coverage,
+                                     residual_correction_eta_factor)
     dt = 2e-4
     sub = max(int(round(dT / dt)), 8)
     dT_eff = sub * dt
-    xh = x0.copy()
-    rng_c = np.random.default_rng(22)
-    errs, etas, covered = [], [], 0
-    qs, zetas, e_plus_meas, Gs, qs_signed = [], [], [], [], []
-    zeta_floor = 1e-6                 # 声明：ADC/DAC + 状态回注的量化地板
     K = 40
-    for w in range(K):
-        xs_w = np.empty((sub + 1, N))
-        xs_w[0] = xh
-        for s in range(sub):
-            inj = bias + r_noise * rng_c.uniform(-1.0, 1.0, size=N)
-            xh = xh + dt * (A @ xh + inj)
-            xs_w[s + 1] = xh
-        res = linear_window_residual(A, np.linspace(0, dT_eff, sub + 1), xs_w)
-        x_true_end = np.diag(np.exp(lam * (w + 1) * dT_eff)) @ x0
-        e_meas = float(np.linalg.norm(xh - x_true_end))
-        errs.append(e_meas)
-        etas.append(res.eta)              # 保守 η_k（传播加权，P0-2）
-        G_w = float(np.exp(-gamma * dT_eff))
-        Gs.append(G_w)
-        # 策略 A（signed 扣除）：负对照——不能保证收缩
-        xh_signed = xh - res.R
-        e_p_signed = float(np.linalg.norm(xh_signed - x_true_end))
-        qs_signed.append(e_p_signed / max(e_meas, 1e-300))
-        # 策略 B（可认证）：独立参考 + 状态回注（ζ=回注量化地板）
-        zeta_inj = 1e-5
-        xh = x_true_end + zeta_inj * rng_c.uniform(-1.0, 1.0, size=N)
-        e_p = float(np.linalg.norm(xh - x_true_end))
-        qs.append(e_p / max(e_meas, 1e-300))
-        zetas.append(zeta_floor + zeta_inj)
-        e_plus_meas.append(e_p)
-        bound = G_w * 0.0 + res.eta
-        if e_meas <= bound * 1.2:
-            covered += 1
-    cov = covered / K
-    rec = corrected_recursion(0.0, Gs, etas, qs, zetas)
-    sb = rec["steady_bound"]
-    cov2 = sum(1 for k in range(K)
-               if e_plus_meas[k] <= rec["eps_plus"][k + 1] * 1.2)
-    add_check("P0-3 负对照：signed 扣除校正 q_max=%.1f > 1 ⇒ 不满足收缩合同"
-              "（不许诺长期有界）" % max(qs_signed),
-              "独立参考是状态复位的前提", max(qs_signed) > 1.0)
-    add_check("P0-3 校正算子：参考回注 q_max=%.3f、ζ=%.0e ⇒ ρ=sup(qG)=%.3f < 1"
-              % (max(qs), zeta_floor + 1e-5, rec["rho"]),
-              "不再假设 q=0", rec["rho"] < 1.0)
-    add_check("P0-3 校正后覆盖：%d/%d 窗口 ε⁺_measured ≤ 1.2×ε⁺_predicted"
-              % (cov2, K), "递推 η̄/(1−ρ)", cov2 >= int(0.95 * K))
-    add_check("P0-3 长期界：η̄/(1−ρ)=%.3e ≥ max ε⁺=%.3e（不再是 mean(η)）"
-              % (sb, max(e_plus_meas)),
-              "eta_bar=%.3e" % rec["eta_bar"],
-              sb >= max(e_plus_meas))
-    add_check("界覆盖：%d/%d 窗口 ε_measured ≤ 1.2×ε_predicted（覆盖率=%.0f%%）"
-              % (covered, K, 100 * cov),
-              "mean η=%.3e" % np.mean(etas), cov >= 0.95)
-    add_check("校正后长期误差 max=%.4f ≪ 无校正饱和 %.4f（×5 至少）"
-              % (max(errs), bound_unc),
-              "ratio=%.3f" % (max(errs) / bound_unc),
-              max(errs) < 0.2 * bound_unc)
-    add_check("长期界 η̄/(1−ρ)=%.3e 罩住校正后 ε⁺ max=%.3e（保守 ≤100×，"
-              "传播加权 η 带来的松度）" % (sb, max(e_plus_meas)),
-              "%.3e vs %.3e" % (sb, max(e_plus_meas)),
-              sb >= max(e_plus_meas)
-              and max(e_plus_meas) > 0.01 * max(sb, 1e-300))
+    write_amp = 1e-5                    # DAC 回写量化 LSB（声明的 ζ 分量）
+    zeta_write = write_amp * np.sqrt(N)
+    Phi_w = np.diag(np.exp(lam * dT_eff))
+    G_w = float(np.linalg.norm(Phi_w, 2))          # 对角：max|e^{λh}|
+    C_mass = np.ones((1, N)) / np.sqrt(N)          # 守恒量（总质量）观测
+    L_mass = C_mass.T @ np.linalg.inv(C_mass @ C_mass.T)
+    q_obs = float(np.linalg.norm((np.eye(N) - L_mass @ C_mass) @ Phi_w, 2))
+    eta_res = float(residual_correction_eta_factor(A, dT_eff))
+    obs_sigma = 1e-4
+    contracts = {
+        "digital recompute": dict(
+            corrector=DigitalRecompute(A=A), q=G_w, zeta=zeta_write,
+            eta_factor=0.0, source="model: ||expm(A h)||_2"),
+        "residual + correction solve": dict(
+            corrector=ResidualPropagation(A=A), q=G_w, zeta=zeta_write,
+            eta_factor=eta_res,
+            source="model: ||expm(A h)||_2, quadrature factor %.3f"
+                   % eta_res),
+        "sparse observer (mass)": dict(
+            corrector=ObserverCorrection(C_mass),
+            q=q_obs, zeta=zeta_write + 3.0 * obs_sigma / np.sqrt(N),
+            eta_factor=1.0,
+            source="model: ||(I-LC)expm(A h)||_2 (L = LS projection)"),
+        "signed subtraction (control)": dict(
+            corrector=SignedSubtraction(A=A), q=None, zeta=zeta_write,
+            eta_factor=1.0, source="no certified q (negative control)"),
+    }
+    # 训练集包络：零注入 / 额定 / 1.5× 三档 + 不同初值、不同种子；
+    # held-out 用**未参与训练**的种子 + 额定 workload（低注入角落）。
+    train_specs = [(100, np.cos(np.pi * (i + 1) * k / (N + 1)), b, ra)
+                   for i, (b, ra) in enumerate([(0.0, 0.0), (0.0, 1.5e-2),
+                                                (3e-3, 4.5e-2),(3e-3, 0.0)])]
+    val_specs = [(200 + i, np.cos(np.pi * k / (N + 1)), 2e-3, 3e-2)
+                 for i in range(3)]
+    results = {}
+    for name, spec in contracts.items():
+        pairs = []
+        for seed, xx0, b, ra in train_specs:
+            ep = _correction_episode(A, spec["corrector"], seed, xx0, b, ra,
+                                     K, sub, dt, Phi_w, write_amp,
+                                     obs_C=(C_mass if "observer" in name
+                                            else None),
+                                     obs_sigma=(obs_sigma if "observer" in name
+                                                else 0.0))
+            pairs += list(zip(ep["e_prev"], ep["e_plus"]))
+        ch = characterize_q(pairs, zeta=spec["zeta"])
+        if spec["q"] is not None:
+            q_used = spec["q"]
+        else:
+            # 负对照没有模型 q：characterization 只能给出"≥1"的实测比，
+            # 截到有限值以免递推溢出；它本来就不许长期界。
+            q_used = float(min(max(ch["raw_ratio_max"], 1.0001), 1e3))
+        rho = q_used * G_w
+        cov, cov_minus, worst, max_ep, max_pred = [], [], 0.0, 0.0, 0.0
+        if rho >= 1.0:
+            # ρ≥1 ⇒ 递推不收敛，不积分、不许诺任何界
+            for seed, xx0, b, ra in val_specs:
+                ep = _correction_episode(A, spec["corrector"], seed, xx0, b, ra,
+                                         K, sub, dt, Phi_w, write_amp,
+                                         obs_C=(C_mass if "observer" in name
+                                                else None),
+                                         obs_sigma=(obs_sigma if "observer" in name
+                                                    else 0.0))
+                max_ep = max(max_ep, float(np.max(ep["e_plus"])))
+                cov.append(0.0)
+                cov_minus.append(float(np.mean(ep["e_minus"] <= 1.2 * (
+                    G_w * np.concatenate(([0.0], ep["e_minus"][:-1]))
+                    + ep["eta"]))))
+            results[name] = dict(q=q_used, q_identifiable=ch["q_max"],
+                                 n_resolvable=ch["n_resolvable"], n=ch["n"],
+                                 zeta=spec["zeta"],
+                                 eta_factor=spec["eta_factor"], rho=rho,
+                                 steady=float("inf"),
+                                 coverage=0.0,
+                                 coverage_minus=float(np.mean(cov_minus)),
+                                 worst_ratio=float("inf"), max_err=max_ep,
+                                 max_pred=float("inf"), source=spec["source"])
+            continue
+        for seed, xx0, b, ra in val_specs:
+            ep = _correction_episode(A, spec["corrector"], seed, xx0, b, ra,
+                                     K, sub, dt, Phi_w, write_amp,
+                                     obs_C=(C_mass if "observer" in name
+                                            else None),
+                                     obs_sigma=(obs_sigma if "observer" in name
+                                                else 0.0))
+            prev = 0.0
+            pred, pred_m = [], []
+            for i in range(K):
+                pp = (q_used * G_w * prev
+                      + spec["eta_factor"] * ep["eta"][i] + spec["zeta"])
+                pm = G_w * prev + ep["eta"][i]
+                pred.append(pp)
+                pred_m.append(pm)
+                prev = pp
+            hc = heldout_coverage(pred, ep["e_plus"])
+            hm = heldout_coverage(pred_m, ep["e_minus"])
+            cov.append(hc["coverage"])
+            cov_minus.append(hm["coverage"])
+            worst = max(worst, hc["worst_ratio"])
+            max_ep = max(max_ep, float(np.max(ep["e_plus"])))
+            max_pred = max(max_pred, float(np.max(pred)))
+        eta_bar = spec["eta_factor"] * float(np.max(ep["eta"])) + spec["zeta"]
+        sb = (eta_bar / (1.0 - rho) if rho < 1.0 else float("inf"))
+        results[name] = dict(q=q_used, q_identifiable=ch["q_max"],
+                             n_resolvable=ch["n_resolvable"], n=ch["n"],
+                             zeta=spec["zeta"], eta_factor=spec["eta_factor"],
+                             rho=rho, steady=sb, coverage=float(np.mean(cov)),
+                             coverage_minus=float(np.mean(cov_minus)),
+                             worst_ratio=worst, max_err=max_ep,
+                             max_pred=max_pred, source=spec["source"])
+    rr = results["digital recompute"]
+    ro = results["sparse observer (mass)"]
+    rp = results["residual + correction solve"]
+    rn = results["signed subtraction (control)"]
+    add_check("B1 q 由模型给出（不读真解）：digital=%.3f、resprop=%.3f、"
+              "observer=%.3f 全部 <1" % (rr["q"], rp["q"], ro["q"]),
+              "signed 无认证 q=%.2f" % rn["q"],
+              rr["q"] < 1.0 and rp["q"] < 1.0 and ro["q"] < 1.0)
+    add_check("B2 held-out 覆盖（未参与拟合的 workload）：digital %.0f%%、"
+              "resprop %.0f%%、observer %.0f%%（最坏比 %.2f）"
+              % (100 * rr["coverage"], 100 * rp["coverage"],
+                 100 * ro["coverage"], max(rr["worst_ratio"],
+                                           rp["worst_ratio"],
+                                           ro["worst_ratio"])),
+              "真解只在评估里出现", min(rr["coverage"], rp["coverage"],
+                                        ro["coverage"]) >= 0.95)
+    add_check("B3 负对照 signed：q=%.2f > 1 ⇒ ρ=%.2f，无长期界（不许诺）"
+              % (rn["q"], rn["rho"]), "x−R 不是传播加权扣除",
+              rn["q"] > 1.0 and rn["rho"] >= 1.0)
+    add_check("B4 digital 长期界 η̄/(1−ρ)=%.2e 罩住实测 max ε⁺=%.2e"
+              "（≤100× 松度）" % (rr["steady"], rr["max_err"]),
+              "η̄=%.2e, ρ=%.3f" % (rr["steady"] * (1 - rr["rho"]), rr["rho"]),
+              rr["steady"] >= rr["max_err"]
+              and rr["steady"] <= 100.0 * max(rr["max_err"], 1e-300))
+    add_check("B5 稀疏观测的代价：observer max ε⁺=%.2e 比 digital %.2e 大"
+              " ≥10×（只观测守恒量 ⇒ 快模态误差不被校正）"
+              % (ro["max_err"], rr["max_err"]),
+              "q 观测 %.3f vs %.3f" % (ro["q"], rr["q"]),
+              ro["max_err"] >= 10.0 * rr["max_err"])
+    add_check("B6 校正前界覆盖：digital %d/%d 窗口 ε⁻ ≤ 1.2×ε⁻_pred"
+              % (int(round(rr["coverage_minus"] * K * len(val_specs))),
+                 K * len(val_specs)),
+              "%.0f%%" % (100 * rr["coverage_minus"]),
+              rr["coverage_minus"] >= 0.95)
+    add_check("B7 校正后长期误差 max=%.2e ≪ 无校正饱和 %.2e（×5 至少）"
+              % (rr["max_err"], bound_unc),
+              "ratio=%.2e" % (rr["max_err"] / bound_unc),
+              rr["max_err"] < 0.2 * bound_unc)
 
     # --- N3：一致偏移对残差不可见（守恒零模态 + 常值偏移）---
     # path-graph Laplacian 的零模态 = 常值向量。真初值 = 0（真解静态
@@ -435,8 +574,7 @@ def case_diffusion_windows():
               "raise", ok)
 
     return dict(gamma=gamma, dT=dT, e_uncorrected=e_unc, bound_sat=bound_unc,
-                coverage=cov, e_corrected_max=max(errs),
-                eta_mean=float(np.mean(etas)), steady_bound=sb,
+                correction=results,
                 n3_residual=res_off.eta, n3_error=e_off)
 
 
@@ -1943,6 +2081,88 @@ def case_residual_semantics():
                 propagated=w.propagated_residual, e_true=e_true,
                 eta_closed=eta_closed, recursion=bnd[-1])
 
+# ------------------------------------------------------ 残差区间记账回归
+def case_residual_quadrature():
+    """A 修复回归：N−1 个区间必须全部进 L1/传播，认证界与估计界分开。
+
+    旧 bug：r_samples 是 N−1 个**区间**样本，却用 trapezoid(..., t[:-1])
+    （N−1 个节点）积分——单区间时数组长度 0，全给 0。反例
+    A=0, t=[0,1], x=[0,1]：r=1、e(1)=1，旧实现 residual_l1_bound /
+    propagated_residual / quad_error 全 0。
+    新口径：r̄_i 是区间均值（与 R 精确同口径），Σ‖r̄_i‖h_i 覆盖全部区间；
+    认证界需要声明（r_lipschitz/r_envelope + log-norm 增益界），
+    未声明时 certified_bound=None、eta 只是估计。
+    采样间不可见的扰动：节点全零、区间内振荡的轨迹——估计界为 0，
+    只有声明的包络/带宽能看见它（负对照）。
+    """
+    emit("[case_residual_quadrature]  区间记账 / 估计 vs 认证 / 采样盲区")
+    # 1. 最小反例（线性 + 非线性两条路径）
+    A0 = np.zeros((1, 1))
+    t1 = np.array([0.0, 1.0])
+    x1 = np.array([[0.0], [1.0]])
+    w = linear_window_residual(A0, t1, x1)
+    add_check("区间记账反例：A=0,t=[0,1],x=[0,1] ⇒ L1=1、传播=1、η=1",
+              "旧实现全 0；真解 e(1)=1",
+              abs(w.residual_l1_bound - 1.0) < 1e-12
+              and abs(w.propagated_residual - 1.0) < 1e-12
+              and abs(w.eta - 1.0) < 1e-12
+              and abs(w.quad_error) < 1e-12)
+    wn = window_integral_residual(lambda xx, tt: np.zeros_like(xx), t1, x1)
+    add_check("同一反例走一般 F 路径 ⇒ L1=1（不再漏最后区间）",
+              "%.6f" % wn.residual_l1_bound,
+              abs(wn.residual_l1_bound - 1.0) < 1e-12)
+    # 2. 多区间常数残差：Σ‖r̄‖h 精确等于 ∫‖r‖
+    r = np.array([1.0, 2.0])
+    tm = np.array([0.0, 0.5, 1.0])
+    xm = np.array([[0.0, 0.0], [0.5 * r[0], 0.5 * r[1]],
+                   [r[0], r[1]]])
+    wm = linear_window_residual(np.zeros((2, 2)), tm, xm)
+    add_check("多区间常数 r：Σ‖r̄‖h=%.4f = ‖r‖=%.4f（区间均值口径）"
+              % (wm.residual_l1_bound, np.linalg.norm(r)),
+              "%.4f" % wm.residual_l1_bound,
+              abs(wm.residual_l1_bound - np.linalg.norm(r)) < 1e-12)
+    # 3. 认证界：声明后存在、覆盖真实 |e(2)|、且不虚高
+    dt = 1e-3
+    t = np.linspace(0.0, 2.0, 2001)
+    xs = np.zeros((t.size, 1))
+    e = 0.0
+    for i in range(1, t.size):
+        ri = 1.0 if t[i - 1] < 1.0 else -1.0
+        e = e + dt * (-e + ri)
+        xs[i] = e
+    wc = linear_window_residual(np.array([[-1.0]]), t, xs,
+                                r_lipschitz=0.0, quad_bound=0.0)
+    e_true = abs(2.0 / np.e - 1.0 / np.e ** 2 - 1.0)
+    add_check("认证界（r-Lipschitz=0 + quad_bound）%.4f ≥ |e(2)|=%.4f，"
+              "且 ≤ L1 %.4f" % (wc.certified_bound, e_true,
+                                 wc.residual_l1_bound),
+              "cert=%s" % wc.certification,
+              wc.certified_bound is not None
+              and wc.certified_bound >= e_true
+              and wc.certified_bound <= wc.residual_l1_bound + 1e-12
+              and wc.eta == wc.certified_bound)
+    wu = linear_window_residual(np.array([[-1.0]]), t, xs)
+    add_check("未声明 ⇒ certified_bound=None、eta 标注 ESTIMATED",
+              "%s" % wu.certification,
+              wu.certified_bound is None
+              and "ESTIMATED" in wu.eta_assumption)
+    # 4. 采样盲区（负对照）：节点样本全零、区间内振荡 ⇒ 估计界为 0
+    h = 0.25
+    ts = np.arange(0.0, 1.0001, h)
+    xz = np.sin(2.0 * np.pi * ts / h + 1e-12)[:, None]   # 节点处 sin(2πk)=0
+    xz[np.abs(xz) < 1e-9] = 0.0
+    wz = linear_window_residual(np.zeros((1, 1)), ts, xz)
+    r_env = 2.0 * np.pi / h                              # |ẋ| 上界
+    wzc = linear_window_residual(np.zeros((1, 1)), ts, xz, r_envelope=r_env)
+    add_check("采样盲区：节点全零 ⇒ 估计 L1=%.1e（看不见区间内振荡），"
+              "声明包络 ρ=%.3f ⇒ 认证界 %.3f 覆盖"
+              % (wz.residual_l1_bound, r_env, wzc.certified_bound),
+              "估计不是界，声明才是合同",
+              wz.residual_l1_bound < 1e-9
+              and wzc.certified_bound > 1.0)
+    return dict(single=w.residual_l1_bound, certified=wc.certified_bound,
+                blind=wz.residual_l1_bound, blind_cert=wzc.certified_bound)
+
 # ------------------------------------------------------------ P0-4 证书强化
 def case_certificate_hardening():
     """§6.22 P0-4 回归：双轨合同强制 + 畸形证据不得通过。
@@ -2206,6 +2426,137 @@ def case_error_aware_chain():
                 missing_status=res2.cert.status)
 
 
+def case_p7_physics():
+    """C/D 修复：解析伴随权重 + 物理端口预算 + P6∧P7 联合判决。"""
+    emit("[case_p7_physics]  解析权重 / 端口图 / 联合判决")
+    import numpy as np
+    from analysis.adjoint import dJ_weights_exact
+    from analysis.descriptor import Descriptor
+    from lowering.compose import joint_verdict, run_chain
+    from lowering.p7 import qoi_adjoint_weights
+
+    # --- C1：刚性对角系统的 65 点梯形陷阱 vs 闭式 ---
+    A = np.diag([-1.0, -20.0, -400.0, -3000.0])
+    c = np.ones(4)
+    T = 1.0
+    t65 = np.linspace(0.0, T, 65)
+    adj = qoi_adjoint_weights(A, None, c, T, t65)
+    w_exact = dJ_weights_exact(A, c, T)
+    rel = float(np.max(np.abs(adj["weights"] - w_exact))
+                / np.max(np.abs(w_exact)))
+    add_check("C1 刚性对角：闭式权重与解析式一致（rel=%.2e），而 65 点梯形"
+              "偏差 %.2f（γ_max·Δt=%.0f）"
+              % (rel, adj["sampled_deviation"], adj["gamma_max_dt"]),
+              "method=%s" % adj["method"],
+              rel < 1e-12 and adj["sampled_deviation"] > 0.1
+              and adj["gamma_max_dt"] > 10.0 and adj["reliable"])
+    # 端点伪影：最快模态的 1/γ 尖峰被 0.5Δt 替身 ⇒ 该模态权重放大
+    lam_s = np.array([c * np.exp(-(-np.diag(A)) * (T - tk))
+                      for tk in t65]).T
+    w_s = np.array([np.trapezoid(np.abs(lam_s[i]), t65)
+                    for i in range(4)])
+    w_s = w_s / w_s.sum()
+    ratio_fast = float(w_s[-1] / w_exact[-1])
+    ratio_slow = float(w_s[0] / w_exact[0])
+    add_check("C1b 最快模态权重被梯形放大 %.1f×（慢模态 %.3f×）：1/γ=%.1e 的"
+              "尖峰被 0.5Δt=%.1e 替身" % (ratio_fast, ratio_slow,
+                                          1.0 / 3000.0, 0.5 * (t65[1] - t65[0]),
+                                          ),
+              "endpoint artefact", ratio_fast > 5.0 and abs(ratio_slow - 1) < 0.05)
+
+    # --- C2/C3：耦合系统（有边 ⇒ 有 route 端口）走 run_chain ---
+    # 对角刚性系统（C2 走闭式）
+    desc_stiff = Descriptor(np.eye(4), np.diag([-1.0, -20.0, -400.0, -3000.0]),
+                            np.ones((4, 1)), np.ones((1, 4)))
+    kw4 = dict(B_hw=1e4, kappa_hw=1e3, closure_N=4, closure_eps=1e-9)
+    stiff = run_chain(desc_stiff, qoi=np.ones(4), eps_J=5e4, T_horizon=1.0,
+                      **kw4)
+    add_check("C2 run_chain 的 dJ 权重走闭式：method=%s，γΔt=%.1f，"
+              "逐分量梯形偏差 %.1f×（旧路径会失真）"
+              % (stiff.config.plan.adjoint["method"],
+                 stiff.config.plan.adjoint["gamma_max_dt"],
+                 stiff.config.plan.adjoint["sampled_deviation"]),
+              "closed-form",
+              stiff.config.plan.adjoint["method"] == "closed-form"
+              and stiff.config.plan.adjoint["reliable"]
+              and stiff.config.plan.adjoint["sampled_deviation"] > 5.0)
+
+    # 耦合系统（C3/C4：有边 ⇒ 有 route 端口）
+    N = 8
+    A8 = np.diag(-np.arange(1, N + 1, dtype=float))
+    off = 0.4
+    for i in range(N - 1):
+        A8[i, i + 1] += off
+        A8[i + 1, i] += off
+    desc8 = Descriptor(np.eye(N), A8, np.ones((N, 1)), np.ones((1, N)))
+    kw = dict(B_hw=1e4, kappa_hw=1e3, closure_N=N, closure_eps=1e-9)
+    tight = run_chain(desc8, qoi=np.ones(N), eps_J=50.0, T_horizon=1.0, **kw)
+    loose = run_chain(desc8, qoi=np.ones(N), eps_J=5e5, T_horizon=1.0, **kw)
+    plan = tight.config.plan
+    kinds = sorted({p["kind"] for p in (plan.port_budgets or [])})
+    add_check("C3 物理端口图分型：%s（gm/C/offset/DAC/ADC/route 各自 K）"
+              % "/".join(kinds), "no state-name sharing",
+              all(k in kinds for k in ("gm_c", "c_bank", "offset", "dac",
+                                       "adc", "gm_edge", "route_tau")))
+    Kgm = [p["K_rel"] for p in plan.port_budgets if p["kind"] == "gm_c"]
+    Koff = [p["K_rel"] for p in plan.port_budgets if p["kind"] == "offset"]
+    add_check("C3b 同一节点的 gm 与 offset 灵敏度不同（%.4g vs %.4g）"
+              % (Kgm[0], Koff[0]), "物理端口分开",
+              abs(Kgm[0] - Koff[0]) > 1e-9 * max(Kgm[0], Koff[0]))
+    tau = [p for p in plan.port_budgets if p["kind"] == "route_tau"]
+    add_check("C3c route τ 端口存在：%d 条，带 τ_budget=%.2e s / 相位 %.2f°"
+              % (len(tau),
+                 tau[0]["tau_budget_s"] if tau else float("nan"),
+                 tau[0]["phase_budget_deg"] if tau else float("nan")),
+              "phase axis separate from ppm", bool(tau)
+              and tau[0]["residual_budget_ppm"] is None)
+    ident = sum(p["K_rel"] * p["residual_budget_ppm"]
+                for p in plan.port_budgets
+                if p["residual_budget_ppm"] is not None)
+    add_check("C4 端口分配恒等式：Σ K_rel·e = %.4f ≈ ε_J=%.1f（残差 %.1e）"
+              % (ident, plan.eps_J_ppm, abs(ident - plan.eps_J_ppm)),
+              "relative-sensitivity contract",
+              abs(ident - plan.eps_J_ppm) < 1e-9 * plan.eps_J_ppm)
+    add_check("C5 紧 ε_J ⇒ %d/%d 端口低于测量底，deliverability=False"
+              % (tight.config.deliverability["n_infeasible_ports"],
+                 tight.config.deliverability["n_ports"]),
+              "; ".join(tight.config.deliverability["reasons"])[:60],
+              tight.config.deliverability["ok"] is False)
+    add_check("C5b 松 ε_J ⇒ 全部端口可交付（P7 deliverable=True）",
+              "n_ports=%d" % loose.config.deliverability["n_ports"],
+              loose.config.deliverability["ok"] is True)
+
+    # --- D：联合判决真值表 + 回传 ---
+    jv_ok = joint_verdict(True, {"ok": True, "reasons": []})
+    jv_bad_p7 = joint_verdict(True, {"ok": False, "reasons": ["3 ports < floor"],
+                                    "n_infeasible_ports": 3})
+    jv_partial = joint_verdict(False, {"ok": True, "reasons": []})
+    add_check("D1 真值表：T∧T=%s、T∧F=%s（reason=%s）、F∧T=%s（%s）"
+              % (jv_ok["final_feasible"], jv_bad_p7["final_feasible"],
+                 jv_bad_p7["final_status"][:28], jv_partial["final_feasible"],
+                 jv_partial["final_status"][:22]),
+              "∧ semantics", jv_ok["final_feasible"]
+              and not jv_bad_p7["final_feasible"]
+              and not jv_partial["final_feasible"])
+    add_check("D2 联合判决回传到证书：cert.status=%s、cert.p7.final=%s、"
+              "chain.final=%s"
+              % (tight.cert.status, tight.cert.p7["final_feasible"],
+                 tight.final_feasible),
+              "P7 undeliverable ⇒ chain rejected",
+              tight.cert.p7["final_feasible"] is False
+              and tight.final_feasible is False
+              and "P7" in tight.final_status)
+    add_check("D2b 松 ε_J 下 chain 状态为 partial（P6 未全轴评估，不许诺"
+              " feasible）：%s" % loose.final_status[:40], "partial",
+              loose.final_status.startswith("partial"))
+    return dict(closed_form_rel=rel, trap_dev=adj["sampled_deviation"],
+                kinds=kinds, n_ports=tight.config.deliverability["n_ports"],
+                tight_ok=tight.config.deliverability["ok"],
+                loose_ok=loose.config.deliverability["ok"],
+                final_tight=tight.final_status,
+                final_loose=loose.final_status)
+
+
 # ---------------------------------------------------------------- main
 
 def main():
@@ -2240,6 +2591,8 @@ def main():
     emit("")
     rs = case_residual_semantics()
     emit("")
+    rq = case_residual_quadrature()
+    emit("")
     hc = case_certificate_hardening()
     emit("")
     dp = case_device_ports()
@@ -2251,6 +2604,8 @@ def main():
     il = case_interface_lifecycle()
     emit("")
     ec9 = case_error_aware_chain()
+    emit("")
+    p7p = case_p7_physics()
     n_pass = sum(1 for c in _checks if c["ok"])
     emit("")
     emit("%d/%d checks passed" % (n_pass, len(_checks)))
@@ -2268,10 +2623,11 @@ def main():
                    adjoint_qoi=adj, burgers=bur, shock_dwr=dwr,
                    multi_shock=mul,                    epsj_alloc=alc, runtime_dwell=dwl,
                    descriptor_adjoint=de, nonlinear_dwr=nl,
-                   entropy_system=ent, chaos=ch,                    residual_semantics=rs, certificate_hardening=hc,
+                   entropy_system=ent, chaos=ch,                    residual_semantics=rs, residual_quadrature=rq, certificate_hardening=hc,
                    device_ports=dp, five_types=ft,
                    descriptor_robustness=dr, interface_lifecycle=il,
-                   error_aware_chain=ec9, checks=_checks)
+                   error_aware_chain=ec9, p7_physics=p7p,
+                   checks=_checks)
     with open(os.path.join(out_dir, "error_control.json"), "w") as fh:
         json.dump(payload, fh, indent=1, ensure_ascii=False)
     return n_pass == len(_checks)

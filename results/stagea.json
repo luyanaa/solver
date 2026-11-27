@@ -85,6 +85,7 @@
         "binding_axis": "robustness_A",
         "constraint": null,
         "error_control": null,
+        "p7": null,
         "rejection_reasons": [],
         "assumptions": [
           "τ_c/τ_min≪1 white-noise approx (§1.4: finite τ_c gives O(τ_c) Itô bias; σ_y² from generalized Lyapunov assumes white injection)",
@@ -206,8 +207,8 @@
           },
           "lyapunov": {
             "value": {
-              "sigma_y": 0.9649804923936286,
-              "sigma_y2": 0.9311873507002498,
+              "sigma_y": 0.9649804923936295,
+              "sigma_y2": 0.9311873507002517,
               "h2_finite": 1,
               "method": "direct"
             },
@@ -218,6 +219,7 @@
         "binding_axis": "stiffness",
         "constraint": null,
         "error_control": null,
+        "p7": null,
         "rejection_reasons": [],
         "assumptions": [
           "τ_c/τ_min≪1 white-noise approx (§1.4: finite τ_c gives O(τ_c) Itô bias; σ_y² from generalized Lyapunov assumes white injection)",
@@ -378,7 +380,7 @@
           "display": "校准残差（Gram 标定）",
           "nominal_value": 0.02,
           "sensitivity": 17.1,
-          "sensitivity_definition": "isometry after right-Gram 2.90e-15; at 2% calibration residual 0.342 (§6.16 measured) → d(isometry)/d(residual)≈17/unit; left-multiply trap: naive isometry 0.032",
+          "sensitivity_definition": "isometry after right-Gram 3.46e-15; at 2% calibration residual 0.342 (§6.16 measured) → d(isometry)/d(residual)≈17/unit; left-multiply trap: naive isometry 0.032",
           "source": "results/transform.json gram case + DESIGN §6.16 measured 0.342@2%",
           "falsification_observation": "§9 risk 2: θ(t) drifts with temperature ⇒ ΔA time-varying, H2/H∞ need periodic recompute; wrong left-Gram multiplication leaves isometry at 0.032 silently"
         },
@@ -587,13 +589,13 @@
     "n_passed": 26
   },
   "_meta": {
-    "git_sha": "be94f64b39dcfaf84821608166c9313d92877908",
+    "git_sha": "95f79c27f1bfef51c1a4b38df339ff116adfd263",
     "git_dirty": true,
     "bench_module": "bench.run_stagea",
     "command": "python3 -m bench.run_stagea",
-    "timestamp_utc": "2026-11-27T02:50:02+00:00",
-    "python_version": "3.13.5",
-    "numpy_version": "2.2.4",
-    "scipy_version": "1.15.3"
+    "timestamp_utc": "2026-11-27T06:56:17+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
   }
 }

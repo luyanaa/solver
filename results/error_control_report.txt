@@ -20,13 +20,13 @@
   [PASS] 调度单调性：λ×10 ⇒ ΔT×0.89↓；r_max×2 ⇒ ΔT×0.50↓（扰动越强查越勤）                0.0506 / 0.0285
   [PASS] 调度公式：e0 ≥ ε ⇒ raise（不许静默给∞间隔）                                    raise
   [PASS] 无校正：实测 0.0033 ≤ 饱和界 r_max/γ=0.397 且 ≈ 偏置预测 0.0033（×2）            ratio_sat=0.008
-  [PASS] P0-3 负对照：signed 扣除校正 q_max=53.5 > 1 ⇒ 不满足收缩合同（不许诺长期有界）           独立参考是状态复位的前提
-  [PASS] P0-3 校正算子：参考回注 q_max=0.157、ζ=1e-05 ⇒ ρ=sup(qG)=0.153 < 1         不再假设 q=0
-  [PASS] P0-3 校正后覆盖：40/40 窗口 ε⁺_measured ≤ 1.2×ε⁺_predicted               递推 η̄/(1−ρ)
-  [PASS] P0-3 长期界：η̄/(1−ρ)=8.839e-04 ≥ max ε⁺=3.530e-05（不再是 mean(η)）      eta_bar=7.484e-04
-  [PASS] 界覆盖：40/40 窗口 ε_measured ≤ 1.2×ε_predicted（覆盖率=100%）              mean η=4.745e-03
-  [PASS] 校正后长期误差 max=0.0008 ≪ 无校正饱和 0.3971（×5 至少）                         ratio=0.002
-  [PASS] 长期界 η̄/(1−ρ)=8.839e-04 罩住校正后 ε⁺ max=3.530e-05（保守 ≤100×，传播加权 η 带来的松度） 8.839e-04 vs 3.530e-05
+  [PASS] B1 q 由模型给出（不读真解）：digital=0.978、resprop=0.978、observer=0.965 全部 <1 signed 无认证 q=1000.00
+  [PASS] B2 held-out 覆盖（未参与拟合的 workload）：digital 100%、resprop 100%、observer 100%（最坏比 0.63） 真解只在评估里出现
+  [PASS] B3 负对照 signed：q=1000.00 > 1 ⇒ ρ=977.90，无长期界（不许诺）                 x−R 不是传播加权扣除
+  [PASS] B4 digital 长期界 η̄/(1−ρ)=1.12e-03 罩住实测 max ε⁺=5.58e-05（≤100× 松度）  η̄=4.90e-05, ρ=0.956
+  [PASS] B5 稀疏观测的代价：observer max ε⁺=1.41e-03 比 digital 5.58e-05 大 ≥10×（只观测守恒量 ⇒ 快模态误差不被校正） q 观测 0.965 vs 0.978
+  [PASS] B6 校正前界覆盖：digital 120/120 窗口 ε⁻ ≤ 1.2×ε⁻_pred                    100%
+  [PASS] B7 校正后长期误差 max=5.58e-05 ≪ 无校正饱和 3.97e-01（×5 至少）                  ratio=1.40e-04
   [PASS] N3 残差不可见：窗口残差 0.00e+00 ≪ 实际误差 1.41e+00（残差小≠误差小）                  ratio=0.0e+00
   [PASS] N3 独立参考可见：offset=1.414 被检出；无参考 ⇒ 如实 detectable=False             True / False
   [PASS] neutral 实测斜率=0.0200 ≈ bias=0.0200（线性累积被证实）                       0.0200
@@ -97,7 +97,7 @@
   [PASS] A 零权重元素：不分配（budget=None，误差只进 ε_global）                           zero dJ weight: not allocated (error goes to eps_global only)
   [PASS] A 背景间隔：高权重元素更短（2824.3 < 19353.8，重标更勤）                            interval ∝ budget−floor
   [PASS] A 可行性对账：budget 241.2 < floor 400 ⇒ flagged（不许诺）                  n_infeasible=1
-  [PASS] P7 集成：per_element_budgets 发射（65 项，1 flagged），budget_source=dJ-allocation eps_J=500
+  [PASS] P7 集成：per_element_budgets 发射（65 项，3 flagged），budget_source=dJ-allocation eps_J=500
   [PASS] P7 集成：计划层恒等式 |Σ s_i·e_i − ε_J|=0.00e+00                          flagged 预算仍计入恒等式（分配数学 vs 可交付性分立）
   [PASS] A 采样陷阱：γ_max·Δt=125663.7 ≫ 1 ⇒ 采样权重比 1.0（端点伪影，近均匀）vs 解析 4096（集中慢模态）——刚性系统必须走闭式 γ_max=5.03e+06
   [PASS] 向后兼容：不声明 ε_J ⇒ per_element_budgets=None，budget_source=none（启发式不变） run_calib 62/62 回归保障
@@ -147,10 +147,18 @@
 
 [case_residual_semantics]  P0-2 抵消反例 / 三种残差语义 / η 闭式
   [PASS] P0-2 反例：signed |∫r|=0.0002 ≈ 0 而真实 |e(2)|=0.3998（诊断非界）           解析 e(2)=0.3996
-  [PASS] P0-2 l1 预算 ∫‖r‖=1.999 ≥ |e(2)|=0.400（收缩前提下的界）                    比传播界松 2.3×
-  [PASS] P0-2 传播预算 ∫‖Φ‖‖r‖=0.8637 ≥ |e(2)|=0.3998（保守动态界）                  eta=0.8637（含求积误差）
-  [PASS] P0-2 lognorm 闭式：r_max(e^{μΔT}−1)/μ=0.8647 ≈ 传播积分 0.8637          μ=−1, r_max=1, ΔT=2
-  [PASS] P0-2 递推：ε(2)=0.8633 ≥ |e(2)|=0.3998（signed 预算会给 0）               G=e^{-1}, η=传播积分
+  [PASS] P0-2 l1 预算 ∫‖r‖=2.001 ≥ |e(2)|=0.400（收缩前提下的界）                    比传播界松 2.3×
+  [PASS] P0-2 传播预算 ∫‖Φ‖‖r‖=0.8655 ≥ |e(2)|=0.3998（保守动态界）                  eta=2.0008（含求积误差）
+  [PASS] P0-2 lognorm 闭式：r_max(e^{μΔT}−1)/μ=0.8647 ≈ 传播积分 0.8655          μ=−1, r_max=1, ΔT=2
+  [PASS] P0-2 递推：ε(2)=1.3685 ≥ |e(2)|=0.3998（signed 预算会给 0）               G=e^{-1}, η=传播积分
+
+[case_residual_quadrature]  区间记账 / 估计 vs 认证 / 采样盲区
+  [PASS] 区间记账反例：A=0,t=[0,1],x=[0,1] ⇒ L1=1、传播=1、η=1                       旧实现全 0；真解 e(1)=1
+  [PASS] 同一反例走一般 F 路径 ⇒ L1=1（不再漏最后区间）                                     1.000000
+  [PASS] 多区间常数 r：Σ‖r̄‖h=2.2361 = ‖r‖=2.2361（区间均值口径）                       2.2361
+  [PASS] 认证界（r-Lipschitz=0 + quad_bound）0.8655 ≥ |e(2)|=0.3996，且 ≤ L1 2.0008 cert=interval-gain+r-lipschitz+quad-bound
+  [PASS] 未声明 ⇒ certified_bound=None、eta 标注 ESTIMATED                      none
+  [PASS] 采样盲区：节点全零 ⇒ 估计 L1=0.0e+00（看不见区间内振荡），声明包络 ρ=25.133 ⇒ 认证界 25.133 覆盖 估计不是界，声明才是合同
 
 [case_certificate_hardening]  P0-4 双轨强制 / 畸形证据拒绝
   [PASS] P0-4 拒绝：qoi 负方向大误差 ⇒ rejected                                    error_control eps_J violated: |qoi_estimate| 100 + B_remaind
@@ -195,4 +203,18 @@
   [PASS] 审查9 p7 出 dJ 分配预算：source=dJ-allocation，4 项                        eps_J=500.0
   [PASS] 审查9 缺 evidence 且 workload 要求 ⇒ 证书 rejected                       rejected
 
-154/154 checks passed
+[case_p7_physics]  解析权重 / 端口图 / 联合判决
+  [PASS] C1 刚性对角：闭式权重与解析式一致（rel=0.00e+00），而 65 点梯形偏差 21.99（γ_max·Δt=47）   method=closed-form
+  [PASS] C1b 最快模态权重被梯形放大 23.0×（慢模态 0.981×）：1/γ=3.3e-04 的尖峰被 0.5Δt=7.8e-03 替身 endpoint artefact
+  [PASS] C2 run_chain 的 dJ 权重走闭式：method=closed-form，γΔt=785.4，逐分量梯形偏差 294.4×（旧路径会失真） closed-form
+  [PASS] C3 物理端口图分型：adc/c_bank/dac/gm_c/gm_edge/offset/route_tau（gm/C/offset/DAC/ADC/route 各自 K） no state-name sharing
+  [PASS] C3b 同一节点的 gm 与 offset 灵敏度不同（20.51 vs 0.00625）                    物理端口分开
+  [PASS] C3c route τ 端口存在：14 条，带 τ_budget=3.55e-01 s / 相位 0.00°           phase axis separate from ppm
+  [PASS] C4 端口分配恒等式：Σ K_rel·e = 50.0000 ≈ ε_J=50.0（残差 0.0e+00）            relative-sensitivity contract
+  [PASS] C5 紧 ε_J ⇒ 38/68 端口低于测量底，deliverability=False                    8/9 per-element budgets below measurement floor; 38/68 physi
+  [PASS] C5b 松 ε_J ⇒ 全部端口可交付（P7 deliverable=True）                         n_ports=68
+  [PASS] D1 真值表：T∧T=True、T∧F=False（reason=rejected: P7: 3 ports < floo）、F∧T=False（partial (P6 not fully ） ∧ semantics
+  [PASS] D2 联合判决回传到证书：cert.status=no violation on evaluated axes、cert.p7.final=False、chain.final=False P7 undeliverable ⇒ chain rejected
+  [PASS] D2b 松 ε_J 下 chain 状态为 partial（P6 未全轴评估，不许诺 feasible）：partial (P6 not fully established; P7 de partial
+
+172/172 checks passed
