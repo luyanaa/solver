@@ -17,7 +17,7 @@ It needs `results/gf180_extract.json` (G1) for its macro column:
 | file | tile | structure | headline numbers (§6.27) |
 |---|---|---|---|
 | `t1_integrator.sp` | T1 state | replica-diode-biased nMOS gm cell (10 µA, 10u/1u) + one `cap_mim_2f0_m4m5_noshield` 22.36×22.36 µm (1.0163 pF) + ideal 10 µA sink load | a0 = 331.12, f_3dB = 63.26 kHz; macro 333.59 / 63.23 kHz |
-| `t5_flux_chain16.sp` | T5 flux | 16 × 1 pF nodes, 15 `nfet_03v3` 10u/1u pass elements (gate at vdd), source-held, plus a 2-node calibration cell and a 0.1 V step | DC gain 1.0000, R_chord 1189 Ω, g_ss 1.43 mS, τ₁ 187.8 ns vs 73.1 ns composition (tax ×2.57) |
+| `t5_flux_chain16.sp` | T5 flux | 16 × 1 pF nodes, 15 `nfet_03v3` 10u/1u pass elements (gate at vdd), source-held, plus a 2-node calibration cell and a 0.1 V step | DC gain 1.0000, **g=0.6929 mS / C_ii 1.0603 pF / τ₁ 150.8 ns (G/C matrix, §6.28)**; 100 mV tail 188.8 ns in the G3 window vs 154.1 ns at 10 mV |
 | `t7_route_tester.sp` | T7 route | two rm3 wires (1000u×2u = 500□, 100u×2u = 50□) four-wire probed; then TWO parallel driver+1 pF loads, differing only in the wire model: (i) lumped rm3 45.3 Ω, (ii) 10-section π ladder (4.53 Ω/section, 4.02/8.04…/4.02 fF = 80.4 fF total from the D stack) | 0.0906 Ω/□ (rsh_rm3 0.090); lumped pole 63.3 kHz (= no-wire 63.3), ladder pole 58.6 kHz = −7.31 % vs C-ratio prediction −7.33 %; wire t50 1.38 ps = 5.0 % of the 27.8 ps 1° budget |
 | `t8_noise_bank.sp` | T8 noise | (a) replica of the extractor's cell (100 kΩ load), (b) m = 1/2/4/8 bank (10 kΩ loads), (c) kT/C anchor (1 kΩ + 1 pF MIM), (d) W=100u clean cell | kT/C 63.52 µV vs 63.83 µV (−0.5 %); bank 16.15→10.42 nV/√Hz (×8 area → ×1.55, **not** √8) |
 | `t9_dac5.sp` | T9 statistics | 5-bit binary current DAC, `m=1/2/4/8/16` mirror legs, ideal `S` switches, 1 kΩ summing load, one process per code | LSB 11.100 µA (λ-corrected 11.612), FS 336.55 µA = 30.32 LSB, INL(FS) −2.19 % vs λ −1.19 % |
@@ -45,9 +45,11 @@ It needs `results/gf180_extract.json` (G1) for its macro column:
 
 ## Open items handed to C1 (do not quietly close them with simulation)
 
-1. **T5 per-node parasitic tax ×2.57.** The composition has no junction/wire
-   capacitance per node; the 1 mm wire's 80 fF explains only a fraction. Needs a
-   per-node capacitance model (post-layout) or a silicon measurement.
+1. ~~**T5 per-node parasitic tax ×2.57.**~~ **Closed by §6.28** (`bench/run_gf180_t5gc.py`,
+   19/19): the tax decomposes into ×1.955 (the two-node cell has ONE dynamic node,
+   pole = g/C₂, not g/2C) × 1.043 (junction C, 44 aF/node — the only real parasitic)
+   × 1.27–1.31 (100 mV gate-overdrive shift). True small-signal tax is +4.3 % on C
+   and +2.2 % on τ. What remains for C1 is only "is the 44 aF still 44 aF after PEX".
 2. **T8 white noise vs area.** The PDK's MOS white noise does not scale as
    4kTγ/g_m with W×m (`m=8` ≡ `w=80u`, so it is not a netlist artifact). The bank
    must be measured; the replica's flicker corner sits on its pole, so §6.25(c)'s

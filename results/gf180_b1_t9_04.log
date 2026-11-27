@@ -7,7 +7,7 @@ Circuit: * t9 5-bit binary current dac -- gf180mcu batch-1 characterization vehi
 Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
 
 Using SPARSE 1.3 as Direct Linear Solver
- Reference value :  0.00000e+00
+
 No. of Data Rows : 1
 DCODE 4 3.25574 4.42639E-05
 Note: Simulation executed from .control section 

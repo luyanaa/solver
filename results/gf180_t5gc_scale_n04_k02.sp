@@ -1,0 +1,23 @@
+* T5 ladder, G/C extraction, inject node 2
+* N=4 nodes, node 1 held by an ideal source, pass devices 10u/1u
+.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.tech/ngspice/sm141064.ngspice" typical
+.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.tech/ngspice/sm141064.ngspice" mimcap_typical
+.param fnoicor=0
+.param sw_stat_global=0
+.param sw_stat_mismatch=0
+Vdd vdd 0 3.3
+Vg ng 0 3.3
+Vb n1 0 dc 1.65 ac 0
+Iinj n2 0 dc 0 ac 1e-06
+XC1 n1 0 cap_mim_2f0_m4m5_noshield c_length=22.36u c_width=22.36u
+XC2 n2 0 cap_mim_2f0_m4m5_noshield c_length=22.36u c_width=22.36u
+XC3 n3 0 cap_mim_2f0_m4m5_noshield c_length=22.36u c_width=22.36u
+XC4 n4 0 cap_mim_2f0_m4m5_noshield c_length=22.36u c_width=22.36u
+XL1 n1 ng n2 0 nfet_03v3 w=10u l=1u
+XL2 n2 ng n3 0 nfet_03v3 w=10u l=1u
+XL3 n3 ng n4 0 nfet_03v3 w=10u l=1u
+.control
+ac dec 1 1k 1G
+wrdata /home/yanlu/solver/results/b1_scale_n04_k02.dat v(n2) v(n3) v(n4)
+.endc
+.end

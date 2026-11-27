@@ -534,11 +534,11 @@
     "n_passed": 31
   },
   "_meta": {
-    "git_sha": "a16be859d0e6a6acaa375357de8f7dd90ed69a46",
+    "git_sha": "3abc8a40a8213e5275d44e9606c20e3ba1865fc1",
     "git_dirty": true,
     "bench_module": "bench.run_basis_interface",
     "command": "python3 -m bench.run_basis_interface",
-    "timestamp_utc": "2026-11-27T12:34:32+00:00",
+    "timestamp_utc": "2026-11-27T14:02:03+00:00",
     "python_version": "3.14.7",
     "numpy_version": "2.5.4",
     "scipy_version": "1.18.1"

@@ -1,0 +1,18 @@
+* T5 ladder, G3's own two-node cell
+* N=2 nodes, node 1 held by an ideal source, pass devices 10u/1u
+.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.tech/ngspice/sm141064.ngspice" typical
+.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.tech/ngspice/sm141064.ngspice" mimcap_typical
+.param fnoicor=0
+.param sw_stat_global=0
+.param sw_stat_mismatch=0
+Vdd vdd 0 3.3
+Vg ng 0 3.3
+Vcal c1 0 dc 1.65 ac 1
+XLC c1 ng c2 0 nfet_03v3 w=10u l=1u
+XCC1 c1 0 cap_mim_2f0_m4m5_noshield c_length=22.36u c_width=22.36u
+XCC2 c2 0 cap_mim_2f0_m4m5_noshield c_length=22.36u c_width=22.36u
+.control
+ac dec 20 1e2 1e9
+wrdata /home/yanlu/solver/results/b1_t5gc_cal_ref.dat v(c2)
+.endc
+.end

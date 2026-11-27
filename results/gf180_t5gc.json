@@ -1,0 +1,147 @@
+{
+  "design": "gf180mcu batch-1 T5 G/C matrix (P0-C)",
+  "note": "G3's x2.57 tax decomposed into a calibration-formula error, the junction C and the 100 mV gate-overdrive shift",
+  "c_bank_4p_tau_s": 5.865434808196768e-07,
+  "c_bank_4p_pred_ratio": 3.8754779446584147,
+  "c_bank_16p_tau_s": 2.310178097540337e-06,
+  "c_bank_16p_pred_ratio": 15.377389723292076,
+  "n_checks": 19,
+  "n_pass": 19,
+  "checks": [
+    {
+      "name": "C1 the G matrix is tridiagonal (a chain of one-port flux elements)",
+      "ok": true,
+      "detail": "largest non-tridiagonal entry 2.41e-10 S; diag/2 = 0.6929 mS equals the off-diagonal 0.6929 mS"
+    },
+    {
+      "name": "C2 the C matrix is diagonal to <1 % (node caps only)",
+      "ok": true,
+      "detail": "max |C_ij| 8.10e-03 pF for i!=j, i.e. 0.76 % of C_ii"
+    },
+    {
+      "name": "C3 reciprocity: G is symmetric",
+      "ok": true,
+      "detail": "max |G_ij-G_ji| 2.88e-10 S"
+    },
+    {
+      "name": "C4 Y is quasi-static: G flat to 1 GHz and C flat from 1 kHz",
+      "ok": true,
+      "detail": "G(1 kHz) vs G(10 kHz) 2.99e-10 S; C(1 GHz) vs C(10 kHz) 2.51e-05 pF (the FET channel RC does not roll the susceptance off)"
+    },
+    {
+      "name": "C5 the mode-1 eigenvalue matches 2(1-cos(pi/31)) (<2 %)",
+      "ok": true,
+      "detail": "lambda_1*C/g 0.010150 vs analytic 0.010261 (-1.08 %); with a fully uniform C the matrix reproduces 0.010261 bit-for-bit, so the residual is the two measured C non-idealities: the end cap (1.0380 vs 1.0603 pF, +0.3 %) and the 0.76 % inter-node entries (-1.4 %)"
+    },
+    {
+      "name": "C6 the capacitance overhead is junction-only: C_ii/C_mim < 15 %",
+      "ok": true,
+      "detail": "C_ii 1.0603 pF vs MIM 1.0163 pF = +4.3 % (260 aF of device caps per cell, not the x1.6 the G3 composition assumed)"
+    },
+    {
+      "name": "C7 the two-node cell has one dynamic node: g = 2*pi*f*C, not *2C",
+      "ok": true,
+      "detail": "g_true 0.6929 mS vs G3's 1.3547 mS = x1.955 (the x2 is the formula, not the silicon: Vcal holds c1, only c2 integrates)"
+    },
+    {
+      "name": "C8 the 0.2 V chord probe is not a small-signal probe (different v_gs)",
+      "ok": true,
+      "detail": "chord 1/1189 = 0.8410 mS vs g_ss 0.6929 mS = x1.21; the chord cell ties the source to 1.45 V (v_gs 1.85) while the chain sits at 1.65 (v_gs 1.65), and g is proportional to v_ov"
+    },
+    {
+      "name": "C9 a 0.1 V common-mode step costs ~20 % of g (low v_ov at v_sb=1.65)",
+      "ok": true,
+      "detail": "g(1.65)/g(1.75) = 1.309; v_sb = 1.65 V raises Vth, so v_ov is only ~0.5 V and a 0.1 V gate swing is ~20 % of it"
+    },
+    {
+      "name": "C10 the G3 187.8 ns tail is reproduced in its own window (<3 %)",
+      "ok": true,
+      "detail": "188.8 ns vs the G3 record 187.8 ns (0.6 %) -- same netlist, same window"
+    },
+    {
+      "name": "C11 the 10 mV tail matches eig(G^-1 C) within 5 % (linear regime)",
+      "ok": true,
+      "detail": "tau 154.1 ns vs eig 150.8 ns (2.2 %), fit residual 0.000"
+    },
+    {
+      "name": "C12 the 100 mV tail is slower by exactly the g(1.75)/g(1.65) ratio",
+      "ok": true,
+      "detail": "tau100/tau10 = 1.271 vs g(1.65)/g(1.75) = 1.309 (-2.9 %) -- the step ends on a lower-overdrive bias, so the large-signal tail is the linear tail re-rated, not a different mode"
+    },
+    {
+      "name": "C13 the x2.57 tax is a product of three measured factors, not parasitics",
+      "ok": true,
+      "detail": "x2.58 vs x2.67: calibration formula x1.96, junction C x1.04, gate-overdrive x1.31 (an UPPER bound: the tail sits between the 1.65 V start and the 1.75 V end, and the measured tail ratio is x1.27)"
+    },
+    {
+      "name": "C14 the true parasitic tax is the junction C alone (<10 %)",
+      "ok": true,
+      "detail": "+4.3 % on C; with the 10 mV (small-signal) tau the residual over eig(G^-1C) is 2.2 %"
+    },
+    {
+      "name": "D1 tau_1(N) * lam1(N) = C/g at every N (the discrete mode-1 law, <3 %)",
+      "ok": true,
+      "detail": "kappa spread 2.1 % over N = [2, 4, 8, 16]; lam1 = 2(1-cos(pi/(2N-1))) is the Dirichlet-Neumann eigenvalue, NOT 2(1-cos(pi/(2N)))"
+    },
+    {
+      "name": "D2 tau(16)/tau(2) equals lam1(2)/lam1(16) (within 5 %)",
+      "ok": true,
+      "detail": "x100.6 measured vs x97.5 prediced by the mode law (log-log slope 2.22; a naive x64 assumes a continuum N^2)"
+    },
+    {
+      "name": "Ea tau_1 scales with the C-bank: MIM area + the fixed junction C (4x area -> 3.88x tau, within 5 %)",
+      "ok": true,
+      "detail": "ratio to the 1 pF run 3.806 vs 3.875 (naive area ratio 4.0) -> -1.8 %"
+    },
+    {
+      "name": "Eb tau_1 scales with the C-bank: MIM area + the fixed junction C (16x area -> 15.38x tau, within 5 %)",
+      "ok": true,
+      "detail": "ratio to the 1 pF run 14.991 vs 15.377 (naive area ratio 16.0) -> -2.5 %"
+    },
+    {
+      "name": "F1 the injected charge equals sum C_ii dV within 3 % (Q bookkeeping)",
+      "ok": true,
+      "detail": "Q 1.712 pC vs 1.690 pC (1.30 %); the linear sum is C(n2..n16) + C(n1), and the residual is the junction Q(V) nonlinearity, not a leak"
+    }
+  ],
+  "lam_dim": 0.010150203652037684,
+  "g_link_s": 0.000692893412230741,
+  "g_2node_s": 0.0006928968016350702,
+  "g_175_s": 0.0005291745518604272,
+  "c_ii_f": 1.060292435579108e-12,
+  "c_end_f": 1.0379719523622412e-12,
+  "tau_eig_s": 1.5075942585879584e-07,
+  "tau10_s": 1.541056241730912e-07,
+  "tau100_s": 1.9593050713264125e-07,
+  "tau100_g3_s": 1.8879885177251658e-07,
+  "g_ratio": 1.3093917672326496,
+  "lam1": 6633084.427746622,
+  "lam1_analytic": 0.01026135321620969,
+  "g3_formula_s": 0.0013546734176761428,
+  "tau_synth_s": 7.31097338931623e-08,
+  "tax_old": 2.582403761015115,
+  "decomp": 2.670833851458202,
+  "scale_slope": 2.215226215922648,
+  "scale_taus": {
+    "16": 1.5075942585879584e-07,
+    "2": 1.4980181434681592e-09,
+    "4": 7.709286366344622e-09,
+    "8": 3.5253915203973616e-08
+  },
+  "lam1_c_uniform": 0.01026135321620987,
+  "lam1_uniform_diag": 0.010289213959250096,
+  "lam1_g_uniform": 0.010150192661747957,
+  "q_in_c": 1.7118738233071392e-12,
+  "q_lin_c": 1.6898348602747485e-12,
+  "status": "complete",
+  "_meta": {
+    "git_sha": "3abc8a40a8213e5275d44e9606c20e3ba1865fc1",
+    "git_dirty": true,
+    "bench_module": "bench.run_gf180_t5gc",
+    "command": "python3 -m bench.run_gf180_t5gc",
+    "timestamp_utc": "2026-11-27T14:19:27+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
+  }
+}

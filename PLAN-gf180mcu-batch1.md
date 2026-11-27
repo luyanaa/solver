@@ -85,3 +85,17 @@ B0-gf180 冻结修订（§7.5 一段） ──► G1 提取 ──► G2 macromo
 1. `DESIGN.md §7.5` 追加 B0-gf180 修订小节（上面 §1 的表）；
 2. 写 `twin/spice/extract_gf180.py`：先复跑 `PDKS["gf180mcu"]` 的 diode 镜像提取确认环境不回归，再扩到 5V 器件 + `.noise` + MC；
 3. `bench/run_gf180.py` 验收骨架 + `results/gf180_extract.json` 落盘。
+
+## 6. P0 修订记录（用户技术评审的落地）
+
+五条 P0 按「影响面 × 返工成本」排序执行，每条都有可失败的判决，数字进 `results/`，结论进 `DESIGN.md`：
+
+| 项 | 内容 | 状态 | 落点 |
+|---|---|---|---|
+| P0-A | PDK 目标 pin 到 **gf180mcuD**（MIM 合法性：batch-1 的 `cap_mim_2f0_m4m5_noshield` 只在 D 合法） | **完成** | §6.25「变体锁定」，A/D 重跑逐字段零差异、D 五层 stack |
+| P0-D | T7 线电容进网表（10 段 π 梯 80.4 fF），把「1 mm 线不可见」限界为「串联 R 不可见、并联 C 收 7.3 %」 | **完成** | §6.27(c)，极点 63.3 → 58.6 kHz（−7.31 % vs 预测 −7.33 %） |
+| P0-C | T5 的 G/C 矩阵直测：g=0.6929 mS、C_ii=1.0603 pF、τ₁=150.8 ns；×2.58 税分解为口径 1.955 × 结电容 1.043 × 栅过驱动 1.27–1.31，**无寄生项** | **完成** | §6.28（19/19，`bench/run_gf180_t5gc.py`） |
+| P0-E | trim 闭环重算 P 表：`k_full=1+MEAS_FLOOR` 是理想上界，需 coarse+fine 两级 DAC + 48 draws → ADC 量化 → 有限 trim 码 → held-out 验证 | 待办 | §6.26 P 表的下一版 |
+| P0-B/G4 | T1 四旋钮（`a_ii`/leakage/`b_ports`/`STATE_WR`）+ supervisor 拓扑选型 | 待办 | G4 |
+
+架构提案（State Cell → PAB-4 → Island → 64-state die）登记为 **B0-gf180 v2 候选**，不进本批冻结；与现有 compiler 的三条接口映射（四类连接 ↔ `Wire`/`coeff_edge`/`coupling.single_source`/`Buffer+route_contract`；`multiplier: continuous/shareable: conditional` 进 route-contract；MODE/TRIM/STATE_WR/EPOCH + shadow commit ↔ `twin/calib.py` FSM + `lowering/p7.py`，`ε_switch` 挂 `correction.py` 的 CorrectionOperator）已在评审回复中给出。
