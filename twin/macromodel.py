@@ -61,7 +61,11 @@ import numpy as np
 __all__ = ["IntegratorStage", "CurrentMirror", "TGSwitch", "NoiseModel",
            "load_b2_extract", "hbt_ro", "mos_corner_fits",
            "b2_nonideal_map", "VT", "FOURKT", "LAMBDA_HBT",
-           "RL_AC_OHM", "C_BANK_F"]
+           "RL_AC_OHM", "C_BANK_F",
+           # gf180 batch-1 (G2)
+           "load_gf180_extract", "gf180_corner_fits", "gf180_nonideal_map",
+           "gf180_pvt_factors", "gf180_noise_model",
+           "GF180_C_BANK_F", "GF180_I_BIAS", "GF180_RL_OHM"]
 
 # ---------------------------------------------------------------------------
 # physical constants (300 K)
@@ -451,3 +455,166 @@ def b2_nonideal_map(netlist, ext: dict, device: str = "auto",
                      "with per-instance gm (bias unknown); v_swing is a "
                      "headroom estimate, not a measurement")
     return map_out
+
+
+# ---------------------------------------------------------------------------
+# GF180MCU batch-1 (G2): the same objects fed from results/gf180_extract.json
+# ---------------------------------------------------------------------------
+GF180_C_BANK_F = 1e-12            # B0 T1 C_bank = 1 pF (same value, same role)
+GF180_I_BIAS = 10e-6              # extraction bias: lambda <-> ro is pinned
+GF180_RL_OHM = 100e3              # 3v3 gm-cell resistive load (extract_gf180)
+
+
+def load_gf180_extract(path: str | None = None) -> dict:
+    """results/gf180_extract.json -> dict (G1's measured primitive record)."""
+    if path is None:
+        here = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(os.path.dirname(here), "results",
+                            "gf180_extract.json")
+    with open(path) as fh:
+        return json.load(fh)
+
+
+def gf180_corner_fits(ext: dict, c_f: float = GF180_C_BANK_F) -> dict:
+    """Per-corner/per-temperature macromodel parameters from the G1 record.
+
+    The gf180 pole cell is an IDEAL current source into 1 pF, so the pole
+    is set by the device's own r_o only: omega_p = 1/(r_o*C), i.e.
+    r_o = 1/(2*pi*f_pole*C) and lambda = 1/(r_o*I_BIAS).  gm comes from the
+    resistive-load DC gate sweep (gm = dId/dVg, the corner netlist's cell),
+    and A0 = gm*r_o is the measured intrinsic gain — the same identity the
+    b2 lane used, but here g_out_total == 1/r_o (no external load in the
+    pole cell), which is why the self-coefficient moves with Id and not
+    with gm.
+
+    Returns {tag: dict} for tt/ss/ff corners, plus every PVT and joint row
+    that carries the probe (gm_fd + pole_hz).
+    """
+    out = {}
+    for tag, c in ext["corners"].items():
+        pole = c.get("pole_hz")
+        if pole is None or pole <= 0:
+            continue
+        ro = 1.0 / (2.0 * math.pi * pole * c_f)
+        out[tag] = dict(fam=tag.split("_")[0], temp_c=c.get("temp_c", 27.0),
+                        proc=tag.split("_")[1], source="corner",
+                        gm=c.get("gm_fd"), pole_hz=pole, ro_ohm=ro,
+                        lambda_ohm_inv=1.0 / (ro * GF180_I_BIAS),
+                        id_a=c.get("id_at_gmprobe_a"),
+                        a0=c.get("a0_gm_ro"),
+                        mirror_ratio=c.get("ratio_vds_mismatch"),
+                        a_intrinsic_fd=c.get("a_intrinsic_fd"))
+    for lane in ("pvt", "joint"):
+        for tag, r in ((ext.get(lane) or {}).get("rows") or {}).items():
+            pole = r.get("pole_hz")
+            gm = r.get("gm_fd")
+            if pole is None or pole <= 0 or gm is None:
+                continue
+            ro = 1.0 / (2.0 * math.pi * pole * c_f)
+            out[tag] = dict(fam=r["fam"], temp_c=r["temp_c"],
+                            proc=r.get("section", "tt"), source=lane,
+                            gm=gm, pole_hz=pole, ro_ohm=ro,
+                            lambda_ohm_inv=1.0 / (ro * GF180_I_BIAS),
+                            id_a=r.get("id_a"), a0=gm * ro,
+                            mirror_ratio=r["mirror_ratio"],
+                            a_intrinsic_fd=r.get("a_intrinsic_fd"),
+                            bias_ok=r.get("bias_ok", True))
+    return out
+
+
+def gf180_noise_model(ext: dict, fam: str = "3v3", corner: str = "tt",
+                 kind: str = "nmos") -> NoiseModel:
+    """Measured MOS input-referred white density from the G1 record.
+
+    Unlike IHP (PSP103 OSDI device noise unimplemented -> derived-only),
+    gf180's `.noise` on the resistive-load cell is real: the record carries
+    sv_white (output plateau), A0 = gm*(Rl||ro) and the derived input
+    density.  Source label is "measured-mos" with the measured white
+    factor vs the gamma=1 ideal kept in `factor`.
+    """
+    ent = ext["noise"][kind]["%s_%s" % (fam, corner)]
+    return NoiseModel(density_v_rthz=float(ent["density_in_nv_rthz"]) * 1e-9,
+                      source="measured-mos-gf180",
+                      factor=float(ent["gamma_eff"]["white_factor"]),
+                      note="ngspice .noise on the resistive-load nmos cell, "
+                           "band plateau + 1/f two-band fit; 1/f corner "
+                           "%.1f MHz" % ((ent.get("flicker_corner_hz") or 0)
+                                         / 1e6))
+
+
+def gf180_nonideal_map(netlist, ext: dict, fam: str = "3v3",
+                       v_swing: float = 1.5) -> dict:
+    """Per-integrator nonideality map for gf180, for
+    lowering.netlist.attach_nonidealities.
+
+    Same schema as b2_nonideal_map (so BehavioralNetlist does not care
+    which process it is looking at), but every number is G1-measured:
+    gm implied by the element's own a_ii, r_o/lambda from the 1 pF pole
+    cell, noise density + white factor from `.noise`, vos sigma
+    input-referred (Pelgrom), TG Ron + sigma, mirror sigma.
+
+    v_swing default 1.5 V is the 3.3 V family's usable half-range (supply
+    3.3 V, 0.3 V headroom both sides) — a declared headroom estimate, not a
+    measurement, exactly as in the b2 map.
+    """
+    tt = ext["corners"]["%s_tt" % fam]
+    mc = (ext.get("mc") or {}).get(fam) or {}
+    fits = gf180_corner_fits(ext)
+    fit_tt = fits.get("%s_tt" % fam, {})
+    ro = fit_tt.get("ro_ohm", float("inf"))
+    lam = fit_tt.get("lambda_ohm_inv", float("nan"))
+    nmodel = gf180_noise_model(ext, fam=fam)
+    # vos: the record's vd0 is the DIFFERENTIAL OUTPUT offset; the
+    # input-referred sigma is that over 2*|A_dm->se| (see run_gf180 J12)
+    vos_out = (mc.get("vd0_offset") or {}).get("sigma", 0.0)
+    a_se = abs((mc.get("gain_diff") or {}).get("mean", 0.0)) or 1.0
+    vos_in = vos_out / (2.0 * a_se)
+    ron = float(tt["ron_tg"])
+    ron_sig = (mc.get("ron_tg") or {}).get("sigma", 0.0)
+    map_out = {}
+    for itg in netlist.integrators:
+        c_f = float(itg.C_bank) * 1e-12
+        gm_needed = abs(float(itg.pole)) * c_f
+        leak = 1.0 / (ro * c_f) if math.isfinite(ro) and ro > 0 else 0.0
+        map_out[itg.name] = dict(
+            device="mos", process="gf180mcu-%s" % fam,
+            gm_S=gm_needed, C_F=c_f, ro_ohm=ro,
+            A0=gm_needed * ro, leak_rad_s=leak,
+            lambda_fit_mos=lam, id_bias_a=GF180_I_BIAS,
+            v_swing_V=v_swing, v_sat_V=float("nan"),   # gate drive: no tanh
+            noise_density_v_rthz=nmodel.density_v_rthz,
+            noise_source=nmodel.source, noise_factor=nmodel.factor,
+            vos_sigma_V=vos_in,            # input-referred (Pelgrom, measured)
+            vos_sigma_out_V=vos_out,
+            mirror_sigma_rel=(mc.get("ratio_mis") or {}).get("sigma", 0.0),
+            tg_ron_ohm=ron, tg_ron_sigma_ohm=ron_sig,
+            validity="r_o/lambda/gm at the measured 10 uA, %s TT bias; NOT "
+                     "rescaled per instance (bias unknown); v_swing is a "
+                     "supply-headroom estimate, not a measurement" % fam)
+    return map_out
+
+
+def gf180_pvt_factors(ext: dict, fam: str = "3v3") -> dict:
+    """Measured per-point relative factors for the joint lane.
+
+    Returns {tag: dict(k_pole, k_gm, k_mirror, temp_c, proc, source,
+    bias_ok)} where every k is relative to **that family's** TT/27 C point
+    (the compiler's A_v target is process-agnostic; the realized
+    coefficient is what moves).  k_pole is the self-coefficient axis
+    (1/r_o*C = lambda*Id/C), k_gm the input-gain axis, k_mirror the edge
+    axis — three axes, measured separately, never one global scale.
+    """
+    fits = gf180_corner_fits(ext)
+    ref = fits["%s_tt" % fam]
+    out = {}
+    for tag, f in fits.items():
+        if f["fam"] != fam:
+            continue
+        out[tag] = dict(k_pole=f["pole_hz"] / ref["pole_hz"],
+                        k_gm=f["gm"] / ref["gm"],
+                        k_mirror=f["mirror_ratio"] / ref["mirror_ratio"],
+                        temp_c=f["temp_c"], proc=f["proc"],
+                        source=f["source"], bias_ok=f.get("bias_ok", True),
+                        pole_hz=f["pole_hz"], gm=f["gm"], ro_ohm=f["ro_ohm"],
+                        mirror_ratio=f["mirror_ratio"], id_a=f.get("id_a"))
+    return out

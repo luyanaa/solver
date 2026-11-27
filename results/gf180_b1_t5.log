@@ -1,0 +1,68 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: * t5 1d flux chain -- gf180mcu batch-1 characterization vehicle
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+T5OP 1.65 1.65 1.65 1189.09
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 281
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 141
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vdd                                        3.3
+ng                                         3.3
+a                                         1.65
+b                                         1.45
+c1                                        1.65
+c2                                        1.65
+n1                                        1.65
+n2                                        1.65
+n3                                        1.65
+n4                                        1.65
+n5                                        1.65
+n6                                        1.65
+n7                                        1.65
+n8                                        1.65
+n9                                        1.65
+n10                                       1.65
+n11                                       1.65
+n12                                       1.65
+n13                                       1.65
+n14                                       1.65
+n15                                       1.65
+n16                                       1.65
+vin#branch                        -4.98251e-11
+vcal#branch                       -3.32314e-12
+vb#branch                          0.000168196
+va#branch                         -0.000168196
+vg#branch                                    0
+vdd#branch                                   0
+
+ Reference value :  6.22400e-08
+ Reference value :  1.92240e-07
+No. of Data Rows : 1514
+Note: Simulation executed from .control section 
+Error opening osdi lib "/home/yanlu/.ciel/ciel/ihp-sg13/versions/89d42ee6d2fd9b50b86a1aada6fee6673c3e6008/ihp-sg13g2/libs.tech/ngspice/osdi/cap_cmomi.osdi": No such file or directory!
+Error: Library /home/yanlu/.ciel/ciel/ihp-sg13/versions/89d42ee6d2fd9b50b86a1aada6fee6673c3e6008/ihp-sg13g2/libs.tech/ngspice/osdi/cap_cmomi.osdi couldn't be loaded!
+Error opening osdi lib "/home/yanlu/.ciel/ciel/ihp-sg13/versions/89d42ee6d2fd9b50b86a1aada6fee6673c3e6008/ihp-sg13g2/libs.tech/ngspice/osdi/cap_cmomf.osdi": No such file or directory!
+Error: Library /home/yanlu/.ciel/ciel/ihp-sg13/versions/89d42ee6d2fd9b50b86a1aada6fee6673c3e6008/ihp-sg13g2/libs.tech/ngspice/osdi/cap_cmomf.osdi couldn't be loaded!

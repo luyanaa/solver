@@ -1,0 +1,82 @@
+{
+  "n_checks": 27,
+  "n_pass": 27,
+  "n_genuine_fail": 0,
+  "failed": [],
+  "status": "complete",
+  "prim3v3": {
+    "ratio": 1.03279,
+    "ratio_shared": 1.0,
+    "lambda_pole": 0.040377144621346645,
+    "lambda_diode": 0.03405,
+    "gm": 0.00013469254679435478,
+    "ro": 2476648.632234679,
+    "a0": 333.58611179044425,
+    "c_mim_f": 1.0162825044652928e-12,
+    "ron_tg": 2854.999999999941,
+    "pole_hz": 64262.221544236534
+  },
+  "prim6v0": {
+    "ratio": 1.17181,
+    "lambda_pole": 0.10996323194438792,
+    "ro": 909394.8789225596,
+    "gm": 0.00012683379595766121,
+    "ron_tg": 1644.9999999998965
+  },
+  "noise": {
+    "gamma_eff_white": {
+      "nm3v3": 0.9775926140079212,
+      "pm3v3": 0.9284928596430836,
+      "nm6v0": 1.1854883022001932
+    },
+    "input_density_nv": 10.965777707514182,
+    "ideal_nv": 11.090738920946825,
+    "flicker_corner_hz": 2930518.49126506,
+    "tg_white_factor": 1.0239597430713705
+  },
+  "mc": {
+    "n": 48,
+    "determinism": true,
+    "vd0_sigma": 0.038355825829137755,
+    "vd0_pred": 0.03192086278126,
+    "ratio_sigma": 0.03363338817295856,
+    "ratio_mean": 1.0075909166666668,
+    "ron_sigma_rel": 0.010207147410082601
+  },
+  "pvt": {
+    "n": 18,
+    "vbe_slope_mv_per_k": -0.7905151515151513,
+    "ratio_span": [
+      1.02979,
+      1.18342
+    ]
+  },
+  "joint": {
+    "n": 8,
+    "r3": [
+      1.02515,
+      1.04315
+    ],
+    "r6": [
+      1.12848,
+      1.21802
+    ]
+  },
+  "paras": {
+    "slope_rel_err": -0.006259509590212375
+  },
+  "transient": {
+    "settle_tau": 3.7954515944065847,
+    "thd": 0.0021115948721471467
+  },
+  "_meta": {
+    "git_sha": "4b8c8e1c5232131be6cea2e9bbc31f069d9a5387",
+    "git_dirty": true,
+    "bench_module": "bench.run_gf180",
+    "command": "python3 -m bench.run_gf180",
+    "timestamp_utc": "2026-11-27T10:45:03+00:00",
+    "python_version": "3.14.7",
+    "numpy_version": "2.5.4",
+    "scipy_version": "1.18.1"
+  }
+}

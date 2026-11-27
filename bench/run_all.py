@@ -100,12 +100,16 @@ BENCHES = [
     ("run_b2",                    "b2.json",                 None,                          False),
     ("run_b2_behavioral",         "b2_behavioral.json",      None,                          False),
     ("run_b2_joint",              "b2_joint.json",           None,                          "long"),
+    ("run_gf180",                 "gf180.json",              None,                          False),
+    ("run_gf180_joint",           "gf180_joint.json",        None,                          "long"),
+    ("run_gf180_batch1",          "gf180_batch1.json",       None,                          True),
 ]
 
 # Opt-in only: real ngspice extraction (~70 s per PDK / ~10 min for b2).
 SPICE_BENCHES = [
     ("twin.spice.extract",    "device_extract.json",  None, False),
     ("twin.spice.extract_b2", "b2_extract.json",      None, False),
+    ("twin.spice.extract_gf180", "gf180_extract.json", None, False),
 ]
 
 # "N/M checks pass" style line in the *_report.txt files; some reports use

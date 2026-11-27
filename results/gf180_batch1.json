@@ -1,0 +1,173 @@
+{
+ "design": "gf180mcu batch-1 (G3)",
+ "note": "three-way: SPICE / primitive-bank composition / design closed form",
+ "t1": {
+  "a0_spice": 331.11854204137035,
+  "fp_spice_hz": 63257.62155362853,
+  "a0_macro": 333.58611179044425,
+  "fp_macro_hz": 63232.63586835776,
+  "a0_design": 363.35052516814943,
+  "fp_design_hz": 58998.08348986833,
+  "v_out": 0.765406
+ },
+ "t5": {
+  "dc_gain": 0.9999983990006805,
+  "f3db_hz": 1039978.0509407771,
+  "r_chord_ohm": 1189.09,
+  "g_ss_s": 0.0013546664049098299,
+  "r_ss_ohm": 738.1891190152919,
+  "tau1_s": 1.8776115226327595e-07,
+  "tau_pred_s": 7.31101123638154e-08,
+  "tax": 2.568196740403385,
+  "lam1": 0.01026135321620969,
+  "tail_fit_resid": 0.001778745452459461,
+  "tail_fit_points": 950
+ },
+ "t7": {
+  "rsh_ohm_sq": 0.0905994,
+  "r_1000um_ohm": 45.2997,
+  "r_100um_ohm": 4.52997,
+  "c_wire_f": 8.0350084e-14,
+  "t50_wire_s": 1.3813172687163369e-12,
+  "fp_with_wire_hz": 63256.500897432714,
+  "fp_without_hz": 63257.62155362853,
+  "note": "magic's tech file prints metal3 = 10 (mohm/sq) while the ngspice res_typical rm3 model says 0.090 ohm/sq; SPICE is used and the conflict is recorded in DESIGN 6.27"
+ },
+ "t8": {
+  "replica_density_nv": 13.73578285015562,
+  "primitive_density_nv": 10.965777707514182,
+  "gamma_from_replica": 1.5338605183767466,
+  "bank_nv_1_2_4_8": [
+   16.14703804373603,
+   12.610611483183439,
+   11.086974155250472,
+   10.421639121548873
+  ],
+  "area8_factor": 1.5493760487588484,
+  "kt_measured_v": 6.35193e-05,
+  "kt_theory_v": 6.382531192892501e-05,
+  "big_cell_nv": 11.260364783433973,
+  "open_items": [
+   "area x8 gives x1.55, not sqrt(8) = 2.83: ngspice scales m= and W identically (checked), so the PDK's white-noise scaling vs area is what does not reproduce. C1 item.",
+   "the replica's A+B/f plateau fit is ill-conditioned: that cell's flicker corner (2.93 MHz) sits on its pole, so the primitive bank's gamma_eff should be read as a fit, not a bound"
+  ]
+ },
+ "t9": {
+  "lsb_a": 1.1099999999999887e-05,
+  "lsb_pred_a": 1.1612173195901619e-05,
+  "full_scale_a": 0.0003365499999999999,
+  "inl_rel": -0.021941296134834753,
+  "inl_pred": -0.011925622376997458,
+  "vds_lsb": 3.2889,
+  "vds_fs": 2.96345
+ },
+ "t10": {
+  "offset_nominal_mv": -4.775300706076624e-13,
+  "mismatch_draws_mv": [
+   -1.3715525009545897,
+   2.388384509624195,
+   -1.2583926389737339,
+   -2.5196013289036356
+  ],
+  "sigma_meas_mv": 1.844686685990322,
+  "pelgrom_mv": 2.2927000816718426,
+  "tau_reg_s": 3.821733067126283e-10,
+  "delay_1v_s": 7.07e-09,
+  "note": "6.25's 38.36 mV vd0 sigma is an output-referred offset"
+ },
+ "n_checks": 18,
+ "n_pass": 18,
+ "checks": [
+  {
+   "name": "T1a DC gain within 20 % of the primitive-bank composition",
+   "ok": true,
+   "detail": "SPICE 331.12 vs macro 333.59 (macro-SPICE 0.7 %)"
+  },
+  {
+   "name": "T1b pole within 20 % of 1/(2*pi*ro*C_mim)",
+   "ok": true,
+   "detail": "SPICE 63.3 kHz vs macro 63.2 kHz (-0.0 %)"
+  },
+  {
+   "name": "T1c pole also within 20 % of the design column (the two lambdas agree here)",
+   "ok": true,
+   "detail": "design 59.0 kHz; lambda_slope 0.03518 vs lambda_pole 0.04038 -> -8.2 % ro split"
+  },
+  {
+   "name": "T1d integrating node stays in saturation",
+   "ok": true,
+   "detail": "v(out) = 0.765 V = the diode bias the extraction used (0.765 V)"
+  },
+  {
+   "name": "T5a ladder DC gain is 1 (a conservative flux chain has no DC loss)",
+   "ok": true,
+   "detail": "|H| at the lowest frequency = 1.0000"
+  },
+  {
+   "name": "T5b small-signal link conductance exceeds the 0.2 V chord (triode law)",
+   "ok": true,
+   "detail": "R_ss 738 ohm < R_chord 1189 ohm; the triode law gives R_chord/R_ss = 1 + vds/(2*vov) = 1.61"
+  },
+  {
+   "name": "T5c parasitics may only slow the ladder (tax recorded, not ratio-gated)",
+   "ok": true,
+   "detail": "measured/composition = 2.57 (fit residual 0.002 over 950 pts); the composition has no per-node link capacitance, so this is the batch-1 parasitic tax and a C1 measurement item"
+  },
+  {
+   "name": "T7a metal sheet resistance matches the PDK resistor model (<5 %)",
+   "ok": true,
+   "detail": "rm3 0.0906 ohm/sq; the 100 um wire independently gives 0.0906"
+  },
+  {
+   "name": "T7b a 1 mm M3 route is invisible behind a 1 pF bank (<2 % pole shift)",
+   "ok": true,
+   "detail": "63.3 kHz with the wire vs 63.3 kHz without (-0.00 %)"
+  },
+  {
+   "name": "T7c the wire's own RC delay is under 10 % of the 1-degree phase budget",
+   "ok": true,
+   "detail": "t50 1.38 ps vs 27.8 ps at 100 MHz (5.0 %)"
+  },
+  {
+   "name": "T8a kT/C anchor: total integrated noise = sqrt(kT/C) within 5 %",
+   "ok": true,
+   "detail": "63.52 uV vs 63.83 uV (-0.5 %)"
+  },
+  {
+   "name": "T8b bank size reduces the input-referred density monotonically",
+   "ok": true,
+   "detail": "16.15, 12.61, 11.09, 10.42 nV/rtHz at m = 1/2/4/8"
+  },
+  {
+   "name": "T8c replica cell reproduces the primitive bank's own band total (<25 %)",
+   "ok": true,
+   "detail": "batch-1 1.8399 mV vs extractor 1.5641 mV (17.6 %)"
+  },
+  {
+   "name": "T9a LSB within 20 % of the lambda-corrected bank unit current",
+   "ok": true,
+   "detail": "11.100 uA vs 11.612 uA (-4.4 %)"
+  },
+  {
+   "name": "T9b the INL is the lambda mechanism, within a factor of two",
+   "ok": true,
+   "detail": "measured -2.19 % vs lambda -1.19 % (x1.84)"
+  },
+  {
+   "name": "T10a nominal pair offset under 1 mV (symmetry; a PWL source's DC sweep value is its 'dc' field, 0 V, so the trip point IS the offset)",
+   "ok": true,
+   "detail": "offset -0.000 mV on a 20 uV sweep grid"
+  },
+  {
+   "name": "T10b mismatch is live and the Pelgrom scale is right (0.5..5 mV, 4 draws)",
+   "ok": true,
+   "detail": "sigma 1.84 mV vs Pelgrom 2.29 mV, seed-resolved draws"
+  },
+  {
+   "name": "T10c regeneration reaches 1 V with an exponential, ns-scale tau",
+   "ok": true,
+   "detail": "delay 7.07 ns, tau 0.38 ns, 62 fit points"
+  }
+ ],
+ "status": "complete"
+}

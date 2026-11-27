@@ -2246,11 +2246,11 @@
     "n_passed": 44
   },
   "_meta": {
-    "git_sha": "95f79c27f1bfef51c1a4b38df339ff116adfd263",
+    "git_sha": "4b8c8e1c5232131be6cea2e9bbc31f069d9a5387",
     "git_dirty": true,
     "bench_module": "bench.run_reduce",
     "command": "python3 -m bench.run_reduce",
-    "timestamp_utc": "2026-11-27T06:45:24+00:00",
+    "timestamp_utc": "2026-11-27T10:34:32+00:00",
     "python_version": "3.14.7",
     "numpy_version": "2.5.4",
     "scipy_version": "1.18.1"
