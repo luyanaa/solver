@@ -106,6 +106,26 @@
   "cancellation": 1.0,
   "eps_J_pass": true
  },
+ "burgers": {
+  "tv_godunov": 1.9999999897826506,
+  "tv_central": 33.26858636568533,
+  "l1_godunov": 0.016318328111253774,
+  "l1_central": 0.2227294393414867,
+  "l1_T": 0.00039145569105851957,
+  "bound": 0.0010590404634113852,
+  "dx_s": 0.0007812499999999556,
+  "dT": 0.1616161616161616,
+  "mass_err": 5.551115123125783e-17
+ },
+ "shock_dwr": {
+  "xs_clean": 0.7006015417224343,
+  "dx_s": 6.5621865017462255e-06,
+  "pred": 6.818325877534636e-05,
+  "dJ_shock": 6.249999999999312e-06,
+  "dJ_ur": 0.0,
+  "dJ_plateau": -1.2204931354453663e-07,
+  "interface_share": 1.0499498402795118
+ },
  "checks": [
   {
    "name": "IR 前提：rho_pred=kappa*u_a=0.066 < 1（修正闭环合法）",
@@ -398,6 +418,108 @@
   {
    "name": "证书聚合：声明 ε_J 但缺 δJ ⇒ rejected（malformed）",
    "value": "rejected",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "B1 Godunov TVD：TV(u_T)=2.0000 ≤ TV(u_0)=2.0000（周期双跳，熵产生以 TV 不增为代理实测）",
+   "value": "xs=0.6992",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "B1 激波位置：干净运行误差 7.812e-04 ≤ 1 cell=7.812e-03",
+   "value": "xs=0.6992 exact=0.7000",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "B1 中心通量负对照（T=0.10）：TV=33.269 > TV0（熵产生为正被 TV 抓住）且 L1 2.227e-01 > Godunov 1.200e-02",
+   "value": "ratio=18.6",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "B2 L1 收缩覆盖：注入诱发 ‖u_hw−u_clean‖₁=0.0004 ≤ 实测 ∫‖r‖₁dx=0.0011（Crandall–Tartar，激波不放大注入）",
+   "value": "ratio=0.37",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "B2 双项分解：总 L1=0.0165 ≤ ν_num 基线 0.0163 + 注入项 0.0004（三角不等式，两项预算分立）",
+   "value": "基线占比=99%",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "B2 中性累积：后半程斜率 8.397e-04 ≈ 全程 9.786e-04（×2 内，线性非指数）",
+   "value": "L1(T/2)=0.0002 L1(T)=0.0004",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "B2 调度：预算式 ΔT=0.162 s（r_max=0.006，ε₁=1e-03），预报注入量 r_max·ΔT=0.001 ≥ 实测注入诱发 L1=0.0004",
+   "value": "s",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "B3 质量精确守恒（shared flux + 守恒注入）：误差 5.55e-17 ~ 浮点级，而注入诱发 ‖e‖₁=3.915e-04 持续累积——守恒量对误差路径零敏感",
+   "value": "观测极限：位置只能靠锚点",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "B3 激波位置被合同罩住：δx_s=0.0008 ≤ 1 cell + 1.5·‖e‖₁/(uL−uR)=0.0084（FV 间断的位置观测极限 = 1 cell）",
+   "value": "xs=0.6992 exact=0.7000",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "证书聚合：激波 L1 中性合同 ⇒ pass（预算式调度进 detail）",
+   "value": "pass",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "D0 子 cell 估计器：|xs_clean−exact|=6.02e-04 ≤ dx/4=1.95e-03",
+   "value": "xs=0.70060",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "D1 界面项主导：|Δu·δx_s|=6.562e-06 ≥ 5×|光滑余项|=3.122e-07（激波问题的 δJ 主体是位移项，Δu=解析跳变 uL−uR）",
+   "value": "dJ=6.250e-06 dx_s=6.562e-06",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "D2 跳变条件上界：δx_s 实测 6.562e-06 ≤ 光滑预测 ∫(δuL+δuR)/2 dt=6.818e-05（实测低 10×：FV 位置响应被 cell 平均簿记量化/粘滞——光滑跳变条件只作保守上界，界面项用同一估计器的相对位移）",
+   "value": "jump: ds=(δuL+δuR)/2",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "D4 镜像偶极：δx_s 反号同幅（-6.570e-06 vs -6.562e-06，×1.5 内）",
+   "value": "pred=-6.817e-05",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "D3 空间分配：激波邻域 |δJ|=6.250e-06 ≥ 100× uR 远场 0.000e+00（扰动传播速度 ~0，T 内到不了激波）",
+   "value": "dx_s(d)=0.000e+00",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "D5 plateau 远场：|δJ|=1.220e-07 ≤ 0.3×激波邻域（追赶时间 0.7>T；更长时间会到达——界面项是瞬态非永久豁免）",
+   "value": "dx_s(c)=-1.131e-07",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "D6 ε_J 证书：激波 QoI δJ=6.250e-06 ≤ ε_J=1e-3 ⇒ pass（estimate 口径）",
+   "value": "pass",
    "ok": true,
    "kind": "error_control"
   }
