@@ -50,6 +50,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from analysis.error_propagation import (classify_propagation,
                                         conservation_drift_rate,
                                         correction_interval, steady_bound)
+from lowering.budget import evaluate_sys
+from lowering.error_control import (ErrorControlResult, classify_constraint,
+                                    constraint_refine, constraint_schedule)
+from twin.constraint import ConstraintMesh, solve_constraint
 from twin.residual import (detect_offset, linear_window_residual,
                            window_integral_residual)
 
@@ -398,6 +402,127 @@ def case_diffusion_windows():
                 n3_residual=res_off.eta, n3_error=e_off)
 
 
+# ---------------------------------------------------------------- 约束综合
+
+def case_constraint_fabric():
+    """§6.22 × T10 综合：误差控制合同在约束 fabric 上的实例化。
+
+    三条合同（lowering/error_control.py）：
+      C1 约束网分类（−G/C 必然 contracting，非 SPD 网如实改判并要求对账）；
+      C2 约束网 IR：mismatch 偏置被 KCL 残差暴露并扣除 —— regime B（安静
+         模拟核 + 10% dev 压力注入）实测最终误差**低于 mismatch 地板**，
+         即约束 fabric 在数字残差通路上自校准（§3.6 的定量版）；
+      C3 调度：背景重校间隔由预算式反解，与 calib 语义一致。
+    加证书聚合：_error_control_verdict 四情形 + evaluate_sys 转发。
+    """
+    emit("[case_constraint_fabric]  T10 约束网分类 / IR 自校准 / 调度 / 证书聚合")
+    from lowering.budget import _error_control_verdict
+
+    mesh = ConstraintMesh.poisson_1d(16, g=1.0)
+    N = mesh.n
+    I = np.sin(np.pi * np.arange(N) / (N + 1)) * 1e-6
+    c_node = 1e-12
+
+    # --- 前级事实：solve_constraint 先行（奇异网/不守恒网到此为止）---
+    cons = solve_constraint(mesh, I, c_node, solve_deadline=1e-9,
+                            residual_tol=1e-6)
+    add_check("T10 前级事实：verdict=%s（非 SINGULAR），τ_relax=%.3e s"
+              % (cons.verdict, cons.tau_relax),
+              "kappa_G=%.1f" % cons.kappa_G,
+              cons.verdict in ("STEADY", "PASS") and cons.tau_relax > 0)
+
+    # --- C1 分类 ---
+    pc = classify_constraint(mesh, c_node)
+    add_check("C1 约束网分类 ⇒ contracting（μ₂=%.3g<0，τ_relax 内检查）" % pc.lognorm,
+              pc.cls, pc.cls == "contracting")
+
+    # --- C2 regime A：量化主导（标称 1e-3 dev，u_a=2^-10）---
+    rA = constraint_refine(mesh, I, c_node, lam=0.0138, eps_dev=1e-3, seed=7)
+    add_check("C2-A 量化主导：IR 改进 %.1f× ≥10（e %.3e→%.3e）"
+              % (rA["ir_improve"], rA["e_analog"], rA["e_final"]),
+              "kcl_res=%.3e" % rA["kcl_residual_final"],
+              rA["ir_improve"] >= 10.0 and rA["e_final"] <= 0.1 * rA["e_analog"])
+    add_check("C2-A mismatch 分量被 bound 覆盖（保守 sup 范数）",
+              "%.3e ≤ %.3e" % (rA["mismatch_err"], rA["mismatch_bound_inf"]),
+              rA["mismatch_within_bound"])
+
+    # --- C2 regime B：mismatch 主导（10% dev 压力注入，安静核 u_a=2^-12）---
+    rB = constraint_refine(mesh, I, c_node, u_a=2.0 ** -12, lam=0.0138,
+                           eps_dev=1e-1, seed=7)
+    add_check("C2-B mismatch 可见：e_analog %.3e ≥ 5×地板 %.3e"
+              % (rB["e_analog"], rB["mismatch_floor_inf"]),
+              "ratio=%.1f" % (rB["e_analog"] / rB["mismatch_floor_inf"]),
+              rB["e_analog"] >= 5.0 * rB["mismatch_floor_inf"])
+    add_check("C2-B 自校准：IR 后 %.3e **低于** mismatch 地板 %.3e"
+              "（KCL 残差暴露 δI，修正解扣除）"
+              % (rB["e_final"], rB["mismatch_floor_inf"]),
+              "improve=%.1f×" % rB["ir_improve"],
+              rB["e_final"] < rB["mismatch_floor_inf"]
+              and rB["ir_improve"] >= 20.0)
+
+    # --- C3 调度（漂移=中性累积，预算式 + calib 对账）---
+    sch = constraint_schedule(mesh, c_node, drift_rate=1e-4, calib_floor=1e-6,
+                              eps=1e-3)
+    add_check("C3 调度：ΔT=%.2f s，calib 语义对账 residual=%.3e ≤ ε"
+              % (sch["dT"], sch["predicted_residual"]),
+              "consistent=%s" % sch["calib_consistent"],
+              sch["dT"] > 0 and sch["calib_consistent"])
+    try:
+        constraint_schedule(mesh, c_node, drift_rate=1e-4, calib_floor=2e-3,
+                            eps=1e-3)
+        ok = False
+    except ValueError:
+        ok = True
+    add_check("C3 地板 ≥ ε ⇒ raise（调度无解不许静默）", "raise", ok)
+
+    # --- 证书聚合：_error_control_verdict 四情形 + evaluate_sys 转发 ---
+    ec_good = ErrorControlResult(
+        cls="contracting", n_windows=40, coverage_ratio=1.0,
+        e_measured_max=8.1e-4, e_predicted_max=1.69e-3,
+        eta_mean=1.69e-3, steady_bound=1.69e-3,
+        ir_improve=rB["ir_improve"], schedule_dT=sch["dT"]).as_dict()
+    v, _, _ = _error_control_verdict(ec_good)
+    add_check("证书聚合：合法覆盖证据 ⇒ pass", v, v == "pass")
+
+    ec_bad = dict(ec_good, coverage_ratio=0.9)
+    v, _, d = _error_control_verdict(ec_bad)
+    add_check("证书聚合：覆盖 0.9<1 ⇒ rejected（界未罩住实测）", v,
+              v == "rejected" and "coverage" in d)
+
+    ec_exp = dict(ec_good, cls="expanding", finite_horizon=False)
+    v, _, _ = _error_control_verdict(ec_exp)
+    add_check("证书聚合：expanding 无 finite_horizon ⇒ rejected", v, v == "rejected")
+
+    v, _, _ = _error_control_verdict({"foo": 1})
+    add_check("证书聚合：畸形证据 ⇒ rejected（不冒充可行）", v, v == "rejected")
+
+    # evaluate_sys 转发：error_control 进 Certificate 字段与 items
+    from analysis.descriptor import Descriptor
+    from analysis.slack import HardwareSpec
+    cert = evaluate_sys(Descriptor(np.eye(1), np.array([[-1.0]]),
+                                   np.array([[1.0]]), np.array([[1.0]])),
+                        HardwareSpec(kappa_hw=1e6, B_hw=10e6),
+                        error_control=ec_good)
+    item = cert.items.get("error_control", {})
+    add_check("evaluate_sys 转发：error_control 进 items（verdict=%s）"
+              % item.get("verdict"),
+              "cert.error_control=%s" % (cert.error_control is not None),
+              item.get("verdict") == "pass"
+              and cert.error_control is not None)
+
+    # 静态 IR-only 事实进证书：pass 但 detail 声明非动态判决
+    ec_static = ErrorControlResult(
+        cls="contracting", n_windows=0, coverage_ratio=0.0,
+        e_measured_max=rA["e_final"], e_predicted_max=rA["e_final"],
+        ir_improve=rA["ir_improve"]).as_dict()
+    v, _, d = _error_control_verdict(ec_static)
+    add_check("证书聚合：纯 IR 静态事实 ⇒ pass 但声明非动态判决", v,
+              v == "pass" and "not a dynamic feasibility verdict" in d)
+
+    return dict(cons_verdict=cons.verdict, tau_relax=cons.tau_relax,
+                cls=pc.cls, rA=rA, rB=rB, schedule=sch)
+
+
 # ---------------------------------------------------------------- main
 
 def main():
@@ -407,6 +532,8 @@ def main():
     ir = case_poisson_ir()
     emit("")
     dif = case_diffusion_windows()
+    emit("")
+    con = case_constraint_fabric()
     n_pass = sum(1 for c in _checks if c["ok"])
     emit("")
     emit("%d/%d checks passed" % (n_pass, len(_checks)))
@@ -420,7 +547,8 @@ def main():
                    meta=dict(bench="bench.run_error_control",
                              section="DESIGN.md §6.22",
                              model="behavioral: quantize + bounded noise + bias"),
-                   poisson_ir=ir, diffusion=dif, checks=_checks)
+                   poisson_ir=ir, diffusion=dif, constraint_fabric=con,
+                   checks=_checks)
     with open(os.path.join(out_dir, "error_control.json"), "w") as fh:
         json.dump(payload, fh, indent=1, ensure_ascii=False)
     return n_pass == len(_checks)

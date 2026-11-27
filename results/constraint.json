@@ -1,328 +1,318 @@
 {
-  "constraint": {
-    "checks": [
-      {
-        "name": "poisson1d max|V*−u|",
-        "got": "1.972e-05",
-        "expected": "< 1.013e-03",
-        "passed": true,
-        "kind": "bound"
-      },
-      {
-        "name": "poisson1d symmetric SPD",
-        "got": true,
-        "expected": true,
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "tau_relax fit/formula",
-        "got": "1.0000",
-        "expected": "1 ± 0.05",
-        "passed": true,
-        "kind": "ratio"
-      },
-      {
-        "name": "tau_relax value",
-        "got": "4.282e-10 s",
-        "expected": "C/λ_min",
-        "passed": true,
-        "kind": "info"
-      },
-      {
-        "name": "residual t=0 = ‖G·0−I‖",
-        "got": "1.349e-03",
-        "expected": "1.349e-03",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "residual t_end → 0",
-        "got": "2.781e-12",
-        "expected": "< 1e-6·r0",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "κ ratio N=64/32",
-        "got": "3.884",
-        "expected": "≈4 ±20%",
-        "passed": true,
-        "kind": "ratio"
-      },
-      {
-        "name": "κ growth ~N²",
-        "got": "ratio 3.884",
-        "expected": "(65/33)²=3.880",
-        "passed": true,
-        "kind": "info"
-      },
-      {
-        "name": "descriptor A stable (Re eig < 0)",
-        "got": "-2.336e+09",
-        "expected": "< 0",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "eigvals = −λ_mesh/C_node",
-        "got": "7.324e-03",
-        "expected": "≈0 (<1e-9 rel)",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "E = C_node·I (regular)",
-        "got": true,
-        "expected": true,
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "descriptor.check() n",
-        "got": 64,
-        "expected": 64,
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "‖δV‖∞ ≤ ‖G⁻¹‖∞‖δI‖∞ (10 seeds)",
-        "got": "all hold",
-        "expected": "all hold",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "floor ratio N=128/32",
-        "got": "8.61",
-        "expected": "≈κ ratio 15.30 (×0.5–2)",
-        "passed": true,
-        "kind": "ratio"
-      },
-      {
-        "name": "lam systematic grows with λ (ΔV≠0)",
-        "got": "3.31e-05 → 2.32e-03",
-        "expected": "increases",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "eps_dev-dominant when ΔV=0 (λ term inert)",
-        "got": "1.0000",
-        "expected": "1.0 (identical draws)",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "eps_sys floor ≈ η·eps_sys·‖V*‖∞",
-        "got": "3.333e-04",
-        "expected": "O(1.013e-03)",
-        "passed": true,
-        "kind": "order"
-      },
-      {
-        "name": "ε_c pass case (<0.01)",
-        "got": "0.0043",
-        "expected": "< 0.01",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "ε_c fail: C_node too large",
-        "got": "42.8165",
-        "expected": "≥ 0.01 → FAIL flag",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "verdict flags timing violation",
-        "got": "FAIL",
-        "expected": "FAIL",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "ε_c fail: state too fast (τ_state=1e-12)",
-        "got": "42.8165",
-        "expected": "≥ 0.01",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "neumann-mixed nonsingular",
-        "got": true,
-        "expected": true,
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "λ_min is g_ref-scale",
-        "got": "3.093e-05",
-        "expected": "0 < λ_min < g_ref",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "λ_min ≫ 0 but ≪ λ_max",
-        "got": "3.09e-05 ≪ 3.99e+00",
-        "expected": "κ large (leakage-only zero-mode lifting)",
-        "passed": true,
-        "kind": "info"
-      },
-      {
-        "name": "pure Neumann zero mode detected",
-        "got": true,
-        "expected": true,
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "solve_constraint verdict SINGULAR (never inverted)",
-        "got": "SINGULAR",
-        "expected": "SINGULAR",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "non-symmetric mesh detected",
-        "got": false,
-        "expected": false,
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "monotone_spd correctly False",
-        "got": false,
-        "expected": false,
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "full-spectrum abscissa < 0 (stable)",
-        "got": "-4.085e-03",
-        "expected": "< 0",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "stable_full uses full eig (not sym part)",
-        "got": true,
-        "expected": true,
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "λ_min taken on symmetric part",
-        "got": "4.079e-03",
-        "expected": "= λ_min((G+Gᵀ)/2)",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "destabilizing gm caught by full spectrum",
-        "got": false,
-        "expected": false,
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "destabilizing abscissa > 0",
-        "got": "4.011e-02",
-        "expected": "> 0",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "R_f = 8μl/(πr⁴)",
-        "got": "2.5465e+11",
-        "expected": "2.5465e+11",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "two-node chain P0 = Q·(R1∥(R2+R3))",
-        "got": "2.0372e-01",
-        "expected": "2.0372e-01",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "two-node chain P1 = P0·R3/(R2+R3)",
-        "got": "1.0186e-01",
-        "expected": "1.0186e-01",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "fluidic G structure (sym, off-diag ≤ 0)",
-        "got": "True",
-        "expected": "True",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "mapping table P↔V, Q↔I, R_f↔R",
-        "got": "{'P': 'V', 'Q': 'I', 'R_f': 'R', 'C_f': 'C', 'L_R': 'G'}",
-        "expected": "{'P':'V','Q':'I','R_f':'R','C_f':'C','L_R':'G'}",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "fluidic G → relaxation_modes works (SPD)",
-        "got": true,
-        "expected": true,
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "poisson_2d(8×8) SPD monotone",
-        "got": true,
-        "expected": true,
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "poisson_2d interior row sums ≈ 0",
-        "got": "0.000e+00",
-        "expected": "≈0",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "κ_hw windows present (electronic/mems/fluidic/photonic)",
-        "got": "['electronic', 'fluidic', 'mems', 'photonic']",
-        "expected": "4 domains",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "photonic window is 1e-12..1e-9",
-        "got": "(1e-12, 1e-09)",
-        "expected": "(1e-12, 1e-9)",
-        "passed": true,
-        "kind": "exact"
-      },
-      {
-        "name": "TransducerCost.as_dict contract fields",
-        "got": "['bandwidth_hz', 'energy', 'extra', 'gain', 'noise_rms', 'notes']",
-        "expected": "gain/noise_rms/bandwidth_hz/energy",
-        "passed": true,
-        "kind": "exact"
-      }
-    ],
-    "summary": {
-      "n_checks": 44,
-      "n_passed": 44
-    }
-  },
-  "_meta": {
-    "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
-    "git_dirty": true,
-    "bench_module": "bench.run_constraint",
-    "command": "python3 -m bench.run_constraint",
-    "timestamp_utc": "2026-11-20T05:56:25+00:00",
-    "python_version": "3.14.7",
-    "numpy_version": "2.5.4",
-    "scipy_version": "1.18.1"
+ "constraint": {
+  "checks": [
+   {
+    "name": "poisson1d max|V*\u2212u|",
+    "got": "1.972e-05",
+    "expected": "< 1.013e-03",
+    "passed": true,
+    "kind": "bound"
+   },
+   {
+    "name": "poisson1d symmetric SPD",
+    "got": true,
+    "expected": true,
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "tau_relax fit/formula",
+    "got": "1.0000",
+    "expected": "1 \u00b1 0.05",
+    "passed": true,
+    "kind": "ratio"
+   },
+   {
+    "name": "tau_relax value",
+    "got": "4.282e-10 s",
+    "expected": "C/\u03bb_min",
+    "passed": true,
+    "kind": "info"
+   },
+   {
+    "name": "residual t=0 = \u2016G\u00b70\u2212I\u2016",
+    "got": "1.349e-03",
+    "expected": "1.349e-03",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "residual t_end \u2192 0",
+    "got": "2.781e-12",
+    "expected": "< 1e-6\u00b7r0",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "\u03ba ratio N=64/32",
+    "got": "3.884",
+    "expected": "\u22484 \u00b120%",
+    "passed": true,
+    "kind": "ratio"
+   },
+   {
+    "name": "\u03ba growth ~N\u00b2",
+    "got": "ratio 3.884",
+    "expected": "(65/33)\u00b2=3.880",
+    "passed": true,
+    "kind": "info"
+   },
+   {
+    "name": "descriptor A stable (Re eig < 0)",
+    "got": "-2.336e+09",
+    "expected": "< 0",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "eigvals = \u2212\u03bb_mesh/C_node",
+    "got": "7.324e-03",
+    "expected": "\u22480 (<1e-9 rel)",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "E = C_node\u00b7I (regular)",
+    "got": true,
+    "expected": true,
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "descriptor.check() n",
+    "got": 64,
+    "expected": 64,
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "\u2016\u03b4V\u2016\u221e \u2264 \u2016G\u207b\u00b9\u2016\u221e\u2016\u03b4I\u2016\u221e (10 seeds)",
+    "got": "all hold",
+    "expected": "all hold",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "floor ratio N=128/32",
+    "got": "8.61",
+    "expected": "\u2248\u03ba ratio 15.30 (\u00d70.5\u20132)",
+    "passed": true,
+    "kind": "ratio"
+   },
+   {
+    "name": "lam systematic grows with \u03bb (\u0394V\u22600)",
+    "got": "3.31e-05 \u2192 2.32e-03",
+    "expected": "increases",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "eps_dev-dominant when \u0394V=0 (\u03bb term inert)",
+    "got": "1.0000",
+    "expected": "1.0 (identical draws)",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "eps_sys floor \u2248 \u03b7\u00b7eps_sys\u00b7\u2016V*\u2016\u221e",
+    "got": "3.333e-04",
+    "expected": "O(1.013e-03)",
+    "passed": true,
+    "kind": "order"
+   },
+   {
+    "name": "\u03b5_c pass case (<0.01)",
+    "got": "0.0043",
+    "expected": "< 0.01",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "\u03b5_c fail: C_node too large",
+    "got": "42.8165",
+    "expected": "\u2265 0.01 \u2192 FAIL flag",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "verdict flags timing violation",
+    "got": "FAIL",
+    "expected": "FAIL",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "\u03b5_c fail: state too fast (\u03c4_state=1e-12)",
+    "got": "42.8165",
+    "expected": "\u2265 0.01",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "neumann-mixed nonsingular",
+    "got": true,
+    "expected": true,
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "\u03bb_min is g_ref-scale",
+    "got": "3.093e-05",
+    "expected": "0 < \u03bb_min < g_ref",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "\u03bb_min \u226b 0 but \u226a \u03bb_max",
+    "got": "3.09e-05 \u226a 3.99e+00",
+    "expected": "\u03ba large (leakage-only zero-mode lifting)",
+    "passed": true,
+    "kind": "info"
+   },
+   {
+    "name": "pure Neumann zero mode detected",
+    "got": true,
+    "expected": true,
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "solve_constraint verdict SINGULAR (never inverted)",
+    "got": "SINGULAR",
+    "expected": "SINGULAR",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "non-symmetric mesh detected",
+    "got": false,
+    "expected": false,
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "monotone_spd correctly False",
+    "got": false,
+    "expected": false,
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "full-spectrum abscissa < 0 (stable)",
+    "got": "-4.085e-03",
+    "expected": "< 0",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "stable_full uses full eig (not sym part)",
+    "got": true,
+    "expected": true,
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "\u03bb_min taken on symmetric part",
+    "got": "4.079e-03",
+    "expected": "= \u03bb_min((G+G\u1d40)/2)",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "destabilizing gm caught by full spectrum",
+    "got": false,
+    "expected": false,
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "destabilizing abscissa > 0",
+    "got": "4.011e-02",
+    "expected": "> 0",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "R_f = 8\u03bcl/(\u03c0r\u2074)",
+    "got": "2.5465e+11",
+    "expected": "2.5465e+11",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "two-node chain P0 = Q\u00b7(R1\u2225(R2+R3))",
+    "got": "2.0372e-01",
+    "expected": "2.0372e-01",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "two-node chain P1 = P0\u00b7R3/(R2+R3)",
+    "got": "1.0186e-01",
+    "expected": "1.0186e-01",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "fluidic G structure (sym, off-diag \u2264 0)",
+    "got": "True",
+    "expected": "True",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "mapping table P\u2194V, Q\u2194I, R_f\u2194R",
+    "got": "{'P': 'V', 'Q': 'I', 'R_f': 'R', 'C_f': 'C', 'L_R': 'G'}",
+    "expected": "{'P':'V','Q':'I','R_f':'R','C_f':'C','L_R':'G'}",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "fluidic G \u2192 relaxation_modes works (SPD)",
+    "got": true,
+    "expected": true,
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "poisson_2d(8\u00d78) SPD monotone",
+    "got": true,
+    "expected": true,
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "poisson_2d interior row sums \u2248 0",
+    "got": "0.000e+00",
+    "expected": "\u22480",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "\u03ba_hw windows present (electronic/mems/fluidic/photonic)",
+    "got": "['electronic', 'fluidic', 'mems', 'photonic']",
+    "expected": "4 domains",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "photonic window is 1e-12..1e-9",
+    "got": "(1e-12, 1e-09)",
+    "expected": "(1e-12, 1e-9)",
+    "passed": true,
+    "kind": "exact"
+   },
+   {
+    "name": "TransducerCost.as_dict contract fields",
+    "got": "['bandwidth_hz', 'energy', 'extra', 'gain', 'noise_rms', 'notes']",
+    "expected": "gain/noise_rms/bandwidth_hz/energy",
+    "passed": true,
+    "kind": "exact"
+   }
+  ],
+  "summary": {
+   "n_checks": 44,
+   "n_passed": 44
   }
+ }
 }

@@ -29,6 +29,67 @@
   "n3_residual": 0.0,
   "n3_error": 1.4142135623730951
  },
+ "constraint_fabric": {
+  "cons_verdict": "PASS",
+  "tau_relax": 2.9365297894371567e-11,
+  "cls": "contracting",
+  "rA": {
+   "e_analog": 2.8659878299569032e-06,
+   "e_final": 2.1192915812145397e-07,
+   "ir_improve": 13.523329471796615,
+   "e_history": [
+    2.8659878299569032e-06,
+    2.9221389001430466e-07,
+    2.2859334667571042e-07,
+    2.1721320621266666e-07,
+    2.1192915812145397e-07
+   ],
+   "kcl_residual_analog": 1.697374862994109e-07,
+   "kcl_residual_final": 1.5964972053761922e-07,
+   "kcl_residual_reduction": 1.063186867648883,
+   "mismatch_floor_inf": 3.0400565887486547e-09,
+   "mismatch_bound_inf": 1.7923215173310621e-07,
+   "mismatch_err": 6.874525598656271e-09,
+   "mismatch_within_bound": true,
+   "final_below_floor": false,
+   "dI_norm": 2.006625576393241e-09,
+   "u_a": 0.0009765625,
+   "u_meas": 0.000244140625,
+   "eps_dev": 0.001
+  },
+  "rB": {
+   "e_analog": 3.323335644063903e-06,
+   "e_final": 5.4587519849871786e-08,
+   "ir_improve": 60.88086898257768,
+   "e_history": [
+    3.323335644063903e-06,
+    1.531929342212818e-07,
+    6.964894946701673e-08,
+    5.855490169804629e-08,
+    5.4587519849871786e-08
+   ],
+   "kcl_residual_analog": 2.3639936510346237e-07,
+   "kcl_residual_final": 5.99958698953823e-08,
+   "kcl_residual_reduction": 3.940260646535893,
+   "mismatch_floor_inf": 3.0400565887486545e-07,
+   "mismatch_bound_inf": 1.792321517331062e-05,
+   "mismatch_err": 6.874525598656273e-07,
+   "mismatch_within_bound": true,
+   "final_below_floor": true,
+   "dI_norm": 2.006625576393241e-07,
+   "u_a": 0.000244140625,
+   "u_meas": 0.000244140625,
+   "eps_dev": 0.1
+  },
+  "schedule": {
+   "dT": 9.99,
+   "predicted_residual": 0.001,
+   "calib_consistent": true,
+   "loop_gain": 0.0,
+   "drift_rate": 0.0001,
+   "calib_floor": 1e-06
+  }
+ },
  "checks": [
   {
    "name": "IR 前提：rho_pred=kappa*u_a=0.066 < 1（修正闭环合法）",
@@ -177,6 +238,90 @@
   {
    "name": "expanding 终局：e0≥ε ⇒ raise（扩张系统不许诺无限时窗轨迹精度）",
    "value": "raise",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "T10 前级事实：verdict=PASS（非 SINGULAR），τ_relax=2.937e-11 s",
+   "value": "kappa_G=116.5",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "C1 约束网分类 ⇒ contracting（μ₂=-3.41e+10<0，τ_relax 内检查）",
+   "value": "contracting",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "C2-A 量化主导：IR 改进 13.5× ≥10（e 2.866e-06→2.119e-07）",
+   "value": "kcl_res=1.596e-07",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "C2-A mismatch 分量被 bound 覆盖（保守 sup 范数）",
+   "value": "6.875e-09 ≤ 1.792e-07",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "C2-B mismatch 可见：e_analog 3.323e-06 ≥ 5×地板 3.040e-07",
+   "value": "ratio=10.9",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "C2-B 自校准：IR 后 5.459e-08 **低于** mismatch 地板 3.040e-07（KCL 残差暴露 δI，修正解扣除）",
+   "value": "improve=60.9×",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "C3 调度：ΔT=9.99 s，calib 语义对账 residual=1.000e-03 ≤ ε",
+   "value": "consistent=True",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "C3 地板 ≥ ε ⇒ raise（调度无解不许静默）",
+   "value": "raise",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "证书聚合：合法覆盖证据 ⇒ pass",
+   "value": "pass",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "证书聚合：覆盖 0.9<1 ⇒ rejected（界未罩住实测）",
+   "value": "rejected",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "证书聚合：expanding 无 finite_horizon ⇒ rejected",
+   "value": "rejected",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "证书聚合：畸形证据 ⇒ rejected（不冒充可行）",
+   "value": "rejected",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "evaluate_sys 转发：error_control 进 items（verdict=pass）",
+   "value": "cert.error_control=True",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "证书聚合：纯 IR 静态事实 ⇒ pass 但声明非动态判决",
+   "value": "pass",
    "ok": true,
    "kind": "error_control"
   }

@@ -1019,6 +1019,13 @@ Fail-closed B2 extension（`extract_b2.py`、`results/b2_extract.json` 的 `stat
 
 **诚实边界**：本节验证的是误差控制合同的**数学**，不是电路实现；合同数字（ρ 预测、界覆盖、调度单调性）在任何满足同一注入模型的实现上应复现，不复现即证伪。adjoint 加权的 ε_J 与全局 ε 的双轨口径（DWR 的抵消问题）、shock displacement 对 QoI 的界面项、混沌系统的 shadowing/统计响应——是后续阶段，本节不做任何许诺；扩张系统的合同终点是"调度公式 raise"，即诚实地拒绝无限时窗轨迹精度。
 
+**与约束 fabric 的综合（2026-11-27，`lowering/error_control.py` + `budget.py` 挂接，bench 39/39）：**
+
+- **C1 约束网分类**：`classify_constraint` 把 KCL 松弛 −G/C_y 送进同一分类器（τ_relax 时标内的检查点）。纯电导网必然 contracting（实测 μ₂=−3.41e10<0）；非 SPD 有源网如实改判并要求与 `solve_constraint` 的 monotone_spd/spectral_abscissa 对账，不静默改判。
+- **C2 约束网自校准（本节最重要的架构结论）**：mismatch 偏置 δI 会被 KCL 残差 r = I − G·V_m **直接暴露**——I 是数字配置，精确已知，残差里的 −δI 项不依赖任何对 δI 的先验估计。实测两个 regime：量化主导（标称 1e-3 dev，u_a=2⁻¹⁰）改进 13.5×（2.87e-6→2.12e-7）；mismatch 主导（10% dev 压力注入，安静核 u_a=2⁻¹²）改进 **60.9×**，最终误差 5.46e-8 **低于** mismatch 地板 3.04e-7。即：约束 fabric 在数字残差通路上是自校准的，mismatch 地板不是精度极限——这是 §3.6 "物理残差 R(x)=0（ΣI、ΣV）做自监督" 的定量版。可达精度的真正瓶颈是修正解自身的量化地板（κ·u_a 级）；读出精度 u_meas 一阶相消（测量与残差看到同一个 δV_m）。§6.22 N1 的教训同构：粗 ADC 残差通路拖垮 attainable。
+- **C3 调度与 calib 语义对账**：约束网漂移是中性累积（λ=0），预算式 ΔT ≤ (ε−floor)(1+T)/drift_rate 与 `twin/calib.py` 的 residual = drift_rate·interval/(1+loop_gain) + floor 在 loop_gain=0 时严格重合（实测 ΔT=9.99 s、predicted_residual=1.000e-3 ≤ ε）。两条公式不一致即说明有界性/线性累积假设被违反。calib_floor ≥ ε ⇒ raise。
+- **P6 证书挂接**：`Certificate.error_control` 可选证据字段 + `_error_control_verdict` 聚合（缺字段 ⇒ rejected；expanding 无 finite_horizon 声明 ⇒ rejected；n_windows>0 且 coverage<1 ⇒ rejected；e_measured_max > e_predicted_max ⇒ rejected；纯 IR 静态事实 pass 但 detail 声明"非动态判决"——与 constraint STEADY 同口径）。负对照四情形 + `evaluate_sys` 转发均验收。assumptions 记录：覆盖检查只对**声明的误差模型**（行为级）负责，不是 SPICE 级 claim。
+
 ---
 
 ## 7. 分阶段落地（每阶段都有可证伪的验收）
@@ -1379,6 +1386,11 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                           # flag 不静默；契约是需求+代表性可行性，
                           # 不是布线结果（那是 P5/B2）（38 项验收
                           # in run_route_contract）
+        ✅ error_control.py # §6.22×T10 综合桥：classify_constraint（−G/C 分类）、
+                          # constraint_refine（KCL 残差暴露 δI ⇒ 自校准，
+                          # regime B 改进 60.9×、低于 mismatch 地板）、
+                          # constraint_schedule（预算式与 calib 语义对账）、
+                          # ErrorControlResult evidence → P6 证书
       twin/
         ✅ spice/extract.py  # 真实 PDK 提取：ngspice 电流镜 → λ, g_m/I_D, r_o, ratio
         ✅ noise.py        # OU 滤波色噪声 + replay + ρ_ij 相关矩阵；色噪声/白噪声极限

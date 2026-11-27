@@ -64,6 +64,9 @@ class BudgetInput:
                                            # T10 约束 fabric 时序证据：eps_c（对
                                            # 显式声明的 external_state_timescale）
                                            # 或纯稳态 deadline/residual 事实
+    error_control: dict | None = None      # lowering.error_control.ErrorControlResult.as_dict()
+                                           # §6.22 运行时误差控制合同：分类/覆盖/
+                                           # IR/调度。字段缺失或界未覆盖 ⇒ rejected
     scaling: object | None = None          # ScalingResult：给定时 slack/Γ/σ_y/‖H‖∞
                                            # 在其 .scaled（物理时间）descriptor 上评；
                                            # delta_A_norm 按相对失配自动缩放
@@ -83,6 +86,7 @@ class Certificate:
     items: dict                  # 每项证据的 {name: {value, verdict, detail}}
     binding_axis: str | None     # slack 里 >1 或最接近 1 的轴名
     constraint: dict | None = None   # T10 约束时序 verdict（constraint 证据）
+    error_control: dict | None = None   # §6.22 误差控制合同 verdict
     rejection_reasons: list[str] = field(default_factory=list)
     assumptions: list[str] = field(default_factory=list)
 
@@ -92,6 +96,7 @@ class Certificate:
             slack=self.slack, items=self.items,
             binding_axis=self.binding_axis,
             constraint=(dict(self.constraint) if self.constraint is not None else None),
+            error_control=(dict(self.error_control) if self.error_control is not None else None),
             rejection_reasons=list(self.rejection_reasons),
             assumptions=list(self.assumptions),
         )
@@ -231,6 +236,61 @@ def _constraint_verdict(cons: dict):
     return "rejected", dict(cons), "constraint evidence malformed (no verdict)"
 
 
+def _error_control_verdict(ec: dict):
+    """§6.22 运行时误差控制合同检查（ErrorControlResult 字段）。
+
+    聚合语义（与 _constraint_verdict 同风格——只读字段，不重算）：
+      * 缺 kind/cls                     ⇒ rejected（malformed 证据）；
+      * cls == "expanding" 且无
+        finite_horizon 声明             ⇒ rejected（不许诺无限时窗
+        轨迹精度——这是合同的终点，不是告警）；
+      * n_windows > 0 且 coverage < 1.0 ⇒ rejected（界未覆盖：预测界
+        没罩住实测误差，合同失效）；
+      * e_measured_max > e_predicted_max ⇒ rejected（同上，逐窗覆盖
+        之外的总账复核）；
+      * 其余                            ⇒ pass，IR/调度数字进 detail。
+        n_windows == 0（纯 IR 静态事实）也 pass，但 detail 明确
+        "这不是动态可行性判决"——与 constraint 的 STEADY 同口径。
+    """
+    kind = ec.get("kind")
+    cls = ec.get("cls")
+    if kind != "error_control" or cls not in ("contracting", "neutral",
+                                              "expanding"):
+        return "rejected", dict(ec), "error_control evidence malformed "\
+            "(kind=%s, cls=%s)" % (_fmt(kind), _fmt(cls))
+    finite = bool(ec.get("finite_horizon", False))
+    if cls == "expanding" and not finite:
+        return "rejected", dict(ec), (
+            "error_control expanding without finite_horizon declaration: "
+            "no infinite-horizon trajectory promise")
+    n_win = ec.get("n_windows", 0)
+    cov = ec.get("coverage_ratio", 0.0)
+    e_meas = ec.get("e_measured_max")
+    e_pred = ec.get("e_predicted_max")
+    detail = ("cls=%s, n_windows=%s, coverage=%s, e_measured_max=%s, "
+              "e_predicted_max=%s, ir_improve=%s, schedule_dT=%s"
+              % (cls, _fmt(n_win), _fmt(cov), _fmt(e_meas), _fmt(e_pred),
+                 _fmt(ec.get("ir_improve")), _fmt(ec.get("schedule_dT"))))
+    if isinstance(n_win, (int, float)) and n_win > 0 and not (
+            isinstance(cov, (int, float)) and cov >= 1.0):
+        return "rejected", dict(ec), (
+            "error_control bound coverage %s < 1.0 over %s windows: %s"
+            % (_fmt(cov), _fmt(n_win), detail))
+    if not isinstance(e_meas, (int, float)) or not isinstance(e_pred,
+                                                              (int, float)):
+        return "rejected", dict(ec), (
+            "error_control e_measured_max/e_predicted_max missing: %s" % detail)
+    if e_meas > e_pred:
+        return "rejected", dict(ec), (
+            "error_control e_measured_max %s > e_predicted_max %s: %s"
+            % (_fmt(e_meas), _fmt(e_pred), detail))
+    if not n_win:
+        return "pass", dict(ec), (
+            "error_control static IR facts (no dynamic windows; not a "
+            "dynamic feasibility verdict): %s" % detail)
+    return "pass", dict(ec), detail
+
+
 def compile_budget(inp: BudgetInput, s_max_threshold: float = S_PEAK_THRESHOLD) -> Certificate:
     """聚合 P0–P5 的证据 → P6 证书。只判聚合语义，不重算前级验收。"""
     items: dict[str, dict] = {}
@@ -239,6 +299,7 @@ def compile_budget(inp: BudgetInput, s_max_threshold: float = S_PEAK_THRESHOLD) 
     slack_block: dict | None = None
     binding_axis: str | None = None
     constraint_val: dict | None = None
+    error_control_val: dict | None = None
 
     sys = inp.sys
     spec = inp.spec
@@ -356,6 +417,17 @@ def compile_budget(inp: BudgetInput, s_max_threshold: float = S_PEAK_THRESHOLD) 
             "deadline+residual facts instead of an ε_c verdict — they are "
             "not silently marked infeasible or feasible on timing")
 
+    if inp.error_control is not None:
+        verdict, val, detail = _error_control_verdict(inp.error_control)
+        items["error_control"] = dict(value=val, verdict=verdict, detail=detail)
+        error_control_val = val
+        if verdict == "rejected":
+            reasons.append(detail)
+        assumptions.append(
+            "error_control bound coverage is checked against the DECLARED "
+            "error model (§6.22 behavioral: quantize + bounded noise + bias); "
+            "a coverage pass on this model is not a SPICE-level claim")
+
     # 状态聚合：结构化拒绝优先于 slack 违规（rejected > infeasible）。
     if reasons:
         status = "rejected"
@@ -370,13 +442,14 @@ def compile_budget(inp: BudgetInput, s_max_threshold: float = S_PEAK_THRESHOLD) 
     return Certificate(feasible=feasible, status=status, slack=slack_block,
                        items=items, binding_axis=binding_axis,
                        constraint=constraint_val,
+                       error_control=error_control_val,
                        rejection_reasons=reasons, assumptions=assumptions)
 
 
 def evaluate_sys(sys: Descriptor, spec: HardwareSpec, metric=None, loop=None,
                  multirate=None, manifold=None, sde_cert=None, reg=None,
                  scaling=None, gamma_M=None, hinf=None, lyap=None,
-                 constraint=None) -> Certificate:
+                 constraint=None, error_control=None) -> Certificate:
     """便捷入口：由 (sys, spec) + 可选证据直接建 BudgetInput 聚合。
 
     scaling: ScalingResult（lowering.scaling）—— 给定时证书评在物理时间
@@ -390,4 +463,5 @@ def evaluate_sys(sys: Descriptor, spec: HardwareSpec, metric=None, loop=None,
                                       manifold=manifold, sde_cert=sde_cert,
                                       reg=reg, scaling=scaling,
                                       gamma_M=gamma_M, hinf=hinf, lyap=lyap,
-                                      constraint=constraint))
+                                      constraint=constraint,
+                                      error_control=error_control))

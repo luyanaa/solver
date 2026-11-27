@@ -30,4 +30,20 @@
   [PASS] expanding 实测 0.0000 ≤ 指数界 0.0344（有限时窗内成立）                        0.0000
   [PASS] expanding 终局：e0≥ε ⇒ raise（扩张系统不许诺无限时窗轨迹精度）                       raise
 
-25/25 checks passed
+[case_constraint_fabric]  T10 约束网分类 / IR 自校准 / 调度 / 证书聚合
+  [PASS] T10 前级事实：verdict=PASS（非 SINGULAR），τ_relax=2.937e-11 s            kappa_G=116.5
+  [PASS] C1 约束网分类 ⇒ contracting（μ₂=-3.41e+10<0，τ_relax 内检查）               contracting
+  [PASS] C2-A 量化主导：IR 改进 13.5× ≥10（e 2.866e-06→2.119e-07）                 kcl_res=1.596e-07
+  [PASS] C2-A mismatch 分量被 bound 覆盖（保守 sup 范数）                            6.875e-09 ≤ 1.792e-07
+  [PASS] C2-B mismatch 可见：e_analog 3.323e-06 ≥ 5×地板 3.040e-07             ratio=10.9
+  [PASS] C2-B 自校准：IR 后 5.459e-08 **低于** mismatch 地板 3.040e-07（KCL 残差暴露 δI，修正解扣除） improve=60.9×
+  [PASS] C3 调度：ΔT=9.99 s，calib 语义对账 residual=1.000e-03 ≤ ε                consistent=True
+  [PASS] C3 地板 ≥ ε ⇒ raise（调度无解不许静默）                                      raise
+  [PASS] 证书聚合：合法覆盖证据 ⇒ pass                                               pass
+  [PASS] 证书聚合：覆盖 0.9<1 ⇒ rejected（界未罩住实测）                                 rejected
+  [PASS] 证书聚合：expanding 无 finite_horizon ⇒ rejected                       rejected
+  [PASS] 证书聚合：畸形证据 ⇒ rejected（不冒充可行）                                      rejected
+  [PASS] evaluate_sys 转发：error_control 进 items（verdict=pass）              cert.error_control=True
+  [PASS] 证书聚合：纯 IR 静态事实 ⇒ pass 但声明非动态判决                                   pass
+
+39/39 checks passed
