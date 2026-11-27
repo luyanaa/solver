@@ -13,24 +13,12 @@
       ],
       "tau": 0.01,
       "ideal": [
-        [
-          -0.9511911518298484,
-          0.0
-        ],
-        [
-          -3.0488088481701516,
-          0.0
-        ]
+        -0.9511911518298484,
+        -3.0488088481701516
       ],
       "poles_desc": [
-        [
-          -0.9603256847721505,
-          0.0
-        ],
-        [
-          -3.1446842601403238,
-          0.0
-        ]
+        -0.9603256847721504,
+        -3.1446842601403238
       ],
       "poles_skew": [
         [
@@ -42,7 +30,7 @@
           0.0
         ]
       ],
-      "formula_err": 2.3121802160036384e-16,
+      "formula_err": 3.4682703240054584e-16,
       "leading_err": 0.03144684260140185,
       "kappa_ideal": 3.205253583682969,
       "kappa_skew": 3.2746018460252255,
@@ -150,7 +138,7 @@
   "checks": [
     {
       "name": "uniform pole formula",
-      "got": "2.31e-16",
+      "got": "3.47e-16",
       "expected": "< 1e-12",
       "passed": true
     },
@@ -244,13 +232,13 @@
     "n_passed": 15
   },
   "_meta": {
-    "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
+    "git_sha": "be94f64b39dcfaf84821608166c9313d92877908",
     "git_dirty": true,
     "bench_module": "bench.run_skew",
     "command": "python3 -m bench.run_skew",
-    "timestamp_utc": "2026-11-20T05:55:24+00:00",
-    "python_version": "3.14.7",
-    "numpy_version": "2.5.4",
-    "scipy_version": "1.18.1"
+    "timestamp_utc": "2026-11-27T02:26:34+00:00",
+    "python_version": "3.13.5",
+    "numpy_version": "2.2.4",
+    "scipy_version": "1.15.3"
   }
 }

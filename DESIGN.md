@@ -998,7 +998,7 @@ Fail-closed B2 extension（`extract_b2.py`、`results/b2_extract.json` 的 `stat
 5. **标定环买到什么**：`uncal → no_track` 买"工艺角 + 静态失配"（27 °C 全部恢复）；`no_track → bg_track` 买"温度漂移"（−40/125 °C 的失败基本消失，残余 = 1 °C 刷新粒度 × 温度行程）；`bg_track → full` 买"刷新残差 + 工作点漂移"的上界。三列之差就是 §6.20 标定环的预算，`full` 列是 bracket，不是实测量。
 6. **偏置门优先于模型**：tt_125/ff_p125 的 P=0 不是"模型预测失败"，而是固定偏置网络失效；要先换偏置（或降 Vgs）再谈这一点的角点通过率。
 
-**全仓验收（2026-11-20）**：`python3 -m bench.run_all` 顺序跑完 25 个套件，无失败、无跳过，1324.6 s；计入 check 计数器的 868/868 项全部通过（`run_twin_experiments` 是无 check 计数器的实验驱动）。记录在 `results/run_all.json`。
+**全仓验收（2026-11-27 刷新）**：`python3 -m bench.run_all` 顺序跑完 **26 个套件**，无失败、无跳过，**2176.5 s**；计入 check 计数器的 21 个套件 **886/886** 项全部通过（无计数器套件：`run_twin_experiments`、`run_scaling`、`run_b2`、`run_b2_behavioral`、`run_b2_joint`）。`run_error_control` 109/109（§6.22 全部十轮合同）纳入全量回归；`git_dirty=True`（本轮改动在跑回归时尚未提交）。记录在 `results/run_all.json`。前次历史记录：2026-11-20，25 套件、1324.6 s、868/868。
 
 ### 6.22 运行时误差控制合同：残差驱动校正与有限时间传播（`analysis/error_propagation.py`、`twin/residual.py`、`bench/run_error_control.py`、`results/error_control.json`）
 
@@ -1076,13 +1076,32 @@ Fail-closed B2 extension（`extract_b2.py`、`results/b2_extract.json` 的 `stat
 - **刚性采样陷阱（本轮新发现，adjoint.py 记录）**：dJ 权重的梯形采样对刚性系统失效——快模态伴随 λ_i(t)=c_i·e^{−γ_i(T−t)} 在 t=T 处是 1/γ_i 尖峰，65 点均匀网格完全分辨不了，实测权重退化成 1/n 端点伪影（spread=1.0）而解析权重 spread=4096。修复：`dJ_weights_exact`（对角实负系统闭式 (1−e^{−γT})/γ，p7 优先走闭式）；非对角走采样 + 分辨率守卫 fail-closed（γ_max·Δt>1 ⇒ raise，宁缺毋滥）。
 
 **诚实边界**：分配假设元素残差到 QoI 的映射是线性的（s_i 常数）——运行时状态相关的敏感度（激波邻域）尚需界面态演化联动；c≥0 逐模态口径（signed QoI 拒绝）；非对角 A 的采样路径依赖调用方保证分辨率。
+
+**descriptor / E≠I 伴随（2026-11-27，路线图②完成，bench case_descriptor_adjoint，90/90 累计）：**
+
+analysis/adjoint.descriptor_adjoint_field 用前向生成元 (E⁻¹A)ᵀ 构造 λ(t)=expm((E⁻¹A)ᵀ(T−t))c；descriptor_qoi_error_estimate 在源空间残差 R_k 与状态伴随之间必须夹 **E⁻¹**：δJ₁=ΣλᵀE⁻¹R_k。实测 E=diag(1,100)：descriptor 估计相对误差 0.6%，naive（无 E⁻¹）偏差 92%（比 desc 差 161×）——κ(E) 度量陷阱（§5.8 M 度量的时序版）。E 奇异 ⇒ raise（代数约束须先投影），E=I 严格退化为 adjoint_field。
+
+**非线性 DWR（2026-11-27，路线图③完成，bench case_nonlinear_dwr，96/96 累计）：**
+
+analysis/adjoint.nonlinear_adjoint_backward 沿参考轨迹反向 RK4 积分 λ̇=−J_F(x_ref(t))ᵀλ（ẋ=−x³ 解析参考，J_F=−3x²）。实测：小注入 δJ₁ 相对误差 0.0%；注入减半误差 ×3.9（二阶余项，一阶应 ×2）；**抵消实证**：正负注入使 δJ₁≈1.2e-8（cancellation≈0）而真误差 6.2e-8 更高（5×）——一级估计不是上界；MC 100 组二元随机注入，启发式界 B=1.3×Σ|λR| 覆盖 100/100（声明概率 0.9，统计口径非严格界）；大注入 ε=0.2 误差 7% ⇒ 不外推。
+
+**Euler/NS 外推的必要探针（2026-11-27，路线图④完成，bench case_entropy_system，100/100）：**
+
+对称双曲 u_t+A u_x=0（A=[[0,1],[1,0]]，熵 E=½(a²+b²)）的**半离散熵产生率** dE/dt=−Σ u_i·(F_{i+1/2}−F_{i−1/2})：Tadmor 熵守恒通量实测 0（等式）、Roe/upwind −3（不等式成立）、反耗散 +3（违反被负对照抓住）。**检验半离散率而非 Euler 前向长时间能量**——中心通量+Euler 前向本身无条件不稳定，长时间比较给假阳性（实测翻车入库）。诚实标注：必要探针，不是 Euler/NS 本身；可压缩 Euler 的 entropy-stable DG + 激波界面态仍是 TODO。
+**混沌统计合同（2026-11-27，路线图⑤完成，bench case_chaos_contract，109/109）：**
+
+Lorenz (σ=10,ρ=28,β=8/3) 的有限时间 Lyapunov 指数由**双轨发散斜率**实测 λ=0.718（切线重整化口径实测高估到 6.8，一个量级——翻车入库，只报能复现的数）；δ0=1e-8 越过 ε=1 的实测时窗 t=27.8 ≈ ln(ε/δ0)/λ=25.7（±30%）；T=60 时轨迹误差 31.5 ≫ QoI 容限 0.1——逐轨迹预测在时窗外失效。
+
+统计合同（Level 2，§1）：8 成员系综 + 有界偏置/噪声注入，指定 QoI（z 均值）相对误差 0.007 ≤ 0.1、协方差相对 Frobenius 误差 0.048 ≤ 0.2——统计稳健与轨迹失效并存，证明混沌问题必须走双轨（QoI 合同 ≠ 初值跟踪）。证书：expanding + finite_horizon=True + QoI 稳健 ⇒ pass；无 finite_horizon ⇒ rejected（不许诺无限时窗）。诚实边界：ensemble 统计不是严格 shadowing，也不恢复初值解。
+
+
 **剩余路线（2026-11-27 收口，按依赖序；已完成项见上六轮）：**
 
 1. ~~**运行时源的 dwell-time 界面演化**~~（✅ 2026-11-27 已实现：`evolve_shock_interfaces` 界面状态演化器 + 值带注源 FV 对账，dwell 衰减因子实测 0.26 ≈ 解析 0.3，见上 dwell-time 小节）
-2. **descriptor/E≠I 伴随**：`analysis/adjoint.py` 目前 E=I 口径；descriptor 伴随（λ 经 Eᵀ 加权回退）打通后 ε_J 双轨才能覆盖 T4 spectral/stiff tile 的 descriptor 形式。
-3. **非线性 DWR 与离散伴随**：δJ₁ 恒等式依赖线性；非线性系统的一级估计有额外偏差（伴随加权残差正负抵消），须配离散伴随或 MC 覆盖检验，并给出可证的覆盖概率口径。
-4. **Euler/NS 外推**：L1 收缩是标量凸通量口径；Euler/NS 须 entropy-stable DG/通量差分 + 界面态（接触间断/涡量）敏感度，L1→相对熵不等式。
-5. **混沌系统合同**：有限预测窗 + 统计量/QoI 验证（shadowing/ensemble），对接 §1 Level 2 统计可划归——扩张模态的调度公式终点是 raise，不许诺轨迹精度。
+2. ~~**descriptor/E≠I 伴随**~~（✅ 2026-11-27 已实现：descriptor_adjoint_field + E⁻¹ 端口权重，naive 偏差 161×，见上小节）
+3. ~~**非线性 DWR 与离散伴随**~~（✅ 2026-11-27 完成必要部分：沿轨迹反向伴随 + 二阶余项 ×3.9 + 抵消非界 + MC 覆盖 100/100；离散伴随的 Euler/NS 界面态仍是 ④ 的后续）
+4. ~~**Euler/NS 外推**~~（✅ 2026-11-27 完成必要探针：对称双曲半离散熵产生率 EC=0/upwind=−3/反耗散=+3；可压缩 Euler 的 entropy-stable DG + 激波界面态仍是后续，已诚实标注）
+5. ~~**混沌系统合同**~~（✅ 2026-11-27 已实现：双轨发散 λ=0.718、时窗 27.8≈25.7、QoI(z 均值) 误差 0.007 vs 轨迹误差 31.5、expanding+finite_horizon 证书，见上混沌小节）
 6. ~~**ε_J 分配进 P7 校准计划**~~（✅ 2026-11-27 已实现：`p7.allocate_element_budgets` + `generate_config(qoi=, eps_J=, T_horizon=)`，见上 ε_J 分配小节；剩余子项：激波邻域界面敏感度联动需界面态演化先行）
 7. **全量回归**：`bench.run_all` 重跑（套件数 26），刷新 2026-11-20 的全仓验收记录。
 
@@ -1519,7 +1538,13 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                                     # → dJ_weights_exact 闭式）
                                     # / dwell-time 界面演化（evolve_shock_
                                     # interfaces：运行时源敏感度衰减 0.26≈0.3、
-                                    # 模型 vs FV 偏差 11%、值带注源口径）（85/85）
+                                    # 模型 vs FV 偏差 11%、值带注源口径）
+                                    # / descriptor 伴随（E⁻¹ 端口，naive 差 161×）
+                                    # / 非线性 DWR（二阶余项 ×3.9、抵消非界、
+                                    # MC 覆盖 100/100）/ Euler/NS 必要探针
+                                    # （半离散熵产生 0/−3/+3）/ 混沌统计合同
+                                    # （λ=0.718、时窗 27.8≈25.7、QoI 0.007 vs
+                                    # 轨迹误差 31.5、finite_horizon 证书）（109/109）
         ✅ run_stagea.py            # A4/A8/A9 收尾：shear 换基判定（Γ 5.12 /
                                     # scaled / eigvec=1+κ(Φ)=20 税）/ VdP
                                     # （不稳定工点 ⇒ 回退，reduce=poly）/

@@ -47,7 +47,10 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from analysis.adjoint import (adjoint_field, dJ_weights, dJ_weights_exact)
+from analysis.adjoint import (adjoint_field, descriptor_adjoint_field,
+                              descriptor_qoi_error_estimate, dJ_weights,
+                              dJ_weights_exact, nonlinear_adjoint_backward,
+                              qoi_error_estimate)
 from analysis.error_propagation import (classify_propagation,
                                         conservation_drift_rate,
                                         correction_interval, steady_bound)
@@ -1439,6 +1442,340 @@ def case_runtime_dwell():
                 dJ_rt=dJ_rt, dJ_ic=dJ_ic)
 
 
+# ----------------------------------------------------------- descriptor 伴随
+def case_descriptor_adjoint():
+    """§6.22 路线图②：descriptor / E≠I 伴随（电容度量端口权重）。
+
+    E·ẋ = A·x + r 的伴随生成元是 (E⁻¹A)ᵀ，源空间残差 R_k=∫r dt 进入
+    状态方程前必须夹 E⁻¹：δJ₁=ΣλᵀE⁻¹R_k。naive 的 ΣλᵀR_k 在 E 病态
+    （mode-C 电容跨 10³）时可偏差 κ(E) 倍——§5.8 的 M 度量频域版。
+    """
+    emit("[case_descriptor_adjoint]  E≠I 伴随 / 端口权重 / naive 对照")
+    E = np.diag([1.0, 100.0])               # 节点电容跨 100×
+    A = -E @ np.diag([0.5, 1.0])            # 前向速率仍 0.5 / 1.0
+    c = np.ones(2)
+    T = 2.0
+    t = np.linspace(0.0, T, 81)
+    lam = descriptor_adjoint_field(E, A, c, t)
+    add_check("D1 终端条件：λ(T)=c（descriptor 伴随构造正确）",
+              "max dev=%.2e" % np.max(np.abs(lam[:, -1] - c)),
+              np.allclose(lam[:, -1], c))
+    lam_i = descriptor_adjoint_field(np.eye(2), -np.diag([0.5, 1.0]), c, t)
+    lam_std = adjoint_field(-np.diag([0.5, 1.0]), c, t)
+    add_check("D1 E=I 退化：descriptor 伴随 == adjoint_field（×1e-12）",
+              "max dev=%.2e" % np.max(np.abs(lam_i - lam_std)),
+              np.allclose(lam_i, lam_std, atol=1e-12))
+    try:
+        descriptor_adjoint_field(np.diag([1.0, 0.0]), A, c, t)
+        ok = False
+    except ValueError:
+        ok = True
+    add_check("D1 E 奇异 ⇒ raise（代数约束须先投影，不静默伪逆）", "raise", ok)
+
+    # 前向模拟（descriptor Euler）：x += dt·E⁻¹(Ax+r)
+    r = np.array([1e-3, 1e-3])
+    dt = 2e-3
+    K = 4
+    sub = (len(t) - 1) // K
+
+    def run(inj):
+        x = np.zeros(2)
+        traj = [x.copy()]
+        for _ in range(len(t) - 1):
+            x = x + dt * np.linalg.solve(E, A @ x + inj)
+            traj.append(x.copy())
+        return np.array(traj)
+
+    xc, xr = run(np.zeros(2)), run(r)
+    dJ_true = float(c @ (xr[-1] - xc[-1]))
+    Rs, centers = [], []
+    for k in range(K):
+        rows = xr[k * sub:(k + 1) * sub + 1]
+        integ = np.array([np.trapezoid(rows[:, j], t[k * sub:(k + 1) * sub + 1])
+                          for j in range(2)])
+        Rs.append(E @ (rows[-1] - rows[0]) - A @ integ)  # = ∫r dt（源空间）
+        centers.append(0.5 * (t[k * sub] + t[(k + 1) * sub]))
+    est_d = descriptor_qoi_error_estimate(E, lam, t, Rs, centers)["delta_J"]
+    est_n = qoi_error_estimate(lam, t, Rs, centers)["delta_J"]
+    rel_d = abs(est_d - dJ_true) / max(abs(dJ_true), 1e-300)
+    rel_n = abs(est_n - dJ_true) / max(abs(dJ_true), 1e-300)
+    add_check("D2 descriptor 端口权重：δJ₁=%.3e vs 实测 %.3e（相对误差 %.1f%%）"
+              % (est_d, dJ_true, 100 * rel_d),
+              "naive=%.3e" % est_n, rel_d < 0.05)
+    add_check("D2 naive 无 E⁻¹ 偏差 %.0f×（κ(E)=100 的度量陷阱）"
+              % (rel_n / max(rel_d, 1e-12)),
+              "rel_naive=%.2f" % rel_n, rel_n > 5.0 * rel_d)
+
+    return dict(dJ_true=dJ_true, est_descriptor=est_d, est_naive=est_n,
+                rel_descriptor=rel_d, rel_naive=rel_n)
+
+# -------------------------------------------------------------- 非线性 DWR
+def case_nonlinear_dwr():
+    """§6.22 路线图③：非线性 DWR（一级估计、二阶余项、抵消、MC 覆盖）。
+
+    ẋ = −x³（x₀=0.5，T=1）有解析参考 x(t)=x₀/√(1+2x₀²t)，J=x(T)。
+    沿参考轨迹反向积分 J_F=−3x² 得 λ(t)，一级估计 δJ₁=Σλ_k R_k。
+    非线性检验：N1 误差 ≤10%；N2 余项二阶；N3 抵消非界；N4 MC 覆盖；
+    N5 大注入失效（不外推）。
+    """
+    emit("[case_nonlinear_dwr]  沿轨迹伴随 / 二阶余项 / 抵消 / MC 覆盖")
+    x0, T = 0.5, 1.0
+    t = np.linspace(0.0, T, 401)
+    x_ref = x0 / np.sqrt(1.0 + 2.0 * x0 ** 2 * t)
+    lam = nonlinear_adjoint_backward(lambda tt, xx: np.array([[-3.0 * xx[0] ** 2]]),
+                                     x_ref[None, :], t, np.ones(1))
+    add_check("N0 终端条件：λ(T)=c（沿轨迹反向积分正确）",
+              "lambda(0)=%.4f" % lam[0, 0], np.allclose(lam[0, -1], 1.0))
+
+    K = 8
+    sub = (len(t) - 1) // K
+    dt = float(t[1] - t[0])
+    centers = np.array([0.5 * (t[k * sub] + t[(k + 1) * sub])
+                        for k in range(K)])
+
+    def run(rates):
+        x = x0
+        traj = [x]
+        for k in range(K):
+            for _ in range(sub):
+                f = lambda v: -v ** 3 + rates[k]
+                k1 = f(x)
+                k2 = f(x + 0.5 * dt * k1)
+                k3 = f(x + 0.5 * dt * k2)
+                k4 = f(x + dt * k3)
+                x = x + dt / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4)
+                traj.append(x)
+        return np.array(traj)
+
+    def estimate(traj):
+        Rs = []
+        for k in range(K):
+            rows = traj[k * sub:(k + 1) * sub + 1]
+            tt = t[k * sub:(k + 1) * sub + 1]
+            integ = np.trapezoid(rows ** 3, tt)
+            Rs.append(np.array([rows[-1] - rows[0] + integ]))
+        return qoi_error_estimate(lam, t, Rs, centers)
+
+    eps = 1e-3
+    tr = run(np.full(K, eps))
+    est = estimate(tr)
+    dJ_true = float(tr[-1] - x_ref[-1])
+    rel = abs(est["delta_J"] - dJ_true) / abs(dJ_true)
+    add_check("N1 小注入：δJ₁=%.3e vs 实测 %.3e（相对误差 %.1f%% < 10%%）"
+              % (est["delta_J"], dJ_true, 100 * rel),
+              "eps=%.0e" % eps, rel < 0.10)
+
+    tr_half = run(np.full(K, eps / 2))
+    est_half = estimate(tr_half)
+    dJ_half = float(tr_half[-1] - x_ref[-1])
+    err_half = abs(est_half["delta_J"] - dJ_half)
+    err_full = abs(est["delta_J"] - dJ_true)
+    order = err_full / max(err_half, 1e-300)
+    add_check("N2 二阶余项：注入减半 ⇒ 估计误差 ×%.1f ∈ [2.5, 6]（一阶应 ×2）"
+              % order, "err_full=%.2e err_half=%.2e" % (err_full, err_half),
+              2.5 <= order <= 6.0)
+
+    w = np.array([np.trapezoid(lam[0, k * sub:(k + 1) * sub + 1],
+                               t[k * sub:(k + 1) * sub + 1])
+                  for k in range(K)])
+    alpha = float(w[:K // 2].sum() / w[K // 2:].sum())
+    rates_c = np.array([eps] * (K // 2) + [-alpha * eps] * (K - K // 2))
+    tr_c = run(rates_c)
+    est_c = estimate(tr_c)
+    dJ_c = float(tr_c[-1] - x_ref[-1])
+    add_check("N3 抵消：δJ₁≈%.2e（cancellation=%.2f）而真误差 %.2e 更高"
+              % (est_c["delta_J"], est_c["cancellation_factor"], abs(dJ_c)),
+              "Σ|贡献|=%.2e" % est_c["abs_sum"],
+              abs(est_c["delta_J"]) < 0.05 * est_c["abs_sum"]
+              and abs(dJ_c) > 3.0 * max(abs(est_c["delta_J"]), 1e-300))
+
+    rng = np.random.default_rng(2026)
+    covered = 0
+    n_mc = 100
+    for _ in range(n_mc):
+        rates = eps * rng.choice([-1.0, 1.0], size=K)
+        tr_m = run(rates)
+        est_m = estimate(tr_m)
+        true_m = float(tr_m[-1] - x_ref[-1])
+        if abs(true_m) <= 1.3 * est_m["abs_sum"] + 1e-9:
+            covered += 1
+    cov = covered / n_mc
+    add_check("N4 MC 覆盖：%d/%d=%.2f ≥ 声明 0.9（B=1.3×Σ|λR|，非严格界）"
+              % (covered, n_mc, cov), "统计口径：100 组随机二元注入",
+              cov >= 0.9)
+
+    tr_big = run(np.full(K, 0.2))
+    est_big = estimate(tr_big)
+    dJ_big = float(tr_big[-1] - x_ref[-1])
+    rel_big = abs(est_big["delta_J"] - dJ_big) / abs(dJ_big)
+    add_check("N5 大注入 ε=0.2：相对误差 %.0f%% ≫ 小注入 %.1f%%（不承诺）"
+              % (100 * rel_big, 100 * rel), "非线性 DWR 有界非线性区间",
+              rel_big > 3.0 * rel)
+
+    return dict(dJ_true=dJ_true, estimate=est["delta_J"], rel=rel,
+                order=order, cancellation=est_c["cancellation_factor"],
+                coverage=cov, rel_big=rel_big)
+
+# -------------------------------------------------- Euler/NS 必要探针
+def case_entropy_system():
+    """§6.22 路线图④：Euler/NS 外推的必要探针——半离散熵不等式。
+
+    线性对称双曲 u_t + A u_x = 0，A=[[0,1],[1,0]]（特征值 ±1），
+    熵 E=½(a²+b²)。Tadmor 熵守恒通量 F*=½A(y_i+y_j)；Roe/upwind
+    再减 ½|A|(y_j−y_i)（|A|=I ⇒ 熵耗散）；反耗散负对照加该项。
+    **检验半离散熵产生率** dE/dt=−Σ u_i·(F_{i+1/2}−F_{i−1/2})
+    （Tadmor 不等式本身），不是 Euler 前向长时间能量——中心通量+Euler
+    前向本身无条件不稳定，长时间能量比较给出假阳性（实测翻车）。
+    **诚实标注**：必要探针，不是 Euler/NS 本身；可压缩 Euler 的
+    entropy-stable DG + 激波界面态仍是 TODO。
+    """
+    emit("[case_entropy_system]  半离散熵不等式 / 必要探针（非 Euler/NS）")
+    n = 128
+    dx = 1.0 / n
+    x = (np.arange(n) + 0.5) * dx
+    y0 = np.vstack([np.where(x < 0.5, 1.0, -1.0), np.zeros(n)])
+    E0 = float(0.5 * np.sum(y0 ** 2) * dx)
+
+    def flux_rate(kind):
+        a, b = y0[0], y0[1]
+        aj, bj = np.roll(a, -1), np.roll(b, -1)
+        fe = np.vstack([0.5 * (b + bj), 0.5 * (a + aj)])
+        diss = np.vstack([0.5 * (aj - a), 0.5 * (bj - b)])
+        if kind == "ec":
+            F = fe
+        elif kind == "upwind":
+            F = fe - diss
+        else:
+            F = fe + diss
+        return float(-np.sum(y0 * (F - np.roll(F, 1))))
+
+    r_ec = flux_rate("ec")
+    r_up = flux_rate("upwind")
+    r_bad = flux_rate("bad")
+    add_check("S1 熵守恒通量：|dE/dt|=%.2e ≤ 1e-10（Tadmor 等式）"
+              % abs(r_ec), "E0=%.4f" % E0, abs(r_ec) <= 1e-10)
+    add_check("S2 upwind 耗散：dE/dt=%.4f < 0（半离散熵不等式成立）"
+              % r_up, "熵产生为负", r_up < -1e-6)
+    add_check("S3 反耗散负对照：dE/dt=%.4f > 0（不等式被违反被抓住）"
+              % r_bad, "熵产生为正", r_bad > 1e-6)
+    add_check("S4 熵产生排序：bad %.4f > ec %.4f > upwind %.4f"
+              % (r_bad, r_ec, r_up), "系统结构的必要条件实测",
+              r_bad > r_ec and r_ec > r_up)
+
+    return dict(E0=E0, rate_ec=r_ec, rate_up=r_up, rate_bad=r_bad)
+
+# ------------------------------------------------------------ 混沌统计合同
+def case_chaos_contract():
+    """§6.22 路线图⑤：混沌系统——有限预测窗 + 统计 QoI 合同。
+
+    Lorenz (σ=10,ρ=28,β=8/3) 正 Lyapunov 指数使逐轨迹误差指数放大：
+    δ(t)≈δ0·e^{λt}，时窗 T*=(1/λ)ln(ε_tol/δ0)；超过后不能许诺跟踪
+    初值解。合同降级 Level 2 统计可划归（§1）：指定的 QoI（z 均值）
+    在容限内而轨迹误差可很大；有限时窗声明进证书（expanding + 
+    finite_horizon=True）。诚实边界：ensemble 统计不是严格 shadowing。
+    实测翻车：切线重整化 λ≈6.8 高估一个量级（Euler 切线 + 阈值重整化
+    口径不对），改用双轨发散斜率拟合 λ≈0.7——只报能复现的数。
+    """
+    emit("[case_chaos_contract]  正 Lyapunov / 有限时窗 / 系综统计合同")
+    sig, rho, beta = 10.0, 28.0, 8.0 / 3.0
+    dt = 5e-3
+    def F(y):
+        return np.array([sig * (y[1] - y[0]),
+                         y[0] * (rho - y[2]) - y[1],
+                         y[0] * y[1] - beta * y[2]])
+    def rk4(y, h, bias=None):
+        k1 = F(y)
+        k2 = F(y + 0.5 * h * k1)
+        k3 = F(y + 0.5 * h * k2)
+        k4 = F(y + h * k3)
+        return y + h / 6.0 * (k1 + 2 * k2 + 2 * k3 + k4) \
+            + (h * bias if bias is not None else 0.0)
+    def run(x0, nst, seed=None, bias=None, noise=0.0, stride=1):
+        rng = np.random.default_rng(seed) if seed is not None else None
+        y = np.array(x0, dtype=float)
+        traj = [y.copy()]
+        for step in range(nst):
+            inj = (bias + noise * rng.uniform(-1.0, 1.0, size=3)
+                   if rng is not None else bias)
+            y = rk4(y, dt, inj)
+            if stride == 1 or (step + 1) % stride == 0:
+                traj.append(y.copy())
+        return np.array(traj)
+
+    d0 = 1e-8
+    n_div = 12000
+    stride = 20
+    y_ref = run([1.0, 1.0, 1.0], n_div, stride=stride)
+    y_pert = run([1.0 + d0, 1.0, 1.0], n_div, stride=stride)
+    dev = np.linalg.norm(y_pert - y_ref, axis=1)
+    tt = np.arange(dev.shape[0]) * dt * stride
+    band = (dev >= 1e-7) & (dev <= 1e-1)
+    lam = float(np.polyfit(tt[band], np.log(dev[band]), 1)[0])
+    add_check("K1 正 Lyapunov（双轨发散斜率）：λ=%.3f ∈ [0.4, 1.5]"
+              % lam, "切线重整化高估 6.8 已弃用", 0.4 <= lam <= 1.5)
+
+    eps_tol = 1.0
+    idx = np.where(dev >= eps_tol)[0]
+    t_cross = float(tt[idx[0]]) if idx.size else float(tt[-1])
+    t_pred = np.log(eps_tol / d0) / lam
+    add_check("K2 有限时窗：δ 越过 ε=1 实测 t=%.1f ≈ ln(ε/δ0)/λ=%.1f（±30%%）"
+              % (t_cross, t_pred), "δ0=%.0e" % d0,
+              abs(t_cross - t_pred) <= 0.3 * t_pred)
+    add_check("K2 时窗外无轨迹精度：T=60 时 δ=%.2f ≫ QoI 容限 0.1"
+              % dev[-1], "逐轨迹预测已失效", dev[-1] > 0.1)
+    dT_lo = correction_interval(lam, 0.1, 0.1 * eps_tol, eps_tol)
+    dT_hi = correction_interval(lam, 0.1, 0.9 * eps_tol, eps_tol)
+    add_check("K2 调度收缩：e0 从 0.1ε 到 0.9ε ⇒ ΔT %.3f → %.3f（越来越短）"
+              % (dT_lo, dT_hi), "正 λ 的调度公式", dT_hi < dT_lo)
+    try:
+        correction_interval(lam, 0.1, eps_tol, eps_tol)
+        ok = False
+    except ValueError:
+        ok = True
+    add_check("K2 e0≥ε ⇒ raise（混沌合同终点：拒绝无限时窗轨迹精度）",
+              "raise", ok)
+
+    n_stat = 12000
+    keep = slice(200, None)           # stride=20 ⇒ index 200 ≈ t=20，弃瞬态
+    ref = run([1.0, 1.0, 1.0], n_stat, stride=stride)
+    ens = []
+    for j in range(8):
+        rng = np.random.default_rng(300 + j)
+        x0j = np.array([1.0, 1.0, 1.0]) + 1e-2 * rng.standard_normal(3)
+        ens.append(run(x0j, n_stat, seed=400 + j,
+                       bias=np.array([1e-2, 0.0, 0.0]), noise=1e-2,
+                       stride=stride))
+    z_ref = float(ref[keep, 2].mean())
+    z_ens = float(np.mean([e[keep, 2].mean() for e in ens]))
+    qoi_err = abs(z_ens - z_ref) / abs(z_ref)
+    c_ref = np.cov(ref[keep].T)
+    c_ens = np.mean([np.cov(e[keep].T) for e in ens], axis=0)
+    c_err = float(np.linalg.norm(c_ens - c_ref) / np.linalg.norm(c_ref))
+    add_check("K3 统计合同：QoI(z 均值) 相对误差 %.3f ≤ 0.1、协方差 %.3f ≤ 0.2"
+              % (qoi_err, c_err), "8 成员系综 + 有界偏置/噪声注入",
+              qoi_err <= 0.1 and c_err <= 0.2)
+    add_check("K3 统计稳健 ≠ 轨迹稳健：QoI 误差 %.3f 小而轨迹误差 %.2f"
+              % (qoi_err, dev[-1]), "Level 2 统计可划归成立",
+              qoi_err < 0.1 and dev[-1] > 0.1)
+
+    ec = ErrorControlResult(cls="expanding", finite_horizon=True,
+                            n_windows=1, coverage_ratio=1.0,
+                            e_measured_max=dev[-1],
+                            e_predicted_max=dev[-1],
+                            qoi_estimate=qoi_err, qoi_tolerance=0.1,
+                            qoi_cancellation=None).as_dict()
+    from lowering.budget import _error_control_verdict
+    v, _, dv = _error_control_verdict(ec)
+    add_check("K4 证书：expanding + finite_horizon=True + QoI 稳健 ⇒ pass",
+              v, v == "pass" and "estimate" in dv)
+    ec_nohorizon = dict(ec, finite_horizon=False)
+    v2, _, _ = _error_control_verdict(ec_nohorizon)
+    add_check("K4 负对照：expanding 无 finite_horizon ⇒ rejected", v2,
+              v2 == "rejected")
+
+    return dict(lam=lam, t_cross=t_cross, t_pred=t_pred, qoi_err=qoi_err,
+                c_err=c_err, traj_error=float(dev[-1]))
+
 # ---------------------------------------------------------------- main
 
 def main():
@@ -1462,6 +1799,14 @@ def main():
     alc = case_epsj_allocation()
     emit("")
     dwl = case_runtime_dwell()
+    emit("")
+    de = case_descriptor_adjoint()
+    emit("")
+    nl = case_nonlinear_dwr()
+    emit("")
+    ent = case_entropy_system()
+    emit("")
+    ch = case_chaos_contract()
     n_pass = sum(1 for c in _checks if c["ok"])
     emit("")
     emit("%d/%d checks passed" % (n_pass, len(_checks)))
@@ -1477,8 +1822,9 @@ def main():
                              model="behavioral: quantize + bounded noise + bias"),
                    poisson_ir=ir, diffusion=dif, constraint_fabric=con,
                    adjoint_qoi=adj, burgers=bur, shock_dwr=dwr,
-                   multi_shock=mul, epsj_alloc=alc, runtime_dwell=dwl,
-                   checks=_checks)
+                   multi_shock=mul,                    epsj_alloc=alc, runtime_dwell=dwl,
+                   descriptor_adjoint=de, nonlinear_dwr=nl,
+                   entropy_system=ent, chaos=ch, checks=_checks)
     with open(os.path.join(out_dir, "error_control.json"), "w") as fh:
         json.dump(payload, fh, indent=1, ensure_ascii=False)
     return n_pass == len(_checks)

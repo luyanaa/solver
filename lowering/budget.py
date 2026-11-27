@@ -32,6 +32,7 @@ assumptions 列出会让证书失效的假设合同（§1.2/§4.3/§4.4/§6）�
 from __future__ import annotations
 
 import dataclasses
+import math
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -294,6 +295,10 @@ def _error_control_verdict(ec: dict):
             return "rejected", dict(ec), (
                 "error_control qoi_tolerance declared but qoi_estimate "
                 "missing: %s" % detail)
+        if not math.isfinite(qoi_est):
+            return "rejected", dict(ec), (
+                "error_control qoi_estimate non-finite (NaN/inf): "
+                "not a pass — %s" % detail)
         if qoi_est > qoi_tol:
             return "rejected", dict(ec), (
                 "error_control eps_J violated: qoi_estimate %s > tolerance %s "

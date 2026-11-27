@@ -154,6 +154,36 @@
   "dJ_rt": 0.00015642977885318293,
   "dJ_ic": 0.0006015624999945665
  },
+ "descriptor_adjoint": {
+  "dJ_true": 0.00015532113157700562,
+  "est_descriptor": 0.00015443266084270215,
+  "est_naive": 0.0002982619636391017,
+  "rel_descriptor": 0.005720218010792601,
+  "rel_naive": 0.9202922397666694
+ },
+ "nonlinear_dwr": {
+  "dJ_true": 0.0007642918363499618,
+  "estimate": 0.0007644973710224882,
+  "rel": 0.0002689217164845873,
+  "order": 3.8764032354024778,
+  "cancellation": 1.8157257862425347e-05,
+  "coverage": 1.0,
+  "rel_big": 0.06802423951888982
+ },
+ "entropy_system": {
+  "E0": 0.5,
+  "rate_ec": -0.0,
+  "rate_up": -3.0,
+  "rate_bad": 3.0
+ },
+ "chaos": {
+  "lam": 0.7178363170542339,
+  "t_cross": 27.800000000000004,
+  "t_pred": 25.661394257042932,
+  "qoi_err": 0.007024689804674693,
+  "c_err": 0.04804322629153463,
+  "traj_error": 31.541611876689146
+ },
  "checks": [
   {
    "name": "IR 前提：rho_pred=kappa*u_a=0.066 < 1（修正闭环合法）",
@@ -662,6 +692,150 @@
   {
    "name": "F3 ε_J 证书：运行时源 δJ=1.564e-04 ≤ ε_J ⇒ pass（estimate 口径）",
    "value": "pass",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "D1 终端条件：λ(T)=c（descriptor 伴随构造正确）",
+   "value": "max dev=0.00e+00",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "D1 E=I 退化：descriptor 伴随 == adjoint_field（×1e-12）",
+   "value": "max dev=0.00e+00",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "D1 E 奇异 ⇒ raise（代数约束须先投影，不静默伪逆）",
+   "value": "raise",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "D2 descriptor 端口权重：δJ₁=1.544e-04 vs 实测 1.553e-04（相对误差 0.6%）",
+   "value": "naive=2.983e-04",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "D2 naive 无 E⁻¹ 偏差 161×（κ(E)=100 的度量陷阱）",
+   "value": "rel_naive=0.92",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "N0 终端条件：λ(T)=c（沿轨迹反向积分正确）",
+   "value": "lambda(0)=0.5443",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "N1 小注入：δJ₁=7.645e-04 vs 实测 7.643e-04（相对误差 0.0% < 10%）",
+   "value": "eps=1e-03",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "N2 二阶余项：注入减半 ⇒ 估计误差 ×3.9 ∈ [2.5, 6]（一阶应 ×2）",
+   "value": "err_full=2.06e-07 err_half=5.30e-08",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "N3 抵消：δJ₁≈1.18e-08（cancellation=0.00）而真误差 6.18e-08 更高",
+   "value": "Σ|贡献|=6.50e-04",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "N4 MC 覆盖：100/100=1.00 ≥ 声明 0.9（B=1.3×Σ|λR|，非严格界）",
+   "value": "统计口径：100 组随机二元注入",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "N5 大注入 ε=0.2：相对误差 7% ≫ 小注入 0.0%（不承诺）",
+   "value": "非线性 DWR 有界非线性区间",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "S1 熵守恒通量：|dE/dt|=0.00e+00 ≤ 1e-10（Tadmor 等式）",
+   "value": "E0=0.5000",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "S2 upwind 耗散：dE/dt=-3.0000 < 0（半离散熵不等式成立）",
+   "value": "熵产生为负",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "S3 反耗散负对照：dE/dt=3.0000 > 0（不等式被违反被抓住）",
+   "value": "熵产生为正",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "S4 熵产生排序：bad 3.0000 > ec -0.0000 > upwind -3.0000",
+   "value": "系统结构的必要条件实测",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "K1 正 Lyapunov（双轨发散斜率）：λ=0.718 ∈ [0.4, 1.5]",
+   "value": "切线重整化高估 6.8 已弃用",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "K2 有限时窗：δ 越过 ε=1 实测 t=27.8 ≈ ln(ε/δ0)/λ=25.7（±30%）",
+   "value": "δ0=1e-08",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "K2 时窗外无轨迹精度：T=60 时 δ=31.54 ≫ QoI 容限 0.1",
+   "value": "逐轨迹预测已失效",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "K2 调度收缩：e0 从 0.1ε 到 0.9ε ⇒ ΔT 2.174 → 0.128（越来越短）",
+   "value": "正 λ 的调度公式",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "K2 e0≥ε ⇒ raise（混沌合同终点：拒绝无限时窗轨迹精度）",
+   "value": "raise",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "K3 统计合同：QoI(z 均值) 相对误差 0.007 ≤ 0.1、协方差 0.048 ≤ 0.2",
+   "value": "8 成员系综 + 有界偏置/噪声注入",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "K3 统计稳健 ≠ 轨迹稳健：QoI 误差 0.007 小而轨迹误差 31.54",
+   "value": "Level 2 统计可划归成立",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "K4 证书：expanding + finite_horizon=True + QoI 稳健 ⇒ pass",
+   "value": "pass",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "K4 负对照：expanding 无 finite_horizon ⇒ rejected",
+   "value": "rejected",
    "ok": true,
    "kind": "error_control"
   }

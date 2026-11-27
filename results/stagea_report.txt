@@ -70,7 +70,7 @@ CASE 5  七项假设敏感度账本（bench/ledger.py）
     noise_psd              nominal=10        sens=0.006303  [variance deficit d/dr[1−(2/π)arctan r] = 0.006303 per unit B_noise/B_req...]
     mismatch               nominal=0.01      sens=5.221  [mismatch floor linear in ε_dev: floor(2%)/floor(1%)=2.000, floor=0.0522 ...]
     parasitics             nominal=3         sens=2.862  [route phase error 2.86°/buffer level (depth1 2.86°, depth4 11.45° vs 3° ...]
-    calibration_residual   nominal=0.02      sens=17.1  [isometry after right-Gram 3.46e-15; at 2% calibration residual 0.342 (§6...]
+    calibration_residual   nominal=0.02      sens=17.1  [isometry after right-Gram 2.90e-15; at 2% calibration residual 0.342 (§6...]
     excess_noise_gamma     nominal=1         sens=0.5  [σ_y² = α·kT/C linear in α, σ_y ∝ √α → d log σ_y/d log α = 1/2 (exact, fo...]
 
   wrote results/ledger.json

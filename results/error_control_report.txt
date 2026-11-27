@@ -104,4 +104,36 @@
   [PASS] F2 dwell 衰减：δJ_runtime/δJ_IC=0.26 ∈ [0.1, 0.5]（解析 0.3——运行时源 ≠ IC 微扰，dwell time 是衰减根源） δJ_IC=6.016e-04 δJ_rt=1.564e-04
   [PASS] F3 ε_J 证书：运行时源 δJ=1.564e-04 ≤ ε_J ⇒ pass（estimate 口径）            pass
 
-85/85 checks passed
+[case_descriptor_adjoint]  E≠I 伴随 / 端口权重 / naive 对照
+  [PASS] D1 终端条件：λ(T)=c（descriptor 伴随构造正确）                                max dev=0.00e+00
+  [PASS] D1 E=I 退化：descriptor 伴随 == adjoint_field（×1e-12）                 max dev=0.00e+00
+  [PASS] D1 E 奇异 ⇒ raise（代数约束须先投影，不静默伪逆）                                  raise
+  [PASS] D2 descriptor 端口权重：δJ₁=1.544e-04 vs 实测 1.553e-04（相对误差 0.6%）      naive=2.983e-04
+  [PASS] D2 naive 无 E⁻¹ 偏差 161×（κ(E)=100 的度量陷阱）                           rel_naive=0.92
+
+[case_nonlinear_dwr]  沿轨迹伴随 / 二阶余项 / 抵消 / MC 覆盖
+  [PASS] N0 终端条件：λ(T)=c（沿轨迹反向积分正确）                                        lambda(0)=0.5443
+  [PASS] N1 小注入：δJ₁=7.645e-04 vs 实测 7.643e-04（相对误差 0.0% < 10%）            eps=1e-03
+  [PASS] N2 二阶余项：注入减半 ⇒ 估计误差 ×3.9 ∈ [2.5, 6]（一阶应 ×2）                      err_full=2.06e-07 err_half=5.30e-08
+  [PASS] N3 抵消：δJ₁≈1.18e-08（cancellation=0.00）而真误差 6.18e-08 更高            Σ|贡献|=6.50e-04
+  [PASS] N4 MC 覆盖：100/100=1.00 ≥ 声明 0.9（B=1.3×Σ|λR|，非严格界）                 统计口径：100 组随机二元注入
+  [PASS] N5 大注入 ε=0.2：相对误差 7% ≫ 小注入 0.0%（不承诺）                             非线性 DWR 有界非线性区间
+
+[case_entropy_system]  半离散熵不等式 / 必要探针（非 Euler/NS）
+  [PASS] S1 熵守恒通量：|dE/dt|=0.00e+00 ≤ 1e-10（Tadmor 等式）                     E0=0.5000
+  [PASS] S2 upwind 耗散：dE/dt=-3.0000 < 0（半离散熵不等式成立）                        熵产生为负
+  [PASS] S3 反耗散负对照：dE/dt=3.0000 > 0（不等式被违反被抓住）                            熵产生为正
+  [PASS] S4 熵产生排序：bad 3.0000 > ec -0.0000 > upwind -3.0000                系统结构的必要条件实测
+
+[case_chaos_contract]  正 Lyapunov / 有限时窗 / 系综统计合同
+  [PASS] K1 正 Lyapunov（双轨发散斜率）：λ=0.718 ∈ [0.4, 1.5]                       切线重整化高估 6.8 已弃用
+  [PASS] K2 有限时窗：δ 越过 ε=1 实测 t=27.8 ≈ ln(ε/δ0)/λ=25.7（±30%）               δ0=1e-08
+  [PASS] K2 时窗外无轨迹精度：T=60 时 δ=31.54 ≫ QoI 容限 0.1                          逐轨迹预测已失效
+  [PASS] K2 调度收缩：e0 从 0.1ε 到 0.9ε ⇒ ΔT 2.174 → 0.128（越来越短）                正 λ 的调度公式
+  [PASS] K2 e0≥ε ⇒ raise（混沌合同终点：拒绝无限时窗轨迹精度）                               raise
+  [PASS] K3 统计合同：QoI(z 均值) 相对误差 0.007 ≤ 0.1、协方差 0.048 ≤ 0.2               8 成员系综 + 有界偏置/噪声注入
+  [PASS] K3 统计稳健 ≠ 轨迹稳健：QoI 误差 0.007 小而轨迹误差 31.54                         Level 2 统计可划归成立
+  [PASS] K4 证书：expanding + finite_horizon=True + QoI 稳健 ⇒ pass            pass
+  [PASS] K4 负对照：expanding 无 finite_horizon ⇒ rejected                     rejected
+
+109/109 checks passed

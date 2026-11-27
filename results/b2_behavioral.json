@@ -132,13 +132,13 @@
     "noise tg: PSP103 OSDI device noise returns identically-zero onoise/inoise spectra in ngspice-44.2 (verified in isolation) -> gamma_eff NOT measurable with this toolchain; only HBT (native VBIC) noise is real. No number fabricated."
   ],
   "_meta": {
-    "git_sha": "1a425298dc8158f1a76babc7822755f37bf0d4f6",
+    "git_sha": "be94f64b39dcfaf84821608166c9313d92877908",
     "git_dirty": true,
     "bench_module": "bench.run_b2_behavioral",
     "command": "python3 -m bench.run_b2_behavioral",
-    "timestamp_utc": "2026-11-20T06:08:46+00:00",
-    "python_version": "3.14.7",
-    "numpy_version": "2.5.4",
-    "scipy_version": "1.18.1"
+    "timestamp_utc": "2026-11-27T02:50:35+00:00",
+    "python_version": "3.13.5",
+    "numpy_version": "2.2.4",
+    "scipy_version": "1.15.3"
   }
 }

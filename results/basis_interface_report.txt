@@ -49,7 +49,7 @@ CASE 4  接口 selector：光滑免费 / 单源合约 / ν_num 阈值翻转 / �
   reason: shock: remesh cost 0.25 < nu_num 0.499 -> move x_s onto an explicit singular state (T_int check is the supervisor's job)
   weak step ±0.2: mode=capture, nu_num=0.0997 (vs 0.25)
   strong step + remesh_cost=10: mode=capture
-  coupled single-source: drift=2.221e-16, leak_max=0.000e+00
+  coupled single-source: drift=4.441e-16, leak_max=0.000e+00
   coupled mismatch=1e-2: drift=6.867e-04, leak_max=8.457e-03
 
 ==============================================================================
@@ -84,7 +84,7 @@ VERDICT
                           flip: raising the threshold flips fit -> capture (same state)                            mode=capture                                   capture  yes
                                contract: single-source dM/dt exactly zero (topological)                                 0.0e+00                                       0.0  yes
                                  contract: mass_budget identity matches coupling.py rhs                                    -1.0                          (3−1)−(5−2) = −1  yes
-                            coupled twin: single-source mass drift at machine precision                               2.221e-16                                   < 1e-12  yes
+                            coupled twin: single-source mass drift at machine precision                               4.441e-16                                   < 1e-12  yes
                                  coupled twin: independent mirrors leak (mismatch=1e-2)                               8.457e-03                                    > 1e-3  yes
                                coupled twin: single-source leak_max ≈ 0 (vs mismatched)                   0.000e+00 ≪ 8.457e-03                              ratio < 1e-6  yes
 

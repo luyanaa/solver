@@ -1,609 +1,619 @@
 {
- "foreground": {
-  "checks": [
-   {
-    "name": "fg: residual >= measurement floor (honest contract)",
-    "got": "100.00 ppm",
-    "expected": ">= 100 ppm",
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: residual ~ noise-floor scale (not raw error)",
-    "got": "100.00 ppm",
-    "expected": "<= 10x floor (1000 ppm)",
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: clean-signal post-cal error at floor level",
-    "got": "45.345 ppm",
-    "expected": "<= 5x floor",
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: gain recovered within noise of true 1.02 (rel)",
-    "got": "62.2 ppm",
-    "expected": "<= ~2000 ppm (fit noise)",
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: single-point stimulus degrades to offset-only",
-    "got": "offset",
-    "expected": "offset",
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: FSM ends IDLE and covers all 5 states",
-    "got": "IDLE",
-    "expected": "IDLE",
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: FSM result equals direct foreground cal",
-    "got": "100.00",
-    "expected": "100.00",
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: verify history recorded and passed",
-    "got": true,
-    "expected": true,
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: fallback VERIFY honestly records independent=False (training residual, degraded)",
-    "got": false,
-    "expected": false,
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: VERIFY consumes a held-out set (independent=True)",
-    "got": true,
-    "expected": true,
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: independent VERIFY residual ~ noise floor (passes)",
-    "got": "161.9 ppm",
-    "expected": "<= 10x floor (1000 ppm), passed",
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: overfit NEG control \u2014 training residual looks fine (= floor, raw eaten by dof=points)",
-    "got": "100.0 ppm",
-    "expected": "100.0 ppm (misleading)",
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: overfit caught by independent VERIFY (err >> floor, fails)",
-    "got": "2887.1 ppm, passed=False",
-    "expected": "> 10x floor (1000 ppm), failed",
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: FSM records the overfit VERIFY as independent",
-    "got": true,
-    "expected": true,
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: ACCEPTED path \u2014 terminal=ACCEPTED, result accepted=True",
-    "got": [
-     "ACCEPTED",
-     "ACCEPTED",
-     true
+  "foreground": {
+    "checks": [
+      {
+        "name": "fg: residual >= measurement floor (honest contract)",
+        "got": "100.00 ppm",
+        "expected": ">= 100 ppm",
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: residual ~ noise-floor scale (not raw error)",
+        "got": "100.00 ppm",
+        "expected": "<= 10x floor (1000 ppm)",
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: clean-signal post-cal error at floor level",
+        "got": "45.345 ppm",
+        "expected": "<= 5x floor",
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: gain recovered within noise of true 1.02 (rel)",
+        "got": "62.2 ppm",
+        "expected": "<= ~2000 ppm (fit noise)",
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: single-point stimulus degrades to offset-only",
+        "got": "offset",
+        "expected": "offset",
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: FSM ends IDLE and covers all 5 states",
+        "got": "IDLE",
+        "expected": "IDLE",
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: FSM result equals direct foreground cal",
+        "got": "100.00",
+        "expected": "100.00",
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: verify history recorded and passed",
+        "got": true,
+        "expected": true,
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: fallback VERIFY honestly records independent=False (training residual, degraded)",
+        "got": false,
+        "expected": false,
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: VERIFY consumes a held-out set (independent=True)",
+        "got": true,
+        "expected": true,
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: independent VERIFY residual ~ noise floor (passes)",
+        "got": "161.9 ppm",
+        "expected": "<= 10x floor (1000 ppm), passed",
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: overfit NEG control — training residual looks fine (= floor, raw eaten by dof=points)",
+        "got": "100.0 ppm",
+        "expected": "100.0 ppm (misleading)",
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: overfit caught by independent VERIFY (err >> floor, fails)",
+        "got": "2887.1 ppm, passed=False",
+        "expected": "> 10x floor (1000 ppm), failed",
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: FSM records the overfit VERIFY as independent",
+        "got": true,
+        "expected": true,
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: ACCEPTED path — terminal=ACCEPTED, result accepted=True",
+        "got": [
+          "ACCEPTED",
+          "ACCEPTED",
+          true
+        ],
+        "expected": [
+          "ACCEPTED",
+          "ACCEPTED",
+          true
+        ],
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: retry consumes a FRESH measurement (correction from retry set, not refit of attempt 0)",
+        "got": "0.980392",
+        "expected": "≈ 1/1.02 = 0.980392",
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: retry VERIFY saw new data (read_digest differs)",
+        "got": 2,
+        "expected": "2 distinct digests",
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: successful retry ends terminal=ACCEPTED",
+        "got": "ACCEPTED",
+        "expected": "ACCEPTED",
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: exhausted retries ⇒ terminal=FAILED (not a clean result)",
+        "got": [
+          "FAILED",
+          "FAILED"
+        ],
+        "expected": [
+          "FAILED",
+          "FAILED"
+        ],
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: FAILED result is not accepted (upstream gate flag)",
+        "got": false,
+        "expected": false,
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: FAILED reason recorded and result still inspectable",
+        "got": [
+          "retries_exhausted_last_verify_failed",
+          "100.0"
+        ],
+        "expected": [
+          "retries_exhausted_last_verify_failed",
+          ">= floor 100.0"
+        ],
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: each exhausted attempt consumed FRESH data (3 digests)",
+        "got": 3,
+        "expected": "3 distinct digests",
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: no fresh measurement for retry ⇒ honest FAILED (never refits the consumed set)",
+        "got": [
+          "FAILED",
+          "retry_needed_but_no_fresh_measurement",
+          false
+        ],
+        "expected": [
+          "FAILED",
+          "retry_needed_but_no_fresh_measurement",
+          false
+        ],
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: consumed data cleared on retry — stale refit fails loud",
+        "got": true,
+        "expected": true,
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: CalibratedTwin.apply_foreground refuses a FAILED result",
+        "got": true,
+        "expected": true,
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: CalibrationResult terminal/accepted JSON-safe",
+        "got": "{\"correction\": {\"offset\": -7.401486830834377e-17, \"gain\": 1.1111111111111112}, \"residual_ppm\": 100.0, \"method\": \"gain+offset\", \"meas_noise_ppm\": 100.0, \"n_points\": 6, \"raw_rms_ppm\": 6.232141462756543e-11, \"terminal\": \"FAILED\", \"accepted\": false}",
+        "expected": "has terminal/accepted",
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: twin param updated by correction (gain*old+offset)",
+        "got": "1.961e+06",
+        "expected": "1.961e+06",
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: twin records source + residual",
+        "got": [
+          "foreground",
+          100.0
+        ],
+        "expected": [
+          "foreground",
+          100.0
+        ],
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      },
+      {
+        "name": "fg: CalibrationResult JSON-safe",
+        "got": "ok",
+        "expected": "ok",
+        "passed": true,
+        "kind": "calib-fg",
+        "note": null
+      }
     ],
-    "expected": [
-     "ACCEPTED",
-     "ACCEPTED",
-     true
+    "summary": {
+      "residual_ppm": 100.0,
+      "floor_ppm": 100.0,
+      "clean_err_ppm": 45.34474613238082,
+      "method": "gain+offset"
+    }
+  },
+  "background": {
+    "checks": [
+      {
+        "name": "bg: residual = rate*interval/(1+T) + floor (exact formula)",
+        "got": "100.500",
+        "expected": "100.500",
+        "passed": true,
+        "kind": "calib-bg",
+        "note": null
+      },
+      {
+        "name": "bg: longer interval => larger residual (honest tradeoff)",
+        "got": "100.500 -> 102.500",
+        "expected": "monotone increase",
+        "passed": true,
+        "kind": "calib-bg",
+        "note": null
+      },
+      {
+        "name": "bg: interval scaling is linear in (1+T)-trimmed drift",
+        "got": "5.00",
+        "expected": "5.00",
+        "passed": true,
+        "kind": "calib-bg",
+        "note": null
+      },
+      {
+        "name": "bg: zero interval collapses to meas floor (A7 semantics)",
+        "got": "100.00",
+        "expected": "100.00",
+        "passed": true,
+        "kind": "calib-bg",
+        "note": null
+      },
+      {
+        "name": "bg: matches A7 gm_c_calibrate residual (interval 10)",
+        "got": "100.50",
+        "expected": "100.50",
+        "passed": true,
+        "kind": "calib-bg",
+        "note": null
+      },
+      {
+        "name": "bg: update_interval_for_budget closes the loop",
+        "got": "150.00 <= 150.00",
+        "expected": "residual <= budget",
+        "passed": true,
+        "kind": "calib-bg",
+        "note": null
+      },
+      {
+        "name": "bg: budget below floor => interval 0 (foreground only)",
+        "got": "0.00",
+        "expected": "0.00",
+        "passed": true,
+        "kind": "calib-bg",
+        "note": null
+      },
+      {
+        "name": "bg: drift_update scales param by (1+tempco*dT) exactly",
+        "got": "2.002e+06",
+        "expected": "2.002e+06",
+        "passed": true,
+        "kind": "calib-bg",
+        "note": null
+      },
+      {
+        "name": "bg: drift_ppm = |tempco*dT|*1e6 returned",
+        "got": "1000.0",
+        "expected": "1000.0",
+        "passed": true,
+        "kind": "calib-bg",
+        "note": null
+      },
+      {
+        "name": "bg: twin background bookkeeping (source/residual)",
+        "got": [
+          "background",
+          100.5
+        ],
+        "expected": [
+          "background",
+          100.5
+        ],
+        "passed": true,
+        "kind": "calib-bg",
+        "note": null
+      },
+      {
+        "name": "bg: CalibratedTwin JSON-safe",
+        "got": "ok",
+        "expected": "ok",
+        "passed": true,
+        "kind": "calib-bg",
+        "note": null
+      }
     ],
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: retry consumes a FRESH measurement (correction from retry set, not refit of attempt 0)",
-    "got": "0.980392",
-    "expected": "\u2248 1/1.02 = 0.980392",
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: retry VERIFY saw new data (read_digest differs)",
-    "got": 2,
-    "expected": "2 distinct digests",
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: successful retry ends terminal=ACCEPTED",
-    "got": "ACCEPTED",
-    "expected": "ACCEPTED",
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: exhausted retries \u21d2 terminal=FAILED (not a clean result)",
-    "got": [
-     "FAILED",
-     "FAILED"
+    "summary": {
+      "residual_10": 100.4999500049995,
+      "residual_50": 102.4997500249975,
+      "floor_ppm": 100.0
+    }
+  },
+  "p7": {
+    "checks": [
+      {
+        "name": "p7: one integrator element per state (+route edge)",
+        "got": 64,
+        "expected": 64,
+        "passed": true,
+        "kind": "calib-p7",
+        "note": null
+      },
+      {
+        "name": "p7: alpha matches ScalingResult on every element",
+        "got": "8.149e-07",
+        "expected": "8.149e-07",
+        "passed": true,
+        "kind": "calib-p7",
+        "note": null
+      },
+      {
+        "name": "p7: s_x elementwise matches S_x_vec",
+        "got": "0.01491",
+        "expected": "0.01491",
+        "passed": true,
+        "kind": "calib-p7",
+        "note": null
+      },
+      {
+        "name": "p7: per-element target = own |a_ii| (scaled A diagonal), not global max|lambda|/alpha",
+        "got": "1227..5.027e+06",
+        "expected": "nu*k^2/alpha each (spread 4096)",
+        "passed": true,
+        "kind": "calib-p7",
+        "note": null
+      },
+      {
+        "name": "p7: tile speed spec kept as source (max|lambda|/alpha)",
+        "got": "5.027e+06",
+        "expected": "5.027e+06",
+        "passed": true,
+        "kind": "calib-p7",
+        "note": null
+      },
+      {
+        "name": "p7: axis>1 => sigma_scale=axis (scaled, not headroom)",
+        "got": 825.6931870012521,
+        "expected": "825.7",
+        "passed": true,
+        "kind": "calib-p7",
+        "note": null
+      },
+      {
+        "name": "p7: axis>1 => residual budget NOT promised (None) + flag",
+        "got": [
+          null,
+          "none",
+          true
+        ],
+        "expected": [
+          null,
+          "none",
+          true
+        ],
+        "passed": true,
+        "kind": "calib-p7",
+        "note": null
+      },
+      {
+        "name": "p7: noise axis actually evaluated (finite, feeds contract)",
+        "got": "825.7",
+        "expected": "finite",
+        "passed": true,
+        "kind": "calib-p7",
+        "note": null
+      },
+      {
+        "name": "p7: infeasible certificate => foreground plan not fabricated (empty)",
+        "got": 0,
+        "expected": 0,
+        "passed": true,
+        "kind": "calib-p7",
+        "note": null
+      },
+      {
+        "name": "p7: background plan has reference + rate from twin ledger",
+        "got": [
+          true,
+          "500.0"
+        ],
+        "expected": "reference set, rate > 0",
+        "passed": true,
+        "kind": "calib-p7",
+        "note": null
+      },
+      {
+        "name": "p7: twin drift-rate ledger feeds background rate",
+        "got": "500.0",
+        "expected": "500.0",
+        "passed": true,
+        "kind": "calib-p7",
+        "note": null
+      },
+      {
+        "name": "p7: no budget promised => update_interval honestly None",
+        "got": null,
+        "expected": null,
+        "passed": true,
+        "kind": "calib-p7",
+        "note": null
+      },
+      {
+        "name": "p7: Config round-trips through JSON",
+        "got": [
+          65,
+          0
+        ],
+        "expected": [
+          65,
+          0
+        ],
+        "passed": true,
+        "kind": "calib-p7",
+        "note": null
+      },
+      {
+        "name": "p7: no unhandled callables/objects in JSON blob",
+        "got": "json-ok",
+        "expected": "json-ok",
+        "passed": true,
+        "kind": "calib-p7",
+        "note": null
+      },
+      {
+        "name": "p7: no twin drift data => interval not fabricated",
+        "got": "None",
+        "expected": "None",
+        "passed": true,
+        "kind": "calib-p7",
+        "note": null
+      }
     ],
-    "expected": [
-     "FAILED",
-     "FAILED"
+    "summary": {
+      "n_elements": 65,
+      "alpha": 8.148733086305042e-07,
+      "gm_over_c": 1227.1846303085129,
+      "residual_budget_ppm": null,
+      "cert_status": "infeasible"
+    }
+  },
+  "negative": {
+    "checks": [
+      {
+        "name": "neg: certificate is infeasible by noise axis",
+        "got": [
+          "infeasible",
+          "24770795.61"
+        ],
+        "expected": [
+          "infeasible",
+          "> 1"
+        ],
+        "passed": true,
+        "kind": "calib-neg",
+        "note": null
+      },
+      {
+        "name": "neg: all integrator elements flagged (not silently planned)",
+        "got": "64/64 flagged",
+        "expected": "all flagged",
+        "passed": true,
+        "kind": "calib-neg",
+        "note": null
+      },
+      {
+        "name": "neg: flag reason cites the certificate",
+        "got": "certificate infeasible; bindin...",
+        "expected": "mentions infeasible",
+        "passed": true,
+        "kind": "calib-neg",
+        "note": null
+      },
+      {
+        "name": "neg: flagged elements fall back to nominal cal method",
+        "got": "nominal",
+        "expected": "nominal",
+        "passed": true,
+        "kind": "calib-neg",
+        "note": null
+      },
+      {
+        "name": "neg: residual budget NOT promised on violated noise axis",
+        "got": "None",
+        "expected": "None",
+        "passed": true,
+        "kind": "calib-neg",
+        "note": null
+      },
+      {
+        "name": "neg: flags list carries the violation message",
+        "got": [
+          1,
+          "noise axis 2.48e+07 > 1: res..."
+        ],
+        "expected": "non-empty",
+        "passed": true,
+        "kind": "calib-neg",
+        "note": null
+      },
+      {
+        "name": "neg: feasible config by contrast has no flags",
+        "got": [
+          true,
+          0
+        ],
+        "expected": "(axis <= 1, 0)",
+        "passed": true,
+        "kind": "calib-neg",
+        "note": null
+      }
     ],
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: FAILED result is not accepted (upstream gate flag)",
-    "got": false,
-    "expected": false,
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: FAILED reason recorded and result still inspectable",
-    "got": [
-     "retries_exhausted_last_verify_failed",
-     "100.0"
-    ],
-    "expected": [
-     "retries_exhausted_last_verify_failed",
-     ">= floor 100.0"
-    ],
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: each exhausted attempt consumed FRESH data (3 digests)",
-    "got": 3,
-    "expected": "3 distinct digests",
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: no fresh measurement for retry \u21d2 honest FAILED (never refits the consumed set)",
-    "got": [
-     "FAILED",
-     "retry_needed_but_no_fresh_measurement",
-     false
-    ],
-    "expected": [
-     "FAILED",
-     "retry_needed_but_no_fresh_measurement",
-     false
-    ],
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: consumed data cleared on retry \u2014 stale refit fails loud",
-    "got": true,
-    "expected": true,
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: CalibratedTwin.apply_foreground refuses a FAILED result",
-    "got": true,
-    "expected": true,
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: CalibrationResult terminal/accepted JSON-safe",
-    "got": "{\"correction\": {\"offset\": -7.401486830834377e-17, \"gain\": 1.1111111111111112}, \"residual_ppm\": 100.0, \"method\": \"gain+offset\", \"meas_noise_ppm\": 100.0, \"n_points\": 6, \"raw_rms_ppm\": 6.232141462756543e-11, \"terminal\": \"FAILED\", \"accepted\": false}",
-    "expected": "has terminal/accepted",
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: twin param updated by correction (gain*old+offset)",
-    "got": "1.961e+06",
-    "expected": "1.961e+06",
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: twin records source + residual",
-    "got": [
-     "foreground",
-     100.0
-    ],
-    "expected": [
-     "foreground",
-     100.0
-    ],
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   },
-   {
-    "name": "fg: CalibrationResult JSON-safe",
-    "got": "ok",
-    "expected": "ok",
-    "passed": true,
-    "kind": "calib-fg",
-    "note": null
-   }
-  ],
+    "summary": {
+      "cert_status": "infeasible",
+      "n_flagged": 64
+    }
+  },
   "summary": {
-   "residual_ppm": 100.0,
-   "floor_ppm": 100.0,
-   "clean_err_ppm": 45.34474613238082,
-   "method": "gain+offset"
+    "n_checks": 62,
+    "n_passed": 62
+  },
+  "_meta": {
+    "git_sha": "be94f64b39dcfaf84821608166c9313d92877908",
+    "git_dirty": true,
+    "bench_module": "bench.run_calib",
+    "command": "python3 -m bench.run_calib",
+    "timestamp_utc": "2026-11-27T02:50:11+00:00",
+    "python_version": "3.13.5",
+    "numpy_version": "2.2.4",
+    "scipy_version": "1.15.3"
   }
- },
- "background": {
-  "checks": [
-   {
-    "name": "bg: residual = rate*interval/(1+T) + floor (exact formula)",
-    "got": "100.500",
-    "expected": "100.500",
-    "passed": true,
-    "kind": "calib-bg",
-    "note": null
-   },
-   {
-    "name": "bg: longer interval => larger residual (honest tradeoff)",
-    "got": "100.500 -> 102.500",
-    "expected": "monotone increase",
-    "passed": true,
-    "kind": "calib-bg",
-    "note": null
-   },
-   {
-    "name": "bg: interval scaling is linear in (1+T)-trimmed drift",
-    "got": "5.00",
-    "expected": "5.00",
-    "passed": true,
-    "kind": "calib-bg",
-    "note": null
-   },
-   {
-    "name": "bg: zero interval collapses to meas floor (A7 semantics)",
-    "got": "100.00",
-    "expected": "100.00",
-    "passed": true,
-    "kind": "calib-bg",
-    "note": null
-   },
-   {
-    "name": "bg: matches A7 gm_c_calibrate residual (interval 10)",
-    "got": "100.50",
-    "expected": "100.50",
-    "passed": true,
-    "kind": "calib-bg",
-    "note": null
-   },
-   {
-    "name": "bg: update_interval_for_budget closes the loop",
-    "got": "150.00 <= 150.00",
-    "expected": "residual <= budget",
-    "passed": true,
-    "kind": "calib-bg",
-    "note": null
-   },
-   {
-    "name": "bg: budget below floor => interval 0 (foreground only)",
-    "got": "0.00",
-    "expected": "0.00",
-    "passed": true,
-    "kind": "calib-bg",
-    "note": null
-   },
-   {
-    "name": "bg: drift_update scales param by (1+tempco*dT) exactly",
-    "got": "2.002e+06",
-    "expected": "2.002e+06",
-    "passed": true,
-    "kind": "calib-bg",
-    "note": null
-   },
-   {
-    "name": "bg: drift_ppm = |tempco*dT|*1e6 returned",
-    "got": "1000.0",
-    "expected": "1000.0",
-    "passed": true,
-    "kind": "calib-bg",
-    "note": null
-   },
-   {
-    "name": "bg: twin background bookkeeping (source/residual)",
-    "got": [
-     "background",
-     100.5
-    ],
-    "expected": [
-     "background",
-     100.5
-    ],
-    "passed": true,
-    "kind": "calib-bg",
-    "note": null
-   },
-   {
-    "name": "bg: CalibratedTwin JSON-safe",
-    "got": "ok",
-    "expected": "ok",
-    "passed": true,
-    "kind": "calib-bg",
-    "note": null
-   }
-  ],
-  "summary": {
-   "residual_10": 100.4999500049995,
-   "residual_50": 102.4997500249975,
-   "floor_ppm": 100.0
-  }
- },
- "p7": {
-  "checks": [
-   {
-    "name": "p7: one integrator element per state (+route edge)",
-    "got": 64,
-    "expected": 64,
-    "passed": true,
-    "kind": "calib-p7",
-    "note": null
-   },
-   {
-    "name": "p7: alpha matches ScalingResult on every element",
-    "got": "8.149e-07",
-    "expected": "8.149e-07",
-    "passed": true,
-    "kind": "calib-p7",
-    "note": null
-   },
-   {
-    "name": "p7: s_x elementwise matches S_x_vec",
-    "got": "0.01491",
-    "expected": "0.01491",
-    "passed": true,
-    "kind": "calib-p7",
-    "note": null
-   },
-   {
-    "name": "p7: per-element target = own |a_ii| (scaled A diagonal), not global max|lambda|/alpha",
-    "got": "1227..5.027e+06",
-    "expected": "nu*k^2/alpha each (spread 4096)",
-    "passed": true,
-    "kind": "calib-p7",
-    "note": null
-   },
-   {
-    "name": "p7: tile speed spec kept as source (max|lambda|/alpha)",
-    "got": "5.027e+06",
-    "expected": "5.027e+06",
-    "passed": true,
-    "kind": "calib-p7",
-    "note": null
-   },
-   {
-    "name": "p7: axis>1 => sigma_scale=axis (scaled, not headroom)",
-    "got": 825.6931870012521,
-    "expected": "825.7",
-    "passed": true,
-    "kind": "calib-p7",
-    "note": null
-   },
-   {
-    "name": "p7: axis>1 => residual budget NOT promised (None) + flag",
-    "got": [
-     null,
-     "none",
-     true
-    ],
-    "expected": [
-     null,
-     "none",
-     true
-    ],
-    "passed": true,
-    "kind": "calib-p7",
-    "note": null
-   },
-   {
-    "name": "p7: noise axis actually evaluated (finite, feeds contract)",
-    "got": "825.7",
-    "expected": "finite",
-    "passed": true,
-    "kind": "calib-p7",
-    "note": null
-   },
-   {
-    "name": "p7: infeasible certificate => foreground plan not fabricated (empty)",
-    "got": 0,
-    "expected": 0,
-    "passed": true,
-    "kind": "calib-p7",
-    "note": null
-   },
-   {
-    "name": "p7: background plan has reference + rate from twin ledger",
-    "got": [
-     true,
-     "500.0"
-    ],
-    "expected": "reference set, rate > 0",
-    "passed": true,
-    "kind": "calib-p7",
-    "note": null
-   },
-   {
-    "name": "p7: twin drift-rate ledger feeds background rate",
-    "got": "500.0",
-    "expected": "500.0",
-    "passed": true,
-    "kind": "calib-p7",
-    "note": null
-   },
-   {
-    "name": "p7: no budget promised => update_interval honestly None",
-    "got": null,
-    "expected": null,
-    "passed": true,
-    "kind": "calib-p7",
-    "note": null
-   },
-   {
-    "name": "p7: Config round-trips through JSON",
-    "got": [
-     65,
-     0
-    ],
-    "expected": [
-     65,
-     0
-    ],
-    "passed": true,
-    "kind": "calib-p7",
-    "note": null
-   },
-   {
-    "name": "p7: no unhandled callables/objects in JSON blob",
-    "got": "json-ok",
-    "expected": "json-ok",
-    "passed": true,
-    "kind": "calib-p7",
-    "note": null
-   },
-   {
-    "name": "p7: no twin drift data => interval not fabricated",
-    "got": "None",
-    "expected": "None",
-    "passed": true,
-    "kind": "calib-p7",
-    "note": null
-   }
-  ],
-  "summary": {
-   "n_elements": 65,
-   "alpha": 8.148733086305042e-07,
-   "gm_over_c": 1227.1846303085129,
-   "residual_budget_ppm": null,
-   "cert_status": "infeasible"
-  }
- },
- "negative": {
-  "checks": [
-   {
-    "name": "neg: certificate is infeasible by noise axis",
-    "got": [
-     "infeasible",
-     "24770795.61"
-    ],
-    "expected": [
-     "infeasible",
-     "> 1"
-    ],
-    "passed": true,
-    "kind": "calib-neg",
-    "note": null
-   },
-   {
-    "name": "neg: all integrator elements flagged (not silently planned)",
-    "got": "64/64 flagged",
-    "expected": "all flagged",
-    "passed": true,
-    "kind": "calib-neg",
-    "note": null
-   },
-   {
-    "name": "neg: flag reason cites the certificate",
-    "got": "certificate infeasible; bindin...",
-    "expected": "mentions infeasible",
-    "passed": true,
-    "kind": "calib-neg",
-    "note": null
-   },
-   {
-    "name": "neg: flagged elements fall back to nominal cal method",
-    "got": "nominal",
-    "expected": "nominal",
-    "passed": true,
-    "kind": "calib-neg",
-    "note": null
-   },
-   {
-    "name": "neg: residual budget NOT promised on violated noise axis",
-    "got": "None",
-    "expected": "None",
-    "passed": true,
-    "kind": "calib-neg",
-    "note": null
-   },
-   {
-    "name": "neg: flags list carries the violation message",
-    "got": [
-     1,
-     "noise axis 2.48e+07 > 1: res..."
-    ],
-    "expected": "non-empty",
-    "passed": true,
-    "kind": "calib-neg",
-    "note": null
-   },
-   {
-    "name": "neg: feasible config by contrast has no flags",
-    "got": [
-     true,
-     0
-    ],
-    "expected": "(axis <= 1, 0)",
-    "passed": true,
-    "kind": "calib-neg",
-    "note": null
-   }
-  ],
-  "summary": {
-   "cert_status": "infeasible",
-   "n_flagged": 64
-  }
- },
- "summary": {
-  "n_checks": 62,
-  "n_passed": 62
- }
 }

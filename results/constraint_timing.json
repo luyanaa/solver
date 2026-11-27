@@ -1,21 +1,21 @@
 {
   "checks": [
     {
-      "name": "\u03b5_c formula = \u03c4_relax / \u03c4_external",
+      "name": "ε_c formula = τ_relax / τ_external",
       "got": "4.281653e-03",
       "expected": "4.281653e-03",
       "passed": true,
       "kind": "exact"
     },
     {
-      "name": "\u03b5_c < 0.01 for slow external dynamics",
+      "name": "ε_c < 0.01 for slow external dynamics",
       "got": "0.0043",
       "expected": "< 0.01",
       "passed": true,
       "kind": "exact"
     },
     {
-      "name": "external_state_timescale=None raises (no bogus \u03b5_c)",
+      "name": "external_state_timescale=None raises (no bogus ε_c)",
       "got": "raises",
       "expected": "ValueError",
       "passed": true,
@@ -29,7 +29,7 @@
       "kind": "exact"
     },
     {
-      "name": "solve_constraint \u03b5_c matches eps_c()",
+      "name": "solve_constraint ε_c matches eps_c()",
       "got": "4.281653e-03",
       "expected": "4.281653e-03",
       "passed": true,
@@ -71,7 +71,7 @@
       "kind": "exact"
     },
     {
-      "name": "steady no-deadline: note explains no-\u03b5_c policy",
+      "name": "steady no-deadline: note explains no-ε_c policy",
       "got": true,
       "expected": true,
       "passed": true,
@@ -99,7 +99,7 @@
       "kind": "exact"
     },
     {
-      "name": "steady residual_tol defaults to 1e-6\u00b7||I||",
+      "name": "steady residual_tol defaults to 1e-6·||I||",
       "got": "8.000e-06",
       "expected": "8.000e-06",
       "passed": true,
@@ -120,9 +120,9 @@
       "kind": "exact"
     },
     {
-      "name": "steady deadline missed: residual \u2248 ||I|| (unconverged)",
-      "got": "0.982\u00b7||I||",
-      "expected": "\u2265 0.5\u00b7||I||",
+      "name": "steady deadline missed: residual ≈ ||I|| (unconverged)",
+      "got": "0.982·||I||",
+      "expected": "≥ 0.5·||I||",
       "passed": true,
       "kind": "exact"
     },
@@ -134,9 +134,9 @@
       "kind": "exact"
     },
     {
-      "name": "slow external dynamics: \u03b5_c = 1e-3",
+      "name": "slow external dynamics: ε_c = 1e-3",
       "got": "0.001000",
-      "expected": "\u2248 1e-3",
+      "expected": "≈ 1e-3",
       "passed": true,
       "kind": "exact"
     },
@@ -148,9 +148,9 @@
       "kind": "exact"
     },
     {
-      "name": "fast external dynamics: \u03b5_c = 0.02 \u2265 0.01",
+      "name": "fast external dynamics: ε_c = 0.02 ≥ 0.01",
       "got": "0.020000",
-      "expected": "\u2265 0.01",
+      "expected": "≥ 0.01",
       "passed": true,
       "kind": "exact"
     },
@@ -162,28 +162,28 @@
       "kind": "exact"
     },
     {
-      "name": "FAIL note cites \u00a73.4 timing contract",
+      "name": "FAIL note cites §3.4 timing contract",
       "got": true,
       "expected": true,
       "passed": true,
       "kind": "exact"
     },
     {
-      "name": "external dynamics faster than relaxation \u21d2 FAIL",
-      "got": "verdict=FAIL \u03b5_c=10.0",
-      "expected": "FAIL, \u03b5_c > 1",
+      "name": "external dynamics faster than relaxation ⇒ FAIL",
+      "got": "verdict=FAIL ε_c=10.0",
+      "expected": "FAIL, ε_c > 1",
       "passed": true,
       "kind": "exact"
     },
     {
-      "name": "constraint FAIL \u21d2 cert status rejected",
+      "name": "constraint FAIL ⇒ cert status rejected",
       "got": "rejected",
       "expected": "rejected",
       "passed": true,
       "kind": "exact"
     },
     {
-      "name": "constraint FAIL \u21d2 cert infeasible",
+      "name": "constraint FAIL ⇒ cert infeasible",
       "got": "False",
       "expected": "False",
       "passed": true,
@@ -211,7 +211,7 @@
       "kind": "exact"
     },
     {
-      "name": "pure-steady fact \u21d2 cert stays 'no violation on evaluated axes'",
+      "name": "pure-steady fact ⇒ cert stays 'no violation on evaluated axes'",
       "got": "no violation on evaluated axes",
       "expected": "no violation on evaluated axes",
       "passed": true,
@@ -219,7 +219,7 @@
     },
     {
       "name": "steady fact recorded as pass-with-fact, not a feasibility verdict",
-      "got": "constraint steady-state fact (no \u03b5_c defined, no external dynamic state declared): tau_relax=4.282e-11; not a feasibility verdict",
+      "got": "constraint steady-state fact (no ε_c defined, no external dynamic state declared): tau_relax=4.282e-11; not a feasibility verdict",
       "expected": "detail states 'not a feasibility verdict'",
       "passed": true,
       "kind": "exact"
@@ -232,21 +232,21 @@
       "kind": "exact"
     },
     {
-      "name": "coupled \u03b5_c PASS \u21d2 cert unchanged",
+      "name": "coupled ε_c PASS ⇒ cert unchanged",
       "got": "no violation on evaluated axes",
       "expected": "no violation on evaluated axes",
       "passed": true,
       "kind": "exact"
     },
     {
-      "name": "malformed constraint evidence (no verdict) \u21d2 rejected",
+      "name": "malformed constraint evidence (no verdict) ⇒ rejected",
       "got": "rejected",
       "expected": "rejected",
       "passed": true,
       "kind": "exact"
     },
     {
-      "name": "negative control: \u03b5_c>1 external timescale \u21d2 cert rejected",
+      "name": "negative control: ε_c>1 external timescale ⇒ cert rejected",
       "got": "rejected",
       "expected": "rejected",
       "passed": true,
@@ -256,5 +256,15 @@
   "summary": {
     "n_checks": 36,
     "n_passed": 36
+  },
+  "_meta": {
+    "git_sha": "be94f64b39dcfaf84821608166c9313d92877908",
+    "git_dirty": true,
+    "bench_module": "bench.run_constraint_timing",
+    "command": "python3 -m bench.run_constraint_timing",
+    "timestamp_utc": "2026-11-27T02:29:19+00:00",
+    "python_version": "3.13.5",
+    "numpy_version": "2.2.4",
+    "scipy_version": "1.15.3"
   }
 }
