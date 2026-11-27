@@ -39,6 +39,8 @@ __all__ = [
     "descriptor_adjoint_field",
     "descriptor_qoi_error_estimate",
     "nonlinear_adjoint_backward",
+    "port_sensitivities",
+    "statistical_coverage_contract",
 ]
 
 
@@ -110,8 +112,14 @@ def descriptor_adjoint_field(E, A, c, t_grid) -> np.ndarray:
     t = np.asarray(t_grid, dtype=float)
     if E.shape != A.shape or A.shape[0] != c.shape[0]:
         raise ValueError("E/A 同形且 c 维度匹配")
-    if abs(np.linalg.det(E)) < 1e-12 * max(1.0, float(np.linalg.norm(E))):
-        raise ValueError("E 奇异：descriptor 伴随须先投影掉代数约束，不静默伪逆")
+    # 尺度不变奇异性判据（审查7）：不用 det（E=1e-3 I_64 的 det=1e-192
+    # 会被误判）；用相对最小奇异值/条件数。真正的奇异 DAE（代数约束）
+    # 须走 QZ/约束一致伴随，本函数不静默伪逆。
+    sv = np.linalg.svd(E, compute_uv=False)
+    if sv[0] <= 0 or sv[-1] / sv[0] <= 1e-12:
+        raise ValueError("E 奇异或病态（cond=%.3g）：descriptor 伴随须"
+                         "先 QZ 投影掉代数约束，不静默伪逆"
+                         % (sv[0] / max(sv[-1], 1e-300)))
     if t.shape[0] < 2 or np.any(np.diff(t) <= 0):
         raise ValueError("t_grid 必须严格递增且至少两点")
     G = np.linalg.solve(E, A)              # 前向生成元
@@ -145,6 +153,72 @@ def descriptor_qoi_error_estimate(E, lam_field, t_grid, window_rs,
     return dict(delta_J=total, contributions=contrib, abs_sum=abs_sum,
                 cancellation_factor=abs(total) / max(abs_sum, 1e-300),
                 n_windows=len(contrib))
+
+def statistical_coverage_contract(estimates, truths, scale,
+                                  confidence=0.95, train_frac=0.5,
+                                  seed=2026) -> dict:
+    """非线性 DWR 的**训练/验证分离**统计覆盖合同（审查7）。
+
+    启发式界 B = q·scale，其中 q 只从**训练集**的分位数得到，覆盖率
+    在**独立验证集**上实测——不能用同一批样本既定系数又报覆盖
+    （那只是重述训练分位数）。这不是严格误差上界：一般非线性界需要
+    Hessian/Jacobian Lipschitz 常数，当前未给出，故只报统计覆盖。
+
+    返回 dict(train_quantile, validation_coverage, n_train, n_val,
+    bound_scale)。
+    """
+    est = np.asarray(estimates, dtype=float)
+    true = np.asarray(truths, dtype=float)
+    sc = np.asarray(scale, dtype=float)
+    if not (est.shape == true.shape == sc.shape) or est.size < 4:
+        raise ValueError("estimates/truths/scale 同形且样本数 >= 4")
+    ratio = np.abs(est - true) / np.maximum(np.abs(sc), 1e-300)
+    rng = np.random.default_rng(seed)
+    idx = rng.permutation(ratio.size)
+    n_tr = max(2, int(train_frac * ratio.size))
+    tr, val = idx[:n_tr], idx[n_tr:]
+    if val.size == 0:
+        raise ValueError("验证集为空")
+    q = float(np.quantile(ratio[tr], float(confidence)))
+    cov = float(np.mean(ratio[val] <= q))
+    return dict(train_quantile=q, validation_coverage=cov,
+                n_train=int(tr.size), n_val=int(val.size),
+                bound_scale=q)
+
+
+def port_sensitivities(lam_field, t_grid, ports, x_ref_traj=None) -> dict:
+    """器件参数的**绝对** QoI 灵敏度 K_i=∫|λ(t)ᵀ∂F/∂θ_i|dt（§6.22 P0-5）。
+
+    ports: {name: B}，B 为常量 n×m（或 n）矩阵，或 callable(t, x)->B(t)
+    给出状态相关的扰动方向（如 gm 失配 ΔA·x、电容失配 −E⁻¹ΔE·ẋ）。
+    返回 {name: K_i}，K_i 是**绝对量**（保留 Σw 的总灵敏度信息），
+    不可与 normalize 后的 dJ_weights 混用。
+
+    硬件误差 → 扰动端口（必须按物理来源分别建模）：
+      integrator offset → 加性电流/状态导数偏置（常量 B）
+      gm mismatch       → ΔA x（状态相关 B）
+      capacitor mismatch→ −E⁻¹ΔE ẋ（需 descriptor 口径）
+      ADC/DAC 量化      → 边界采样/状态回注
+      interconnect delay→ 一阶 −A_ij τ_ij x_j
+    同一节点的 ∫|λ_i|dt 不能用于所有器件 ppm 的预算分配。
+    """
+    lam = np.asarray(lam_field, dtype=float)
+    t = np.asarray(t_grid, dtype=float)
+    if lam.ndim != 2 or lam.shape[1] != t.shape[0]:
+        raise ValueError("lam_field 形状必须 (n, len(t_grid))")
+    out = {}
+    for name, B in ports.items():
+        vals = []
+        for k, tk in enumerate(t):
+            Bk = B(tk, x_ref_traj[:, k]) if callable(B) else B
+            Bk = np.asarray(Bk, dtype=float)
+            if Bk.ndim == 1:
+                Bk = Bk[:, None]
+            v = np.abs(lam[:, k] @ Bk)
+            vals.append(float(v.sum()))       # 多参数端口取各参数贡献之和
+        out[name] = float(np.trapezoid(vals, t))
+    return out
+
 
 def nonlinear_adjoint_backward(F_jac, x_ref_traj, t_grid, c) -> np.ndarray:
     """沿参考轨迹反向积分伴随：λ̇ = −J_F(x_ref(t))ᵀλ，λ(T)=c。

@@ -7,7 +7,8 @@
 from .descriptor import Descriptor
 from .adjoint import (adjoint_field, dJ_weights, dJ_weights_exact,
                        descriptor_adjoint_field, descriptor_qoi_error_estimate,
-                       nonlinear_adjoint_backward, qoi_error_estimate)
+                       nonlinear_adjoint_backward, port_sensitivities,
+                       qoi_error_estimate, statistical_coverage_contract)
 from .error_propagation import (PropagationClass, classify_propagation,
                                  conservation_drift_rate,
                                  correction_interval, error_recursion_bound,

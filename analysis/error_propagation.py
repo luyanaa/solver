@@ -53,6 +53,10 @@ __all__ = [
     "correction_interval",
     "steady_bound",
     "error_recursion_bound",
+    "eta_from_lognorm",
+    "classify_propagation_type",
+    "CorrectionOperator",
+    "corrected_recursion",
 ]
 
 
@@ -70,13 +74,16 @@ class PropagationClass:
     spectral_abscissa: float          # max Re(λ)
     transient_gains: dict             # {horizon: ‖Φ(h,0)‖_M}
     lognorm: float                    # μ₂(A)：2-范数对数范数（能量上界速率）
-    cls: str                          # contracting/neutral/expanding
+    cls: str                          # legacy：contracting/neutral/expanding
     transient_amplified: bool         # 谱稳定但瞬态增益超阈值
+    mu_M: float | None = None         # 能量度量 M 下的 μ_M（审查6）
+    propagation_type: str | None = None  # 五分法类型（审查6）
     horizons: list = field(default_factory=list)
     notes: list = field(default_factory=list)
 
     def as_dict(self) -> dict:
-        return dict(cls=self.cls,
+        return dict(cls=self.cls, propagation_type=self.propagation_type,
+                    mu_M=self.mu_M,
                     spectral_abscissa=self.spectral_abscissa,
                     transient_gains=dict(self.transient_gains),
                     lognorm=self.lognorm,
@@ -105,15 +112,59 @@ def finite_time_gain(A, t, M=None) -> float:
     return float(np.linalg.norm(Mh @ Phi @ Mhi, 2))
 
 
-def logarithmic_norm(A) -> float:
-    """μ₂(A) = λ_max((A+Aᵀ)/2)：2-范数下 ‖e(t)‖ ≤ e^{μ t}‖e(0)‖ 的紧速率。
+def logarithmic_norm(A, M=None) -> float:
+    """μ_M(A) = λ_max[½ M^{-1/2}(AᵀM+MA)M^{-1/2}]（能量度量对数范数）。
 
-    μ < 0 ⇒ 任意初始误差单调收缩（比谱横坐标更强的合同：谱稳定但
-    非正规的系统 μ₂ 可以 > 0，瞬态仍会放大——这正是要同时报告两个数
-    的原因）。
+    M=None ⇒ 普通二范数 μ₂(A)=λ_max((A+Aᵀ)/2)。M=diag(C) 时给出
+    电容/状态尺度正确的收缩速率——C bank 跨数量级时 μ₂ 可能严重误导
+    （审查6）。μ<0 ⇒ 该范数下 ‖e(t)‖_M 单调收缩。
     """
     A = np.asarray(A, dtype=float)
-    return float(np.max(np.linalg.eigvalsh((A + A.T) / 2.0)))
+    if M is None:
+        return float(np.max(np.linalg.eigvalsh((A + A.T) / 2.0)))
+    M = np.asarray(M, dtype=float)
+    w, Q = np.linalg.eigh(M)
+    if np.any(w <= 0):
+        raise ValueError("度量 M 必须正定")
+    Mh = Q @ np.diag(np.sqrt(w)) @ Q.T
+    Mhi = Q @ np.diag(1.0 / np.sqrt(w)) @ Q.T
+    B = 0.5 * Mhi @ (A.T @ M + M @ A) @ Mhi
+    return float(np.max(np.linalg.eigvalsh((B + B.T) / 2.0)))
+
+
+def classify_propagation_type(A, M=None, tol=1e-9) -> str:
+    """审查6 五分法（返回五类之一）：
+
+      contractive           μ_M(A)<0 —— 直接收缩界
+      asymptotically stable Hurwitz 但 μ_M≥0 —— 非正规瞬态放大
+      semistable            零/纯虚半单模态，其余 Re<0 —— 有界中性
+      polynomially growing  临界 Jordan block —— 多项式增长
+      expanding             max Re(λ)>0 —— 指数放大（有限时窗/统计合同）
+
+    M 是能量度量（如节点电容矩阵）；μ_M 与 finite_time_gain(A,t,M)
+    使用同一度量，口径统一。半单判定用零（虚轴）特征值的几何重数
+    == 代数重数（数值容差 tol）。
+    """
+    A = np.asarray(A, dtype=float)
+    w = np.linalg.eigvals(A)
+    alpha = float(np.max(w.real))
+    if alpha > tol:
+        return "expanding"
+    mu = logarithmic_norm(A, M)
+    if mu < -tol:
+        return "contractive"
+    # 临界模态（Re≈0）：Jordan 块 ⇒ 多项式增长；半单 ⇒ 有界中性
+    crit = w[np.abs(w.real) <= tol]
+    if crit.size:
+        for lam in crit:
+            # rank(A−λI) 的零空间维数 vs 重数（几何 vs 代数）
+            mult = int(np.sum(np.abs(w - lam) <= 1e-7 * max(1.0, abs(lam))))
+            rank = np.linalg.matrix_rank(A - lam * np.eye(A.shape[0]),
+                                         tol=1e-8 * max(1.0, float(np.abs(A).max())))
+            if A.shape[0] - rank < mult:
+                return "polynomially growing"
+        return "semistable"
+    return "asymptotically stable"
 
 
 def classify_propagation(A, horizons=(1e-2, 1e-1, 1.0),
@@ -124,7 +175,8 @@ def classify_propagation(A, horizons=(1e-2, 1e-1, 1.0),
     w = np.linalg.eigvals(A)
     alpha = float(np.max(w.real)) if w.size else 0.0
     gains = {float(h): finite_time_gain(A, h, M=M) for h in horizons}
-    mu = logarithmic_norm(A)
+    mu = logarithmic_norm(A, M)
+    ptype = classify_propagation_type(A, M, tol=neutral_tol)
 
     if alpha > neutral_tol:
         cls = "expanding"
@@ -148,6 +200,7 @@ def classify_propagation(A, horizons=(1e-2, 1e-1, 1.0),
     return PropagationClass(spectral_abscissa=alpha,
                             transient_gains=gains,
                             lognorm=mu,
+                            mu_M=mu, propagation_type=ptype,
                             cls=cls,
                             transient_amplified=amplified,
                             horizons=[float(h) for h in horizons],
@@ -208,8 +261,75 @@ def steady_bound(rho: float, eta: float) -> float:
     return eta / (1.0 - rho)
 
 
+@dataclass
+class CorrectionOperator:
+    """校正算子合同（§6.22 P0-3）：‖e⁺‖ ≤ q‖e⁻‖ + ζ。
+
+    q: 校正后的残余收缩系数（0 表示理想复位，但真实 ADC/DAC/
+       参考模型/状态回注做不到）；ζ: 校正自身引入的新误差上界。
+    合同必须**显式声明** q 与 ζ，不能默认 q=0、ζ=0。
+    """
+    q: float
+    zeta: float
+
+    def residual_bound(self, e_minus: float) -> float:
+        if self.q < 0 or self.zeta < 0:
+            raise ValueError("q/zeta 必须 >= 0")
+        return self.q * e_minus + self.zeta
+
+
+def corrected_recursion(e0_plus: float, gains, etas, qs, zetas) -> dict:
+    """校正闭环递推（§6.22 P0-3）：
+
+        ε_{k+1}⁺ ≤ q_{k+1}·G_k·ε_k⁺ + q_{k+1}·η_k + ζ_{k+1}
+
+    ρ=sup(q_{k+1}G_k)<1 且新增项有统一上界 η̄=sup(qη+ζ) 时，
+    limsup ε⁺ ≤ η̄/(1−ρ)。**不声明 q/ζ 就不能声称长期有界**。
+    返回 dict(eps_plus, rho, eta_bar, steady_bound)。
+    """
+    n = len(gains)
+    if not (len(etas) == len(qs) == len(zetas) == n):
+        raise ValueError("gains/etas/qs/zetas 必须等长")
+    eps = [e0_plus]
+    rho = 0.0
+    eta_bar = 0.0
+    for k in range(n):
+        q, G, eta, zeta = qs[k], gains[k], etas[k], zetas[k]
+        if q < 0 or zeta < 0 or G < 0:
+            raise ValueError("q/zeta/G 必须 >= 0")
+        rho = max(rho, q * G)
+        eta_bar = max(eta_bar, q * eta + zeta)
+        eps.append(q * G * eps[-1] + q * eta + zeta)
+    return dict(eps_plus=eps, rho=rho, eta_bar=eta_bar,
+                steady_bound=(eta_bar / (1.0 - rho) if rho < 1.0
+                              else math.inf))
+
+
+def eta_from_lognorm(mu: float, r_max: float, dT: float) -> float:
+    """对数范数闭式新增误差界（§6.22 P0-2）：
+
+        eta ≤ r_max·(e^{mu·dT} − 1)/mu   (mu != 0)
+        eta ≤ r_max·dT                   (mu = 0)
+
+    前提：mu 是**度量 M 下**的对数范数上界，‖r(t)‖ ≤ r_max。
+    这是 ∫‖Φ(t1,s)‖‖r(s)‖ds 的上界（不必计算逐点 Φ）。
+    """
+    if r_max < 0 or dT < 0:
+        raise ValueError("r_max/dT 必须 >= 0")
+    if mu == 0.0:
+        return r_max * dT
+    v = r_max * math.expm1(mu * dT) / mu
+    if v < 0:
+        raise ValueError("mu>0 时指数界溢出/无效：请缩短时窗")
+    return float(v)
+
+
 def error_recursion_bound(e0: float, gains, etas) -> list:
     """逐窗口误差上界传播 ε_{k+1} = G_k ε_k + η_k（§6.22 的在线估计器）。
+
+    **P0-2**：etas 必须是**保守**新增预算 ∫‖Φ‖‖r‖（或经认证的
+    l1 界），绝不能用 ‖∫r dt‖——注入正负抵消会让后者归零而真实
+    误差非零。
 
     gains/etas 等长。返回每窗口末的界序列（含 k=0 的 e0）。残差小
     不代表界小——初始误差经 G_k 传播的那一项一直在，这正是"必须同时

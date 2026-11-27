@@ -40,12 +40,12 @@
             "projected": false
           },
           "verdict": "pass",
-          "detail": "Γ_proj=1000"
+          "detail": "\u0393_proj=1000"
         },
         "hinf": {
           "value": 1000.0009536742325,
           "verdict": "pass",
-          "detail": "‖H‖∞"
+          "detail": "\u2016H\u2016\u221e"
         },
         "lyapunov": {
           "value": {
@@ -55,7 +55,7 @@
             "method": "direct"
           },
           "verdict": "pass",
-          "detail": "σ_y=22.36 (direct)"
+          "detail": "\u03c3_y=22.36 (direct)"
         }
       },
       "binding_axis": "representation",
@@ -63,8 +63,8 @@
       "error_control": null,
       "rejection_reasons": [],
       "assumptions": [
-        "τ_c/τ_min≪1 white-noise approx (§1.4: finite τ_c gives O(τ_c) Itô bias; σ_y² from generalized Lyapunov assumes white injection)",
-        "ΔA declared conservative — leakage ΔA needs drift budget not Γ_proj (§1.2/P0-D: robustness_A axis only valid for column-sum-preserving ΔA)"
+        "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+        "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
       ]
     },
     "infeasible_kappa": {
@@ -117,12 +117,12 @@
             "projected": false
           },
           "verdict": "pass",
-          "detail": "Γ_proj=1000"
+          "detail": "\u0393_proj=1000"
         },
         "hinf": {
           "value": 1000.0009536742325,
           "verdict": "pass",
-          "detail": "‖H‖∞"
+          "detail": "\u2016H\u2016\u221e"
         },
         "lyapunov": {
           "value": {
@@ -132,7 +132,7 @@
             "method": "direct"
           },
           "verdict": "pass",
-          "detail": "σ_y=22.36 (direct)"
+          "detail": "\u03c3_y=22.36 (direct)"
         }
       },
       "binding_axis": "stiffness",
@@ -140,8 +140,8 @@
       "error_control": null,
       "rejection_reasons": [],
       "assumptions": [
-        "τ_c/τ_min≪1 white-noise approx (§1.4: finite τ_c gives O(τ_c) Itô bias; σ_y² from generalized Lyapunov assumes white injection)",
-        "ΔA declared conservative — leakage ΔA needs drift budget not Γ_proj (§1.2/P0-D: robustness_A axis only valid for column-sum-preserving ΔA)"
+        "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+        "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
       ]
     },
     "nan_not_feasible": {
@@ -190,12 +190,12 @@
             "projected": false
           },
           "verdict": "pass",
-          "detail": "Γ_proj=1000"
+          "detail": "\u0393_proj=1000"
         },
         "hinf": {
           "value": 1000.0009536742325,
           "verdict": "pass",
-          "detail": "‖H‖∞"
+          "detail": "\u2016H\u2016\u221e"
         },
         "lyapunov": {
           "value": {
@@ -205,7 +205,7 @@
             "method": "direct"
           },
           "verdict": "pass",
-          "detail": "σ_y=22.36 (direct)"
+          "detail": "\u03c3_y=22.36 (direct)"
         }
       },
       "binding_axis": "stiffness",
@@ -213,8 +213,8 @@
       "error_control": null,
       "rejection_reasons": [],
       "assumptions": [
-        "τ_c/τ_min≪1 white-noise approx (§1.4: finite τ_c gives O(τ_c) Itô bias; σ_y² from generalized Lyapunov assumes white injection)",
-        "ΔA declared conservative — leakage ΔA needs drift budget not Γ_proj (§1.2/P0-D: robustness_A axis only valid for column-sum-preserving ΔA)"
+        "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+        "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
       ]
     },
     "manifold_empty": {
@@ -263,12 +263,12 @@
             "projected": false
           },
           "verdict": "pass",
-          "detail": "Γ_proj=1000"
+          "detail": "\u0393_proj=1000"
         },
         "hinf": {
           "value": 1000.0009536743114,
           "verdict": "pass",
-          "detail": "‖H‖∞"
+          "detail": "\u2016H\u2016\u221e"
         },
         "lyapunov": {
           "value": {
@@ -278,23 +278,23 @@
             "method": "direct"
           },
           "verdict": "pass",
-          "detail": "σ_y=22.36 (direct)"
+          "detail": "\u03c3_y=22.36 (direct)"
         },
         "manifold": {
           "value": NaN,
           "verdict": "rejected",
-          "detail": "manifold stabilization infeasible: no γ in [γ_min,γ_max]"
+          "detail": "manifold stabilization infeasible: no \u03b3 in [\u03b3_min,\u03b3_max]"
         }
       },
       "binding_axis": "stiffness",
       "constraint": null,
       "error_control": null,
       "rejection_reasons": [
-        "manifold stabilization infeasible: no γ in [γ_min,γ_max]"
+        "manifold stabilization infeasible: no \u03b3 in [\u03b3_min,\u03b3_max]"
       ],
       "assumptions": [
-        "τ_c/τ_min≪1 white-noise approx (§1.4: finite τ_c gives O(τ_c) Itô bias; σ_y² from generalized Lyapunov assumes white injection)",
-        "ΔA declared conservative — leakage ΔA needs drift budget not Γ_proj (§1.2/P0-D: robustness_A axis only valid for column-sum-preserving ΔA)"
+        "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+        "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
       ]
     },
     "manifold_outside": {
@@ -343,12 +343,12 @@
             "projected": false
           },
           "verdict": "pass",
-          "detail": "Γ_proj=1000"
+          "detail": "\u0393_proj=1000"
         },
         "hinf": {
           "value": 1000.0009536743114,
           "verdict": "pass",
-          "detail": "‖H‖∞"
+          "detail": "\u2016H\u2016\u221e"
         },
         "lyapunov": {
           "value": {
@@ -358,23 +358,23 @@
             "method": "direct"
           },
           "verdict": "pass",
-          "detail": "σ_y=22.36 (direct)"
+          "detail": "\u03c3_y=22.36 (direct)"
         },
         "manifold": {
           "value": 10.0,
           "verdict": "rejected",
-          "detail": "manifold stabilization infeasible: chosen γ=10 outside (γ_min=100, γ_max=1e+04)"
+          "detail": "manifold stabilization infeasible: chosen \u03b3=10 outside (\u03b3_min=100, \u03b3_max=1e+04)"
         }
       },
       "binding_axis": "stiffness",
       "constraint": null,
       "error_control": null,
       "rejection_reasons": [
-        "manifold stabilization infeasible: chosen γ=10 outside (γ_min=100, γ_max=1e+04)"
+        "manifold stabilization infeasible: chosen \u03b3=10 outside (\u03b3_min=100, \u03b3_max=1e+04)"
       ],
       "assumptions": [
-        "τ_c/τ_min≪1 white-noise approx (§1.4: finite τ_c gives O(τ_c) Itô bias; σ_y² from generalized Lyapunov assumes white injection)",
-        "ΔA declared conservative — leakage ΔA needs drift budget not Γ_proj (§1.2/P0-D: robustness_A axis only valid for column-sum-preserving ΔA)"
+        "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+        "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
       ]
     },
     "loop": {
@@ -428,12 +428,12 @@
               "projected": false
             },
             "verdict": "pass",
-            "detail": "Γ_proj=3.183e-08"
+            "detail": "\u0393_proj=3.183e-08"
           },
           "hinf": {
             "value": 2.2535976784950246e-08,
             "verdict": "pass",
-            "detail": "‖H‖∞"
+            "detail": "\u2016H\u2016\u221e"
           },
           "lyapunov": {
             "value": {
@@ -443,7 +443,7 @@
               "method": "direct"
             },
             "verdict": "pass",
-            "detail": "σ_y=0.0001262 (direct)"
+            "detail": "\u03c3_y=0.0001262 (direct)"
           },
           "loop": {
             "value": 14.696628367147568,
@@ -456,9 +456,9 @@
         "error_control": null,
         "rejection_reasons": [],
         "assumptions": [
-          "τ_c/τ_min≪1 white-noise approx (§1.4: finite τ_c gives O(τ_c) Itô bias; σ_y² from generalized Lyapunov assumes white injection)",
-          "ΔA declared conservative — leakage ΔA needs drift budget not Γ_proj (§1.2/P0-D: robustness_A axis only valid for column-sum-preserving ΔA)",
-          "loop_margins is a necessary-condition probe, not exact DDE roots (§6.15: σ_min dip on a finite ω grid; scalar_dde_root is the exact 1-DOF analog)"
+          "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+          "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)",
+          "loop_margins is a necessary-condition probe, not exact DDE roots (\u00a76.15: \u03c3_min dip on a finite \u03c9 grid; scalar_dde_root is the exact 1-DOF analog)"
         ]
       },
       "cert_big": {
@@ -507,12 +507,12 @@
               "projected": false
             },
             "verdict": "pass",
-            "detail": "Γ_proj=3.183e-08"
+            "detail": "\u0393_proj=3.183e-08"
           },
           "hinf": {
             "value": 2.2535976784950246e-08,
             "verdict": "pass",
-            "detail": "‖H‖∞"
+            "detail": "\u2016H\u2016\u221e"
           },
           "lyapunov": {
             "value": {
@@ -522,7 +522,7 @@
               "method": "direct"
             },
             "verdict": "pass",
-            "detail": "σ_y=0.0001262 (direct)"
+            "detail": "\u03c3_y=0.0001262 (direct)"
           },
           "loop": {
             "value": 500.6050822917349,
@@ -537,9 +537,9 @@
           "loop sensitivity S_peak=500.6 exceeds threshold 50"
         ],
         "assumptions": [
-          "τ_c/τ_min≪1 white-noise approx (§1.4: finite τ_c gives O(τ_c) Itô bias; σ_y² from generalized Lyapunov assumes white injection)",
-          "ΔA declared conservative — leakage ΔA needs drift budget not Γ_proj (§1.2/P0-D: robustness_A axis only valid for column-sum-preserving ΔA)",
-          "loop_margins is a necessary-condition probe, not exact DDE roots (§6.15: σ_min dip on a finite ω grid; scalar_dde_root is the exact 1-DOF analog)"
+          "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+          "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)",
+          "loop_margins is a necessary-condition probe, not exact DDE roots (\u00a76.15: \u03c3_min dip on a finite \u03c9 grid; scalar_dde_root is the exact 1-DOF analog)"
         ]
       }
     },
@@ -598,12 +598,12 @@
                 "projected": false
               },
               "verdict": "pass",
-              "detail": "Γ_proj=1000"
+              "detail": "\u0393_proj=1000"
             },
             "hinf": {
               "value": 1000.0009536743114,
               "verdict": "pass",
-              "detail": "‖H‖∞"
+              "detail": "\u2016H\u2016\u221e"
             },
             "lyapunov": {
               "value": {
@@ -613,7 +613,7 @@
                 "method": "direct"
               },
               "verdict": "pass",
-              "detail": "σ_y=22.36 (direct)"
+              "detail": "\u03c3_y=22.36 (direct)"
             },
             "multirate": {
               "value": {
@@ -629,9 +629,9 @@
           "error_control": null,
           "rejection_reasons": [],
           "assumptions": [
-            "τ_c/τ_min≪1 white-noise approx (§1.4: finite τ_c gives O(τ_c) Itô bias; σ_y² from generalized Lyapunov assumes white injection)",
-            "ΔA declared conservative — leakage ΔA needs drift budget not Γ_proj (§1.2/P0-D: robustness_A axis only valid for column-sum-preserving ΔA)",
-            "σ_max WR bound sufficient-not-necessary (§4.3: non-normal splits can converge below the σ_max certificate; contract rejects only on ρ_sup≥1)"
+            "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+            "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)",
+            "\u03c3_max WR bound sufficient-not-necessary (\u00a74.3: non-normal splits can converge below the \u03c3_max certificate; contract rejects only on \u03c1_sup\u22651)"
           ]
         }
       },
@@ -689,12 +689,12 @@
                 "projected": false
               },
               "verdict": "pass",
-              "detail": "Γ_proj=1000"
+              "detail": "\u0393_proj=1000"
             },
             "hinf": {
               "value": 1000.0009536743114,
               "verdict": "pass",
-              "detail": "‖H‖∞"
+              "detail": "\u2016H\u2016\u221e"
             },
             "lyapunov": {
               "value": {
@@ -704,7 +704,7 @@
                 "method": "direct"
               },
               "verdict": "pass",
-              "detail": "σ_y=22.36 (direct)"
+              "detail": "\u03c3_y=22.36 (direct)"
             },
             "multirate": {
               "value": {
@@ -712,20 +712,20 @@
                 "k_max": Infinity
               },
               "verdict": "rejected",
-              "detail": "multirate split divergent: rho_sup=1.476 ≥ 1; multirate split illegal: k_max=inf < 1"
+              "detail": "multirate split divergent: rho_sup=1.476 \u2265 1; multirate split illegal: k_max=inf < 1"
             }
           },
           "binding_axis": "stiffness",
           "constraint": null,
           "error_control": null,
           "rejection_reasons": [
-            "multirate split divergent: rho_sup=1.476 ≥ 1",
+            "multirate split divergent: rho_sup=1.476 \u2265 1",
             "multirate split illegal: k_max=inf < 1"
           ],
           "assumptions": [
-            "τ_c/τ_min≪1 white-noise approx (§1.4: finite τ_c gives O(τ_c) Itô bias; σ_y² from generalized Lyapunov assumes white injection)",
-            "ΔA declared conservative — leakage ΔA needs drift budget not Γ_proj (§1.2/P0-D: robustness_A axis only valid for column-sum-preserving ΔA)",
-            "σ_max WR bound sufficient-not-necessary (§4.3: non-normal splits can converge below the σ_max certificate; contract rejects only on ρ_sup≥1)"
+            "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+            "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)",
+            "\u03c3_max WR bound sufficient-not-necessary (\u00a74.3: non-normal splits can converge below the \u03c3_max certificate; contract rejects only on \u03c1_sup\u22651)"
           ]
         }
       }
@@ -753,7 +753,7 @@
           "representation"
         ],
         "reasons": {
-          "noise": "add C only on nodes with large ||H_i||₂ (σ² = αkT/C)"
+          "noise": "add C only on nodes with large ||H_i||\u2082 (\u03c3\u00b2 = \u03b1kT/C)"
         },
         "status": "infeasible"
       },
@@ -779,22 +779,22 @@
             "projected": false
           },
           "verdict": "pass",
-          "detail": "Γ_proj=1"
+          "detail": "\u0393_proj=1"
         },
         "hinf": {
           "value": 0.0,
           "verdict": "pass",
-          "detail": "‖H‖∞"
+          "detail": "\u2016H\u2016\u221e"
         },
         "lyapunov": {
           "value": {
             "sigma_y": Infinity,
             "sigma_y2": Infinity,
             "h2_finite": false,
-            "method": "direct-feedthrough (sys.D≠0, ‖D‖=1.00e+00)"
+            "method": "direct-feedthrough (sys.D\u22600, \u2016D\u2016=1.00e+00)"
           },
           "verdict": "violation",
-          "detail": "σ_y=inf (direct-feedthrough (sys.D≠0, ‖D‖=1.00e+00))"
+          "detail": "\u03c3_y=inf (direct-feedthrough (sys.D\u22600, \u2016D\u2016=1.00e+00))"
         }
       },
       "binding_axis": "noise",
@@ -802,7 +802,7 @@
       "error_control": null,
       "rejection_reasons": [],
       "assumptions": [
-        "ΔA declared conservative — leakage ΔA needs drift budget not Γ_proj (§1.2/P0-D: robustness_A axis only valid for column-sum-preserving ΔA)"
+        "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
       ]
     },
     "metric": {
@@ -855,12 +855,12 @@
               "projected": true
             },
             "verdict": "pass",
-            "detail": "Γ_proj=2"
+            "detail": "\u0393_proj=2"
           },
           "hinf": {
             "value": 0.0,
             "verdict": "pass",
-            "detail": "‖H‖∞"
+            "detail": "\u2016H\u2016\u221e"
           },
           "lyapunov": {
             "value": {
@@ -870,7 +870,7 @@
               "method": "qz"
             },
             "verdict": "pass",
-            "detail": "σ_y=0 (qz)"
+            "detail": "\u03c3_y=0 (qz)"
           }
         },
         "binding_axis": "stiffness",
@@ -878,8 +878,8 @@
         "error_control": null,
         "rejection_reasons": [],
         "assumptions": [
-          "τ_c/τ_min≪1 white-noise approx (§1.4: finite τ_c gives O(τ_c) Itô bias; σ_y² from generalized Lyapunov assumes white injection)",
-          "ΔA declared conservative — leakage ΔA needs drift budget not Γ_proj (§1.2/P0-D: robustness_A axis only valid for column-sum-preserving ΔA)"
+          "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+          "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
         ]
       }
     },
@@ -930,12 +930,12 @@
               "projected": false
             },
             "verdict": "pass",
-            "detail": "Γ_proj=1000"
+            "detail": "\u0393_proj=1000"
           },
           "hinf": {
             "value": 1000.0009536743114,
             "verdict": "pass",
-            "detail": "‖H‖∞"
+            "detail": "\u2016H\u2016\u221e"
           },
           "lyapunov": {
             "value": {
@@ -945,7 +945,7 @@
               "method": "direct"
             },
             "verdict": "pass",
-            "detail": "σ_y=22.36 (direct)"
+            "detail": "\u03c3_y=22.36 (direct)"
           },
           "sde_cert": {
             "value": {
@@ -961,8 +961,8 @@
         "error_control": null,
         "rejection_reasons": [],
         "assumptions": [
-          "τ_c/τ_min≪1 white-noise approx (§1.4: finite τ_c gives O(τ_c) Itô bias; σ_y² from generalized Lyapunov assumes white injection)",
-          "ΔA declared conservative — leakage ΔA needs drift budget not Γ_proj (§1.2/P0-D: robustness_A axis only valid for column-sum-preserving ΔA)"
+          "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+          "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
         ]
       },
       "bad": {
@@ -1011,12 +1011,12 @@
               "projected": false
             },
             "verdict": "pass",
-            "detail": "Γ_proj=1000"
+            "detail": "\u0393_proj=1000"
           },
           "hinf": {
             "value": 1000.0009536743114,
             "verdict": "pass",
-            "detail": "‖H‖∞"
+            "detail": "\u2016H\u2016\u221e"
           },
           "lyapunov": {
             "value": {
@@ -1026,13 +1026,13 @@
               "method": "direct"
             },
             "verdict": "pass",
-            "detail": "σ_y=22.36 (direct)"
+            "detail": "\u03c3_y=22.36 (direct)"
           },
           "sde_cert": {
             "value": {
               "ratio": 0.5,
               "warnings": [
-                "B_noise/B_req = 0.5 < 10：方差亏损 70.5%，白噪声近似失效"
+                "B_noise/B_req = 0.5 < 10\uff1a\u65b9\u5dee\u4e8f\u635f 70.5%\uff0c\u767d\u566a\u58f0\u8fd1\u4f3c\u5931\u6548"
               ]
             },
             "verdict": "rejected",
@@ -1046,8 +1046,8 @@
           "sde_cert noise contract violated: B_noise/B_req=0.5 < 10 (white-noise approximation fails)"
         ],
         "assumptions": [
-          "τ_c/τ_min≪1 white-noise approx (§1.4: finite τ_c gives O(τ_c) Itô bias; σ_y² from generalized Lyapunov assumes white injection)",
-          "ΔA declared conservative — leakage ΔA needs drift budget not Γ_proj (§1.2/P0-D: robustness_A axis only valid for column-sum-preserving ΔA)"
+          "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+          "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)"
         ]
       }
     },
@@ -1091,12 +1091,12 @@
             "projected": false
           },
           "verdict": "pass",
-          "detail": "Γ_proj=1000"
+          "detail": "\u0393_proj=1000"
         },
         "hinf": {
           "value": 1000.0009536743114,
           "verdict": "pass",
-          "detail": "‖H‖∞"
+          "detail": "\u2016H\u2016\u221e"
         },
         "lyapunov": {
           "value": {
@@ -1106,12 +1106,12 @@
             "method": "direct"
           },
           "verdict": "pass",
-          "detail": "σ_y=22.36 (direct)"
+          "detail": "\u03c3_y=22.36 (direct)"
         },
         "manifold": {
           "value": 10.0,
           "verdict": "pass",
-          "detail": "chosen γ=10 ∈ (1, 1e+04)"
+          "detail": "chosen \u03b3=10 \u2208 (1, 1e+04)"
         },
         "loop": {
           "value": 10.0,
@@ -1132,10 +1132,10 @@
       "error_control": null,
       "rejection_reasons": [],
       "assumptions": [
-        "τ_c/τ_min≪1 white-noise approx (§1.4: finite τ_c gives O(τ_c) Itô bias; σ_y² from generalized Lyapunov assumes white injection)",
-        "ΔA declared conservative — leakage ΔA needs drift budget not Γ_proj (§1.2/P0-D: robustness_A axis only valid for column-sum-preserving ΔA)",
-        "loop_margins is a necessary-condition probe, not exact DDE roots (§6.15: σ_min dip on a finite ω grid; scalar_dde_root is the exact 1-DOF analog)",
-        "σ_max WR bound sufficient-not-necessary (§4.3: non-normal splits can converge below the σ_max certificate; contract rejects only on ρ_sup≥1)"
+        "\u03c4_c/\u03c4_min\u226a1 white-noise approx (\u00a71.4: finite \u03c4_c gives O(\u03c4_c) It\u00f4 bias; \u03c3_y\u00b2 from generalized Lyapunov assumes white injection)",
+        "\u0394A declared conservative \u2014 leakage \u0394A needs drift budget not \u0393_proj (\u00a71.2/P0-D: robustness_A axis only valid for column-sum-preserving \u0394A)",
+        "loop_margins is a necessary-condition probe, not exact DDE roots (\u00a76.15: \u03c3_min dip on a finite \u03c9 grid; scalar_dde_root is the exact 1-DOF analog)",
+        "\u03c3_max WR bound sufficient-not-necessary (\u00a74.3: non-normal splits can converge below the \u03c3_max certificate; contract rejects only on \u03c1_sup\u22651)"
       ]
     }
   },
@@ -1177,13 +1177,13 @@
       "passed": true
     },
     {
-      "name": "manifold empty window → rejected",
+      "name": "manifold empty window \u2192 rejected",
       "got": "rejected",
       "expected": "rejected",
       "passed": true
     },
     {
-      "name": "manifold chosen outside window → rejected",
+      "name": "manifold chosen outside window \u2192 rejected",
       "got": "rejected",
       "expected": "rejected",
       "passed": true
@@ -1201,26 +1201,26 @@
       "passed": true
     },
     {
-      "name": "loop delayed past τ_ex: S_peak blows up → rejected",
+      "name": "loop delayed past \u03c4_ex: S_peak blows up \u2192 rejected",
       "got": "500.6",
-      "expected": "≥ 50, rejected",
+      "expected": "\u2265 50, rejected",
       "passed": true
     },
     {
-      "name": "loop: S_peak(delayed) ≫ S_peak(baseline)",
+      "name": "loop: S_peak(delayed) \u226b S_peak(baseline)",
       "got": "500.6 vs 10.04",
-      "expected": "≥ 10×",
+      "expected": "\u2265 10\u00d7",
       "passed": true
     },
     {
-      "name": "multirate convergent: ρ_sup<1, k_max≥1, no rejection",
-      "got": "ρ=0.7379 k=20",
-      "expected": "<1, ≥1, pass",
+      "name": "multirate convergent: \u03c1_sup<1, k_max\u22651, no rejection",
+      "got": "\u03c1=0.7379 k=20",
+      "expected": "<1, \u22651, pass",
       "passed": true
     },
     {
-      "name": "multirate divergent: ρ_sup≥1 → rejected",
-      "got": "ρ=1.4757",
+      "name": "multirate divergent: \u03c1_sup\u22651 \u2192 rejected",
+      "got": "\u03c1=1.4757",
       "expected": "rejected",
       "passed": true
     },
@@ -1231,31 +1231,31 @@
       "passed": true
     },
     {
-      "name": "D feedthrough: H2=∞ → noise axis inf → infeasible",
+      "name": "D feedthrough: H2=\u221e \u2192 noise axis inf \u2192 infeasible",
       "got": "infeasible (noise=inf)",
       "expected": "infeasible, binding=noise",
       "passed": true
     },
     {
-      "name": "metric path: projected Γ_M finite on conservation system",
+      "name": "metric path: projected \u0393_M finite on conservation system",
       "got": "2 (projected=True)",
       "expected": "finite",
       "passed": true
     },
     {
-      "name": "metric matters: Γ_M ≠ bare Γ_proj",
+      "name": "metric matters: \u0393_M \u2260 bare \u0393_proj",
       "got": "2 vs 2.077",
-      "expected": "ratio ≠ 1",
+      "expected": "ratio \u2260 1",
       "passed": true
     },
     {
-      "name": "sde_cert good: pass (B_noise/B_req≥100)",
+      "name": "sde_cert good: pass (B_noise/B_req\u2265100)",
       "got": "no violation on evaluated axes",
       "expected": "no violation on evaluated axes",
       "passed": true
     },
     {
-      "name": "sde_cert bad (B_noise/B_req<10) → rejected",
+      "name": "sde_cert bad (B_noise/B_req<10) \u2192 rejected",
       "got": "rejected",
       "expected": "rejected",
       "passed": true
@@ -1263,11 +1263,11 @@
     {
       "name": "assumptions non-empty and cover evaluated contracts",
       "got": "4 items",
-      "expected": "contains: ΔA declared conserva; τ_c/τ_min≪1; loop_margins; σ_max WR bound",
+      "expected": "contains: \u0394A declared conserva; \u03c4_c/\u03c4_min\u226a1; loop_margins; \u03c3_max WR bound",
       "passed": true
     },
     {
-      "name": "NaN axis ⇒ NOT verbatim 'feasible'",
+      "name": "NaN axis \u21d2 NOT verbatim 'feasible'",
       "got": "no violation on evaluated axes",
       "expected": "no violation on evaluated axes",
       "passed": true
@@ -1276,15 +1276,5 @@
   "summary": {
     "n_checks": 22,
     "n_passed": 22
-  },
-  "_meta": {
-    "git_sha": "be94f64b39dcfaf84821608166c9313d92877908",
-    "git_dirty": true,
-    "bench_module": "bench.run_compiler",
-    "command": "python3 -m bench.run_compiler",
-    "timestamp_utc": "2026-11-27T02:29:17+00:00",
-    "python_version": "3.13.5",
-    "numpy_version": "2.2.4",
-    "scipy_version": "1.15.3"
   }
 }

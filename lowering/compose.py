@@ -270,7 +270,10 @@ def run_chain(source, *, B_hw: float, kappa_hw: float, v_swing: float = 1.0,
               basis_candidates: tuple | None = None,
               field=None, dx: float = 1.0,
               delta_A_norm: float = 1e-3, tol_l2: float = 1e-2,
-              sigma_req=None, gamma_M=None, hinf=None) -> ChainResult:
+              sigma_req=None, gamma_M=None, hinf=None,
+              error_control=None, require_error_control=False,
+              qoi=None, eps_J=None, T_horizon=None,
+              device_sensitivities=None) -> ChainResult:
     """描述符产线负载走整条编译链，返回结构化结果。
 
     链序（每个 stage 声明坐标系）：
@@ -503,12 +506,18 @@ def run_chain(source, *, B_hw: float, kappa_hw: float, v_swing: float = 1.0,
     spec_h = HardwareSpec(kappa_hw=kappa_hw, B_hw=B_hw, sigma_req=sigma_req,
                           delta_A_norm=delta_A_norm, tol_l2=tol_l2)
     cert = evaluate_sys(desc_final_masked, spec_h, scaling=sc_final,
-                        gamma_M=gamma_M, hinf=hinf)
+                        gamma_M=gamma_M, hinf=hinf,
+                        error_control=error_control,
+                        require_error_control=require_error_control)
     stages.append(StageRecord(
         "cert", coords + "(physical)", "certificate",
         summary=dict(status=cert.status, binding_axis=cert.binding_axis),
         notes=["evaluate_sys on the SAME masked descriptor + scaling that "
-               "contracts/p7 consume (one coordinate system end-to-end)"]))
+               "contracts/p7 consume (one coordinate system end-to-end)",
+               "error-control evidence %s (require=%s); QoI/eps_J/T_horizon "
+               "forwarded to p7"
+               % ("attached" if error_control is not None else "absent",
+                  require_error_control)]))
 
     # ---- 7. interface（field 域证据；F3 的显式声明边界）----------------------
     ir = None
@@ -576,7 +585,9 @@ def run_chain(source, *, B_hw: float, kappa_hw: float, v_swing: float = 1.0,
                "bandwidth() (physical-time hand-off, F4 positive check)"]))
 
     from lowering.p7 import generate_config
-    cfg = generate_config(_Wrap, cert, sc_final)
+    cfg = generate_config(_Wrap, cert, sc_final, qoi=qoi, eps_J=eps_J,
+                          T_horizon=T_horizon,
+                          device_sensitivities=device_sensitivities)
 
     # ---- 9. F5 断言：契约边集 == coeff 边集 ----------------------------------
     contract_pairs = sorted((int(c["i"]), int(c["j"]))

@@ -1095,6 +1095,22 @@ Lorenz (σ=10,ρ=28,β=8/3) 的有限时间 Lyapunov 指数由**双轨发散斜�
 统计合同（Level 2，§1）：8 成员系综 + 有界偏置/噪声注入，指定 QoI（z 均值）相对误差 0.007 ≤ 0.1、协方差相对 Frobenius 误差 0.048 ≤ 0.2——统计稳健与轨迹失效并存，证明混沌问题必须走双轨（QoI 合同 ≠ 初值跟踪）。证书：expanding + finite_horizon=True + QoI 稳健 ⇒ pass；无 finite_horizon ⇒ rejected（不许诺无限时窗）。诚实边界：ensemble 统计不是严格 shadowing，也不恢复初值解。
 
 
+
+**P0 审查修复（2026-11-27，bench 133/133）：**
+
+- **P0-2 残差语义**：WindowResidual 拆分 residual_signed（∫r，诊断/校正）、residual_l1_bound（∫‖r‖）、propagated_residual（∫‖Φ‖‖r‖）；eta 取传播加权积分 + 求积误差，不再是 ‖∫r‖。反例 ė=−e+r（+1/−1）实测 signed≈2e-4、真实 |e(2)|=0.3998、传播界 0.8637 覆盖——signed 预算会给 0。lognorm 闭式 r_max(e^{μΔT}−1)/μ=0.8647 与传播积分一致。
+- **P0-3 校正算子合同**：CorrectionOperator(q,ζ) + corrected_recursion（ε⁺≤qGε⁺+qη+ζ，ρ=sup(qG)<1 才给 η̄/(1−ρ)）。signed 扣除校正实测 q_max=53.5 ⇒ ρ>1 被否证（负对照）；独立参考 + 状态回注 q=0.157、ζ 显式、ρ=0.153 <1，40/40 覆盖、长期界 8.84e-4 罩住实测 ε⁺ 3.53e-5——不再假设 q=0 或用 mean(η)。
+- **P0-4 证书双轨强制**：_error_control_verdict 拒绝 qoi 负方向大误差（取 |δJ|+B_remainder）、e_measured/e_predicted NaN、coverage 不在 [0,1]、finite_horizon 无具体 horizon_T、界覆盖通过但 predicted>ε_global（精度与覆盖独立）、QoI 余项推高、workload 要求但缺 evidence（require_error_control）；默认向后兼容。
+- **P0-5 P7 绝对灵敏度与端口**：port_sensitivities 按硬件误差端口分别算 K_i=∫|λᵀ∂F/∂θ_i|dt（offset/gm/ΔA x/cap/−E⁻¹ΔE ẋ）；allocate_element_budgets(absolute=True) 保留 ΣK 前置因子——K 翻倍预算减半（归一化会漏掉）；不可行分配（budget<floor）在 P7 flag + P6 拒绝。实测三端口 K=1.264/1.164/0.919。
+
+
+**审查 6–9 收口（2026-11-27，bench 154/154）：**
+
+- **审查6 传播分类五分法 + μ_M**：新增 classify_propagation_type（contractive / asymptotically stable / semistable / polynomially growing / expanding）与能量度量对数范数 μ_M=λ_max[½M^{-1/2}(AᵀM+MA)M^{-1/2}]；μ_M 与 finite_time_gain(A,t,M) 同口径。实测 M=diag(1,1e4) 可把非正规 [[−1,100],[0,−1]] 从 asymptotically stable 预条件成 contractive（μ_M=−0.5）——状态缩放不可只看 μ₂。
+- **审查7 descriptor/非线性/激波/熵**：descriptor 奇异性改用相对奇异值/条件数（E=1e-3 I_64 的 det=1e-192 不再误判）；P7 的 qoi_adjoint_for_config 在 E≠I 时走 (E⁻¹A)ᵀ 并夹 E⁻¹（末节点放大 3.3e27×）；非线性 DWR 增加训练/验证分离覆盖（训练分位 0.95 ⇒ 独立验证覆盖 0.92，诚实标注无 Hessian/Lipschitz 严格界）；evolve_shock_interfaces 引入永久 interface_id/region_id/源生命周期擦除 + merge 事件 3×6 Jacobian（三激波链实测 id 绑定不因合并下标变化而错）；熵系统补相对熵半离散率（EC=0/upwind<0/反耗散>0）与标量保正性（upwind min=0、反耗散 min<0）。
+- **审查8 混沌双合同**：trajectory contract 的预测界 δ0·e^{λt}（吸引子尺度封顶）实测覆盖 99%，不再拿 e_measured=e_predicted 恒等自证；statistical contract 用 8 成员独立参考系综（不同 IC）+ burn-in T<20 + 自相关 τ_int=5.9 ⇒ N_eff=33.7 + 置信区间，QoI 差 0.005 ≤ CI 0.126；λ_fit 明确标注为样本内估计、非最坏上界；证书引入 coverage_threshold 字段（默认 1.0，统计合同可显式 0.95）。
+- **审查9 run_chain error-aware**：run_chain 接受 error_control / require_error_control / qoi / eps_J / T_horizon / device_sensitivities，端到端传给 evaluate_sys 与 generate_config；回归确认证书挂动态证据 pass、p7 出 dJ-allocation 预算、缺 evidence 且 workload 要求 ⇒ rejected。
+
 **剩余路线（2026-11-27 收口，按依赖序；已完成项见上六轮）：**
 
 1. ~~**运行时源的 dwell-time 界面演化**~~（✅ 2026-11-27 已实现：`evolve_shock_interfaces` 界面状态演化器 + 值带注源 FV 对账，dwell 衰减因子实测 0.26 ≈ 解析 0.3，见上 dwell-time 小节）

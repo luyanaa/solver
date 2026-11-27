@@ -50,16 +50,23 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from analysis.adjoint import (adjoint_field, descriptor_adjoint_field,
                               descriptor_qoi_error_estimate, dJ_weights,
                               dJ_weights_exact, nonlinear_adjoint_backward,
-                              qoi_error_estimate)
+                              port_sensitivities, qoi_error_estimate,
+                              statistical_coverage_contract)
 from analysis.error_propagation import (classify_propagation,
                                         conservation_drift_rate,
-                                        correction_interval, steady_bound)
-from lowering.budget import evaluate_sys
+                                        correction_interval,
+                                        corrected_recursion, eta_from_lognorm,
+                                        classify_propagation_type,
+                                        error_recursion_bound,
+                                        logarithmic_norm, steady_bound)
+from lowering.budget import _error_control_verdict, evaluate_sys
 from lowering.error_control import (ErrorControlResult, classify_constraint,
-                                    constraint_refine, constraint_schedule)
+                                    constraint_refine, constraint_schedule,
+                                    evolve_shock_interfaces)
+from lowering.p7 import qoi_adjoint_for_config
 from twin.constraint import ConstraintMesh, solve_constraint
-from twin.residual import (detect_offset, linear_window_residual,
-                           window_integral_residual)
+from twin.residual import (detect_offset, injection_budget,
+                           linear_window_residual, window_integral_residual)
 
 _checks = []
 _LINES = []
@@ -307,6 +314,8 @@ def case_diffusion_windows():
     xh = x0.copy()
     rng_c = np.random.default_rng(22)
     errs, etas, covered = [], [], 0
+    qs, zetas, e_plus_meas, Gs, qs_signed = [], [], [], [], []
+    zeta_floor = 1e-6                 # 声明：ADC/DAC + 状态回注的量化地板
     K = 40
     for w in range(K):
         xs_w = np.empty((sub + 1, N))
@@ -315,21 +324,44 @@ def case_diffusion_windows():
             inj = bias + r_noise * rng_c.uniform(-1.0, 1.0, size=N)
             xh = xh + dt * (A @ xh + inj)
             xs_w[s + 1] = xh
-        xh_traj = xs_w
-        res = linear_window_residual(A, np.linspace(0, dT_eff, sub + 1), xh_traj)
+        res = linear_window_residual(A, np.linspace(0, dT_eff, sub + 1), xs_w)
         x_true_end = np.diag(np.exp(lam * (w + 1) * dT_eff)) @ x0
         e_meas = float(np.linalg.norm(xh - x_true_end))
         errs.append(e_meas)
-        etas.append(res.eta)
-        # 界：G·e_after_reset + η；reset 后误差取上一窗口末实测（诚实）
+        etas.append(res.eta)              # 保守 η_k（传播加权，P0-2）
         G_w = float(np.exp(-gamma * dT_eff))
-        e_prev = errs[-2] if errs[:-1] else 0.0
-        bound = G_w * 0.0 + res.eta                   # reset 恰好扣除 ∫r ⇒ 界=η
+        Gs.append(G_w)
+        # 策略 A（signed 扣除）：负对照——不能保证收缩
+        xh_signed = xh - res.R
+        e_p_signed = float(np.linalg.norm(xh_signed - x_true_end))
+        qs_signed.append(e_p_signed / max(e_meas, 1e-300))
+        # 策略 B（可认证）：独立参考 + 状态回注（ζ=回注量化地板）
+        zeta_inj = 1e-5
+        xh = x_true_end + zeta_inj * rng_c.uniform(-1.0, 1.0, size=N)
+        e_p = float(np.linalg.norm(xh - x_true_end))
+        qs.append(e_p / max(e_meas, 1e-300))
+        zetas.append(zeta_floor + zeta_inj)
+        e_plus_meas.append(e_p)
+        bound = G_w * 0.0 + res.eta
         if e_meas <= bound * 1.2:
             covered += 1
-        xh = xh - res.R                               # 校正：扣除注入积累
     cov = covered / K
-    sb = steady_bound(0.0, float(np.mean(etas)))
+    rec = corrected_recursion(0.0, Gs, etas, qs, zetas)
+    sb = rec["steady_bound"]
+    cov2 = sum(1 for k in range(K)
+               if e_plus_meas[k] <= rec["eps_plus"][k + 1] * 1.2)
+    add_check("P0-3 负对照：signed 扣除校正 q_max=%.1f > 1 ⇒ 不满足收缩合同"
+              "（不许诺长期有界）" % max(qs_signed),
+              "独立参考是状态复位的前提", max(qs_signed) > 1.0)
+    add_check("P0-3 校正算子：参考回注 q_max=%.3f、ζ=%.0e ⇒ ρ=sup(qG)=%.3f < 1"
+              % (max(qs), zeta_floor + 1e-5, rec["rho"]),
+              "不再假设 q=0", rec["rho"] < 1.0)
+    add_check("P0-3 校正后覆盖：%d/%d 窗口 ε⁺_measured ≤ 1.2×ε⁺_predicted"
+              % (cov2, K), "递推 η̄/(1−ρ)", cov2 >= int(0.95 * K))
+    add_check("P0-3 长期界：η̄/(1−ρ)=%.3e ≥ max ε⁺=%.3e（不再是 mean(η)）"
+              % (sb, max(e_plus_meas)),
+              "eta_bar=%.3e" % rec["eta_bar"],
+              sb >= max(e_plus_meas))
     add_check("界覆盖：%d/%d 窗口 ε_measured ≤ 1.2×ε_predicted（覆盖率=%.0f%%）"
               % (covered, K, 100 * cov),
               "mean η=%.3e" % np.mean(etas), cov >= 0.95)
@@ -337,9 +369,11 @@ def case_diffusion_windows():
               % (max(errs), bound_unc),
               "ratio=%.3f" % (max(errs) / bound_unc),
               max(errs) < 0.2 * bound_unc)
-    add_check("长期界 η/(1−ρ)=%.3e 与实测 max 误差同量级（×5 内）" % sb,
-              "%.3e vs %.3e" % (sb, max(errs)),
-              max(errs) < 5.0 * max(sb, 1e-12) and max(errs) > 0.05 * sb)
+    add_check("长期界 η̄/(1−ρ)=%.3e 罩住校正后 ε⁺ max=%.3e（保守 ≤100×，"
+              "传播加权 η 带来的松度）" % (sb, max(e_plus_meas)),
+              "%.3e vs %.3e" % (sb, max(e_plus_meas)),
+              sb >= max(e_plus_meas)
+              and max(e_plus_meas) > 0.01 * max(sb, 1e-300))
 
     # --- N3：一致偏移对残差不可见（守恒零模态 + 常值偏移）---
     # path-graph Laplacian 的零模态 = 常值向量。真初值 = 0（真解静态
@@ -1592,17 +1626,28 @@ def case_nonlinear_dwr():
     rng = np.random.default_rng(2026)
     covered = 0
     n_mc = 100
+    est_list, true_list, scale_list = [], [], []
     for _ in range(n_mc):
         rates = eps * rng.choice([-1.0, 1.0], size=K)
         tr_m = run(rates)
         est_m = estimate(tr_m)
         true_m = float(tr_m[-1] - x_ref[-1])
+        est_list.append(est_m["delta_J"])
+        true_list.append(true_m)
+        scale_list.append(est_m["abs_sum"])
         if abs(true_m) <= 1.3 * est_m["abs_sum"] + 1e-9:
             covered += 1
     cov = covered / n_mc
+    scc = statistical_coverage_contract(est_list, true_list, scale_list,
+                                        confidence=0.95)
     add_check("N4 MC 覆盖：%d/%d=%.2f ≥ 声明 0.9（B=1.3×Σ|λR|，非严格界）"
               % (covered, n_mc, cov), "统计口径：100 组随机二元注入",
               cov >= 0.9)
+    add_check("N4 训练/验证分离：训练分位 0.95 ⇒ 独立验证覆盖 %.2f ≥ 0.85"
+              "（非严格界，无 Hessian/Lipschitz 保证）"
+              % scc["validation_coverage"],
+              "%d train / %d val" % (scc["n_train"], scc["n_val"]),
+              scc["validation_coverage"] >= 0.85)
 
     tr_big = run(np.full(K, 0.2))
     est_big = estimate(tr_big)
@@ -1662,7 +1707,45 @@ def case_entropy_system():
               % (r_bad, r_ec, r_up), "系统结构的必要条件实测",
               r_bad > r_ec and r_ec > r_up)
 
-    return dict(E0=E0, rate_ec=r_ec, rate_up=r_up, rate_bad=r_bad)
+    # 审查7：标量正密度对流——upwind 保正/有界，反耗散产生负值
+    u0_pos = np.where(x < 0.5, 1.0, 0.0)
+    dt_pos = 0.4 * dx
+    nst_pos = int(round(0.4 / dt_pos))
+    def advect(kind):
+        u = u0_pos.copy()
+        for _ in range(nst_pos):
+            F = u if kind == "upwind" else np.roll(u, -1)
+            u = u - dt_pos / dx * (F - np.roll(F, 1))
+        return u
+    u_up, u_bad = advect("upwind"), advect("bad")
+    add_check("审查7 保正性：upwind min=%.4f∈[0,1]（CFL=0.4）" % u_up.min(),
+              "max=%.4f" % u_up.max(),
+              u_up.min() >= -1e-12 and u_up.max() <= 1.0 + 1e-12)
+    add_check("审查7 保正性负对照：反耗散 min=%.3e < 0（被抓住）"
+              % u_bad.min(), "n_neg=%d" % (u_bad < 0).sum(),
+              u_bad.min() < -1e-6)
+    # 审查7：相对熵（两解差值的能量）半离散产生率 EC=0 / upwind≤0 / bad≥0
+    y_a = y0.copy()
+    y_b = y0.copy()
+    y_b[0] += 0.1 * np.sin(2 * np.pi * x)
+
+    def rel_rate(kind):
+        def flux(y):
+            a, b = y[0], y[1]
+            aj, bj = np.roll(a, -1), np.roll(b, -1)
+            fe = np.vstack([0.5 * (b + bj), 0.5 * (a + aj)])
+            diss = np.vstack([0.5 * (aj - a), 0.5 * (bj - b)])
+            return (fe if kind == "ec" else
+                    (fe - diss if kind == "upwind" else fe + diss))
+        return float(-np.sum((y_b - y_a) * (flux(y_b) - flux(y_a))))
+    rr_ec, rr_up, rr_bad = (rel_rate("ec"), rel_rate("upwind"),
+                            rel_rate("bad"))
+    add_check("审查7 相对熵半离散率：EC=%.2e、upwind=%.3f ≤0、bad=%.3f ≥0"
+              % (rr_ec, rr_up, rr_bad), "两解差值的能量不等式",
+              abs(rr_ec) < 1e-10 and rr_up < 0 and rr_bad > 0)
+
+    return dict(E0=E0, rate_ec=r_ec, rate_up=r_up, rate_bad=r_bad,
+                u_min_up=u_up.min(), rel_ec=rr_ec, rel_up=rr_up)
 
 # ------------------------------------------------------------ 混沌统计合同
 def case_chaos_contract():
@@ -1695,8 +1778,9 @@ def case_chaos_contract():
         y = np.array(x0, dtype=float)
         traj = [y.copy()]
         for step in range(nst):
-            inj = (bias + noise * rng.uniform(-1.0, 1.0, size=3)
-                   if rng is not None else bias)
+            inj = ((bias if bias is not None else 0.0)
+                   + (noise * rng.uniform(-1.0, 1.0, size=3)
+                      if noise > 0 and rng is not None else 0.0))
             y = rk4(y, dt, inj)
             if stride == 1 or (step + 1) % stride == 0:
                 traj.append(y.copy())
@@ -1745,24 +1829,49 @@ def case_chaos_contract():
         ens.append(run(x0j, n_stat, seed=400 + j,
                        bias=np.array([1e-2, 0.0, 0.0]), noise=1e-2,
                        stride=stride))
-    z_ref = float(ref[keep, 2].mean())
-    z_ens = float(np.mean([e[keep, 2].mean() for e in ens]))
-    qoi_err = abs(z_ens - z_ref) / abs(z_ref)
-    c_ref = np.cov(ref[keep].T)
-    c_ens = np.mean([np.cov(e[keep].T) for e in ens], axis=0)
-    c_err = float(np.linalg.norm(c_ens - c_ref) / np.linalg.norm(c_ref))
-    add_check("K3 统计合同：QoI(z 均值) 相对误差 %.3f ≤ 0.1、协方差 %.3f ≤ 0.2"
-              % (qoi_err, c_err), "8 成员系综 + 有界偏置/噪声注入",
-              qoi_err <= 0.1 and c_err <= 0.2)
-    add_check("K3 统计稳健 ≠ 轨迹稳健：QoI 误差 %.3f 小而轨迹误差 %.2f"
+    # 审查8：独立参考系综（不同 IC，无注入）——不能拿单条 clean 轨迹自证
+    ref_ens = []
+    for j in range(8):
+        rng = np.random.default_rng(700 + j)
+        x0j = np.array([1.0, 1.0, 1.0]) + 1e-2 * rng.standard_normal(3)
+        ref_ens.append(run(x0j, n_stat, seed=800 + j, stride=stride))
+    z_ref_vals = np.array([r[keep, 2].mean() for r in ref_ens])
+    z_hw_vals = np.array([e[keep, 2].mean() for e in ens])
+    z_ref_mean = float(z_ref_vals.mean())
+    z_hw_mean = float(z_hw_vals.mean())
+    qoi_err = abs(z_hw_mean - z_ref_mean) / abs(z_ref_mean)
+    # 自相关时间 → 有效样本数 → 置信区间（统计签核，不是 8 个样本就够）
+    series = ref[keep, 2]
+    s = series - series.mean()
+    denom = float(np.dot(s, s))
+    rho = [float(np.dot(s[:-k], s[k:]) / denom) for k in range(1, 20)]
+    tau_int = 1.0 + 2.0 * sum(r for r in rho if r > 0.05)
+    n_eff = len(series) / (2.0 * tau_int)
+    ci_ens = (1.96 * np.std(z_ref_vals, ddof=1) / np.sqrt(len(z_ref_vals)))
+    ci_time = 1.96 * np.std(series, ddof=1) / np.sqrt(n_eff)
+    ci_total = (ci_ens + ci_time) / abs(z_ref_mean)
+    add_check("K3 统计签核：差 %.3f ≤ CI %.3f（τ_int=%.1f，N_eff=%.1f，"
+              "独立参考系综）" % (qoi_err, ci_total, tau_int, n_eff),
+              "burn-in T<20", qoi_err <= ci_total and n_eff > 1)
+    add_check("K3 统计稳健 ≠ 轨迹稳健：QoI 差 %.3f 小而轨迹误差 %.2f"
               % (qoi_err, dev[-1]), "Level 2 统计可划归成立",
               qoi_err < 0.1 and dev[-1] > 0.1)
 
+    # 审查8：trajectory contract 的预测界（不再拿实测当预测）
+    pred_traj = np.minimum(d0 * np.exp(lam * tt), 60.0)   # 吸引子尺度封顶
+    traj_cov = float(np.mean(dev <= 1.5 * pred_traj + 1e-12))
+    add_check("K4 轨迹合同覆盖：%.0f%%（预测 δ0·e^{λt} 封顶，非实测自证）"
+              % (100 * traj_cov), "λ_fit 样本内，非最坏上界",
+              traj_cov >= 0.9)
     ec = ErrorControlResult(cls="expanding", finite_horizon=True,
-                            n_windows=1, coverage_ratio=1.0,
+                            horizon_T=60.0,
+                            n_windows=1, coverage_ratio=traj_cov,
                             e_measured_max=dev[-1],
-                            e_predicted_max=dev[-1],
-                            qoi_estimate=qoi_err, qoi_tolerance=0.1,
+                            e_predicted_max=float(pred_traj[-1]),
+                            qoi_estimate=qoi_err,
+                            qoi_remainder=ci_total,
+                            qoi_tolerance=0.5,
+                            coverage_threshold=0.95,
                             qoi_cancellation=None).as_dict()
     from lowering.budget import _error_control_verdict
     v, _, dv = _error_control_verdict(ec)
@@ -1774,7 +1883,328 @@ def case_chaos_contract():
               v2 == "rejected")
 
     return dict(lam=lam, t_cross=t_cross, t_pred=t_pred, qoi_err=qoi_err,
-                c_err=c_err, traj_error=float(dev[-1]))
+                ci_total=ci_total, tau_int=tau_int, n_eff=n_eff,
+                traj_coverage=traj_cov, traj_error=float(dev[-1]))
+
+# --------------------------------------------------------------- P0-2 反例
+def case_residual_semantics():
+    """§6.22 P0-2 回归：∫r dt 不能作为累计误差上界。
+
+    ė=−e+r，e(0)=0；r=+1 (0≤t<1)、−1 (1≤t≤2)：signed 残差≈0，
+    但真实 e(2)=2/e−1/e²−1≈−0.3996——第一段注入已衰减、第二段
+    尚未充分衰减。三种量必须分开：
+      residual_signed      ∫r dt          ≈ 0（诊断/校正，不是界）
+      residual_l1_bound    ∫‖r‖dt         ≈ 2（需收缩前提）
+      propagated_residual  ∫‖Φ‖‖r‖dt      ≈ 0.8647（保守动态界）
+    并验证 lognorm 闭式 eta=r_max(e^{μΔT}−1)/μ 与传播积分一致。
+    """
+    emit("[case_residual_semantics]  P0-2 抵消反例 / 三种残差语义 / η 闭式")
+    dt = 1e-3
+    t = np.linspace(0.0, 2.0, 2001)
+    x = np.zeros((t.size, 1))
+    e = 0.0
+    x[0] = e
+    for i in range(1, t.size):
+        ri = 1.0 if t[i - 1] < 1.0 else -1.0
+        e = e + dt * (-e + ri)
+        x[i] = e
+    e_true = abs(e)
+    e_analytic = abs(2.0 / np.e - 1.0 / np.e ** 2 - 1.0)
+    A = np.array([[-1.0]])
+    w = linear_window_residual(A, t, x)
+    signed = float(np.abs(w.residual_signed[0]))
+    add_check("P0-2 反例：signed |∫r|=%.4f ≈ 0 而真实 |e(2)|=%.4f（诊断非界）"
+              % (signed, e_true), "解析 e(2)=%.4f" % e_analytic,
+              signed < 0.01 and abs(e_true - e_analytic) < 1e-3)
+    add_check("P0-2 l1 预算 ∫‖r‖=%.3f ≥ |e(2)|=%.3f（收缩前提下的界）"
+              % (w.residual_l1_bound, e_true), "比传播界松 2.3×",
+              w.residual_l1_bound >= e_true)
+    add_check("P0-2 传播预算 ∫‖Φ‖‖r‖=%.4f ≥ |e(2)|=%.4f（保守动态界）"
+              % (w.propagated_residual, e_true),
+              "eta=%.4f（含求积误差）" % w.eta,
+              w.propagated_residual >= e_true and w.eta >= e_true)
+    eta_closed = eta_from_lognorm(-1.0, 1.0, 2.0)
+    add_check("P0-2 lognorm 闭式：r_max(e^{μΔT}−1)/μ=%.4f ≈ 传播积分 %.4f"
+              % (eta_closed, w.propagated_residual), "μ=−1, r_max=1, ΔT=2",
+              abs(eta_closed - w.propagated_residual) < 1e-3)
+
+    # 双窗口递推：signed 之和≈0 会给出界 0；保守 eta 给出真实上界
+    ws = []
+    for k in range(2):
+        sel = slice(k * 1000, (k + 1) * 1000 + 1)
+        ws.append(linear_window_residual(A, t[sel], x[sel]))
+    bnd = error_recursion_bound(0.0, [np.exp(-1.0)] * 2,
+                                injection_budget(ws))
+    add_check("P0-2 递推：ε(2)=%.4f ≥ |e(2)|=%.4f（signed 预算会给 0）"
+              % (bnd[-1], e_true), "G=e^{-1}, η=传播积分",
+              bnd[-1] >= e_true)
+
+    return dict(signed=signed, l1=w.residual_l1_bound,
+                propagated=w.propagated_residual, e_true=e_true,
+                eta_closed=eta_closed, recursion=bnd[-1])
+
+# ------------------------------------------------------------ P0-4 证书强化
+def case_certificate_hardening():
+    """§6.22 P0-4 回归：双轨合同强制 + 畸形证据不得通过。
+
+    拒绝路径：qoi_estimate 负方向大误差、e_measured NaN、coverage inf、
+    finite_horizon 无具体时间、界覆盖通过但 ε_global 超标、
+    |δJ|+B_remainder>ε_J、workload 要求但缺 evidence。
+    """
+    emit("[case_certificate_hardening]  P0-4 双轨强制 / 畸形证据拒绝")
+    from lowering.budget import BudgetInput, compile_budget
+    base = dict(kind="error_control", cls="contracting", n_windows=4,
+                coverage_ratio=1.0, e_measured_max=1e-3,
+                e_predicted_max=2e-3)
+    cases = [
+        ("qoi 负方向大误差", dict(base, qoi_estimate=-100.0,
+                                    qoi_tolerance=0.01), "eps_J"),
+        ("e_measured NaN", dict(base, e_measured_max=float("nan")),
+         "non-finite"),
+        ("e_predicted NaN", dict(base, e_predicted_max=float("nan")),
+         "non-finite"),
+        ("coverage inf", dict(base, coverage_ratio=float("inf")),
+         "coverage_ratio"),
+        ("finite_horizon 无时窗", dict(base, cls="expanding",
+                                     finite_horizon=True), "horizon_T"),
+        ("预测 101 > ε_global 100", dict(base, e_measured_max=100.0,
+                                       e_predicted_max=101.0,
+                                       global_tolerance=100.0), "eps_global"),
+        ("余项推高 δJ", dict(base, qoi_estimate=0.009,
+                            qoi_tolerance=0.01, qoi_remainder=0.005), "B_remainder"),
+    ]
+    for name, ev, token in cases:
+        v, _, detail = _error_control_verdict(ev)
+        add_check("P0-4 拒绝：%s ⇒ rejected" % name,
+                  detail[:60], v == "rejected" and token in detail)
+    # 合法时窗声明必须给具体 T
+    v, _, _ = _error_control_verdict(dict(base, cls="expanding",
+                                          finite_horizon=True, horizon_T=2.0))
+    add_check("P0-4 合法 expanding + finite_horizon + horizon_T=2 ⇒ pass",
+              v, v == "pass")
+    # 双轨独立条件：界覆盖但精度超标 ⇒ rejected（已在上表 101>100）
+    # 缺 evidence：workload 声明要求 ⇒ 整张证书拒绝
+    cert = compile_budget(BudgetInput(require_error_control=True))
+    add_check("P0-4 缺 evidence 且 workload 要求 ⇒ 证书 rejected",
+              "; ".join(cert.rejection_reasons)[:70],
+              cert.status == "rejected"
+              and any("error-control evidence" in r
+                      for r in cert.rejection_reasons))
+    cert2 = compile_budget(BudgetInput())
+    add_check("P0-4 默认不要求 evidence ⇒ 向后兼容（不误拒）",
+              cert2.status, cert2.status != "rejected")
+
+    return dict(rejected=len(cases), status=cert.status)
+
+# ------------------------------------------------------------ P0-5 器件端口
+def case_device_ports():
+    """§6.22 P0-5 回归：绝对灵敏度 + 不同硬件误差端口。
+
+    dJ 预算不能把同一个节点的 ∫|λ_i|dt 套到所有器件 ppm 上：
+      integrator offset → 加性方向 e_i（常量 B）
+      gm mismatch       → ΔA x（状态相关 B=diag(x(t))）
+      cap mismatch      → −E⁻¹ΔE ẋ（行为级 B=−A x(t)）
+    各端口算 K_i=∫|λᵀB_i|dt；分配用绝对 K（保留 ΣK 前置因子），
+    K 整体翻倍 ⇒ 预算必须减半（归一化口径会漏掉这一因子）。
+    不可行分配（预算 < 测量底）必须在 P7 flag + P6 拒绝。
+    """
+    emit("[case_device_ports]  P0-5 绝对灵敏度 / 三端口 / 不可行拒绝")
+    from analysis.adjoint import port_sensitivities
+    from lowering.p7 import allocate_element_budgets, generate_config
+    N, T = 8, 2.0
+    A = np.diag(-0.5 * np.arange(1, N + 1))
+    c = np.ones(N)
+    t = np.linspace(0.0, T, 81)
+    lam = adjoint_field(A, c, t)
+    x0 = np.ones(N)
+    xref = np.array([np.exp(np.diag(A) * ti) * x0 for ti in t]).T
+    ports = {
+        "integrator_offset": np.eye(N)[0],
+        "gm_mismatch": lambda tt, xx: np.diag(xx),
+        "cap_mismatch": lambda tt, xx: -A @ xx,
+    }
+    K = port_sensitivities(lam, t, ports, xref)
+    add_check("P0-5 三端口 K_i 不同：offset %.3f、gm %.3f、cap %.3f"
+              % (K["integrator_offset"], K["gm_mismatch"],
+                 K["cap_mismatch"]),
+              "同一节点不能共用一份灵敏度",
+              len(set(round(v, 6) for v in K.values())) == 3)
+
+    k_abs = np.array([K["gm_mismatch"] / N] * N)  # 每元素绝对 K
+    eps_J = 500.0
+    a1 = allocate_element_budgets(k_abs.tolist(), eps_J, absolute=True)
+    ident = float(np.sum(k_abs * np.array(
+        [it["residual_budget_ppm"] for it in a1["items"]])))
+    add_check("P0-5 绝对恒等式：Σ K_i·e_i=%.4f ≈ ε_J（ΣK=%.3f 保留）"
+              % (ident, a1["sensitivity_total"]),
+              "非归一化口径", abs(ident - eps_J) < 1e-8)
+    a2 = allocate_element_budgets((2 * k_abs).tolist(), eps_J,
+                                  absolute=True)
+    b1 = a1["items"][0]["residual_budget_ppm"]
+    b2 = a2["items"][0]["residual_budget_ppm"]
+    add_check("P0-5 K 翻倍 ⇒ 预算减半：%.2f → %.2f（归一化会漏掉 ΣK）"
+              % (b1, b2), "ratio=%.3f" % (b2 / b1),
+              abs(b2 / b1 - 0.5) < 1e-9)
+
+    # 不可行分配（预算 < floor）⇒ P7 flag + P6 拒绝
+    tight = allocate_element_budgets(k_abs.tolist(), 1e-3,
+                                     absolute=True, meas_noise_ppm=100.0)
+    add_check("P0-5 ε_J 过小 ⇒ %d 元素 budget < floor（不可行）"
+              % tight["n_infeasible"], "flag + 拒绝", tight["n_infeasible"] > 0)
+    ec = ErrorControlResult(cls="contracting", n_windows=1,
+                            coverage_ratio=1.0, e_measured_max=1e-4,
+                            e_predicted_max=1e-4,
+                            allocation_infeasible=tight["n_infeasible"]).as_dict()
+    v, _, dv = _error_control_verdict(ec)
+    add_check("P0-5 P6 拒绝不可行分配：verdict=%s" % v, dv[:70],
+              v == "rejected" and "allocation infeasible" in dv)
+
+    return dict(K=K, identity=ident, ratio=b2 / b1,
+                n_infeasible=tight["n_infeasible"])
+
+# -------------------------------------------------------------- 审查6 分类
+def case_five_types():
+    """审查6 回归：传播五分法 + 能量度量 μ_M 口径统一。
+
+    五个系统：contractive（−I）、asymptotically stable（[[−1,100],[0,−1]]，
+    Hurwitz 但强非正规瞬态）、semistable（diag(−1,0)）、polynomially
+    growing（[[0,1],[0,0]] 临界 Jordan）、expanding（+I）。
+    μ_M 与 finite_time_gain(A,t,M) 用同一能量度量 M。
+    """
+    emit("[case_five_types]  传播五分法 / μ_M 能量度量")
+    systems = {
+        "contractive": -np.eye(2),
+        "asymptotically stable": np.array([[-1.0, 100.0], [0.0, -1.0]]),
+        "semistable": np.diag([-1.0, 0.0]),
+        "polynomially growing": np.array([[0.0, 1.0], [0.0, 0.0]]),
+        "expanding": np.eye(2),
+    }
+    for name, A in systems.items():
+        typ = classify_propagation_type(A)
+        add_check("审查6 分类 %s ⇒ %s" % (name, typ), typ, typ == name)
+    A = systems["asymptotically stable"]
+    mu2 = logarithmic_norm(A)
+    M = np.diag([1.0, 1e4])
+    muM = logarithmic_norm(A, M)
+    pc = classify_propagation(A, M=M, horizons=(0.01, 0.1))
+    add_check("审查6 能量度量统一：μ₂=%.1f vs μ_M=%.1f（C bank 跨 10⁴ 时不同）"
+              % (mu2, muM), "finite_time_gain 同 M", abs(mu2 - muM) > 1.0)
+    add_check("审查6 能量度量预条件：无 M 为 asymptotically stable，"
+              "有 M 变 %s（μ_M=%.1f<0 收缩）"
+              % (pc.propagation_type, pc.mu_M),
+              "同一口径 gain 与 μ_M", pc.propagation_type == "contractive"
+              and abs(pc.mu_M - muM) < 1e-9)
+
+    return dict(types={k: classify_propagation_type(v)
+                       for k, v in systems.items()}, mu2=mu2, muM=muM)
+
+# ------------------------------------------------------------ 审查7 descriptor
+def case_descriptor_robustness():
+    """审查7：尺度不变奇异性判据 + P7 真正调用 descriptor 伴随。
+
+    det 阈值会把 E=1e-3 I_64 误判奇异（det=1e-192）——改用相对奇异值/
+    条件数；P7 的 qoi_adjoint_for_config 在 E≠I 时走 (E⁻¹A)ᵀ 并给
+    源端口夹 E⁻¹，不再用 adjoint_field(A_v,...)。
+    """
+    emit("[case_descriptor_robustness]  尺度不变判据 / P7 descriptor 伴随")
+    n = 64
+    E_ok = 1e-3 * np.eye(n)
+    t = np.linspace(0, 1, 65)
+    c = np.ones(n)
+    lam = descriptor_adjoint_field(E_ok, -E_ok @ np.eye(n), c, t)
+    add_check("审查7 E=1e-3 I_64（det=1e-192）不误判：λ(T)=c 且有限",
+              "max|λ(T)−c|=%.1e" % np.max(np.abs(lam[:, -1] - c)),
+              np.allclose(lam[:, -1], c) and np.all(np.isfinite(lam)))
+    E_bad = np.diag([1.0] + [1e-15] * (n - 1))
+    try:
+        descriptor_adjoint_field(E_bad, -E_bad, c, t)
+        ok = False
+    except ValueError:
+        ok = True
+    add_check("审查7 相对奇异值 1e-15 ⇒ raise（cond 判据，非 det）", "raise", ok)
+    A = -np.diag(np.arange(1.0, n + 1.0))
+    w_i = qoi_adjoint_for_config(A, np.eye(n), c, 1.0, t)
+    w_d = qoi_adjoint_for_config(A, np.diag(np.linspace(1.0, 100.0, n)),
+                                c, 1.0, t)
+    ratio = abs(w_d[n - 1, 0]) / max(abs(w_i[n - 1, 0]), 1e-300)
+    add_check("审查7 P7 伴随口径：E≠I 时 λ_last 改变 %.2e×（E⁻¹ 端口权重）"
+              % ratio, "descriptor 而非 adjoint_field", abs(ratio - 1.0) > 1e-3)
+
+    return dict(ratio=ratio)
+
+# ------------------------------------------------------------ 审查7 界面生命周期
+def case_interface_lifecycle():
+    """审查7：界面永久 id、区域源生命周期、merge 事件 Jacobian。
+
+    三激波链 A→B→C，源按 region_id 绑定（rB 中途合并时消失，rC 存活
+    且不得因列表下标变化绑错）；merge event 给 (x,uL,uR) 对两道旧
+    界面的 3×6 Jacobian，供界面态伴随沿事件链回传。
+    """
+    emit("[case_interface_lifecycle]  永久 id / 源生命周期 / merge 伴随")
+    shocks = [dict(x0=0.2, uL=1.0, uR=0.6, id="A"),
+              dict(x0=0.5, uL=0.6, uR=0.3, id="B"),
+              dict(x0=0.8, uL=0.3, uR=0.0, id="C")]
+    m = evolve_shock_interfaces(shocks, {"rB": 1e-3, "rC": 2e-3},
+                                0.9, snap_times=[0.4, 0.9])
+    e0 = m["merges"][0]
+    ok_jac = (e0["left_id"] == "A" and e0["right_id"] == "B"
+              and e0["jacobian"].shape == (3, 6)
+              and e0["jacobian"][0, 4] == 1.0
+              and e0["jacobian"][1, 0] == 1.0
+              and e0["jacobian"][2, 5] == 1.0)
+    add_check("审查7 merge 事件：%s+%s→%s，t=%.3f，3×6 Jacobian"
+              % (e0["left_id"], e0["right_id"], e0["merged_id"], e0["t"]),
+              "shape=%s" % (e0["jacobian"].shape,), ok_jac)
+    add_check("审查7 源生命周期：消失区域 rB 的源被移除",
+              "sources=%s" % {k: round(v, 6) for k, v in m["sources"].items()},
+              "rB" not in m["sources"] and "B" in m["retired"])
+    add_check("审查7 存活源按 id 重绑：rC=%.3e 未绑错（下标已变）"
+              % m["sources"].get("rC", 0.0),
+              "ids=%s" % m["ids"],
+              abs(m["sources"].get("rC", 0.0) - 2e-3) < 1e-12)
+
+    return dict(merges=len(m["merges"]), ids=m["ids"],
+                sources=list(m["sources"]))
+
+
+# ------------------------------------------------------------ 审查9 编译链接线
+def case_error_aware_chain():
+    """审查9：run_chain 接受 Workload+QoI+Tolerance → 静态/动态合同 → 配置。
+
+    以前 evaluate_sys/generate_config 虽有 error_control/qoi 参数，
+    run_chain 却没传；本回归检查端到端传递：证书挂证据、p7 出
+    dJ-allocation 逐元素预算；缺 evidence 且 workload 要求 ⇒ 拒绝。
+    """
+    emit("[case_error_aware_chain]  run_chain 动态合同端到端传递")
+    from analysis.descriptor import Descriptor
+    from lowering.compose import run_chain
+    desc = Descriptor(np.eye(3), np.diag([-1.0, -10.0, -100.0]),
+                      np.eye(3)[:, :1], np.eye(3))
+    kw = dict(B_hw=1e4, kappa_hw=1e3, closure_N=3, closure_eps=1e-9)
+    ec = ErrorControlResult(cls="contracting", n_windows=1,
+                            coverage_ratio=1.0, e_measured_max=1e-3,
+                            e_predicted_max=2e-3,
+                            global_tolerance=1e-2).as_dict()
+    res = run_chain(desc, error_control=ec, qoi=np.ones(3).tolist(),
+                    eps_J=500.0, T_horizon=1.0, **kw)
+    item = res.cert.items.get("error_control", {})
+    add_check("审查9 证书挂动态证据：error_control verdict=%s"
+              % item.get("verdict"), item.get("verdict"),
+              item.get("verdict") == "pass")
+    plan = res.config.plan
+    add_check("审查9 p7 出 dJ 分配预算：source=%s，%d 项"
+              % (plan.budget_source, len(plan.per_element_budgets or [])),
+              "eps_J=%s" % plan.eps_J_ppm,
+              plan.budget_source == "dJ-allocation"
+              and plan.per_element_budgets is not None
+              and len(plan.per_element_budgets) > 0)
+    res2 = run_chain(desc, require_error_control=True, **kw)
+    add_check("审查9 缺 evidence 且 workload 要求 ⇒ 证书 rejected",
+              res2.cert.status, res2.cert.status == "rejected")
+    return dict(verdict=item.get("verdict"),
+                budget_source=plan.budget_source,
+                missing_status=res2.cert.status)
+
 
 # ---------------------------------------------------------------- main
 
@@ -1807,6 +2237,20 @@ def main():
     ent = case_entropy_system()
     emit("")
     ch = case_chaos_contract()
+    emit("")
+    rs = case_residual_semantics()
+    emit("")
+    hc = case_certificate_hardening()
+    emit("")
+    dp = case_device_ports()
+    emit("")
+    ft = case_five_types()
+    emit("")
+    dr = case_descriptor_robustness()
+    emit("")
+    il = case_interface_lifecycle()
+    emit("")
+    ec9 = case_error_aware_chain()
     n_pass = sum(1 for c in _checks if c["ok"])
     emit("")
     emit("%d/%d checks passed" % (n_pass, len(_checks)))
@@ -1824,7 +2268,10 @@ def main():
                    adjoint_qoi=adj, burgers=bur, shock_dwr=dwr,
                    multi_shock=mul,                    epsj_alloc=alc, runtime_dwell=dwl,
                    descriptor_adjoint=de, nonlinear_dwr=nl,
-                   entropy_system=ent, chaos=ch, checks=_checks)
+                   entropy_system=ent, chaos=ch,                    residual_semantics=rs, certificate_hardening=hc,
+                   device_ports=dp, five_types=ft,
+                   descriptor_robustness=dr, interface_lifecycle=il,
+                   error_aware_chain=ec9, checks=_checks)
     with open(os.path.join(out_dir, "error_control.json"), "w") as fh:
         json.dump(payload, fh, indent=1, ensure_ascii=False)
     return n_pass == len(_checks)

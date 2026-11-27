@@ -24,8 +24,8 @@
   "bound_sat": 0.39709632009369134,
   "coverage": 1.0,
   "e_corrected_max": 0.0008116524192551438,
-  "eta_mean": 0.0016939986964306475,
-  "steady_bound": 0.0016939986964306475,
+  "eta_mean": 0.004744507823921169,
+  "steady_bound": 0.0008838877053542633,
   "n3_residual": 0.0,
   "n3_error": 1.4142135623730951
  },
@@ -144,7 +144,7 @@
   "identity": 5.684341886080802e-14,
   "b_hi": 241.20278074584263,
   "b_lo": 1067.5916325915616,
-  "n_flag_p7": 3
+  "n_flag_p7": 1
  },
  "runtime_dwell": {
   "dX_fv": 0.0001564290607998231,
@@ -174,15 +174,72 @@
   "E0": 0.5,
   "rate_ec": -0.0,
   "rate_up": -3.0,
-  "rate_bad": 3.0
+  "rate_bad": 3.0,
+  "u_min_up": 3.4329730160322324e-09,
+  "rel_ec": -0.0,
+  "rel_up": -0.00038545401434483443
  },
  "chaos": {
   "lam": 0.7178363170542339,
   "t_cross": 27.800000000000004,
   "t_pred": 25.661394257042932,
-  "qoi_err": 0.007024689804674693,
-  "c_err": 0.04804322629153463,
+  "qoi_err": 0.004600259573948518,
+  "ci_total": 0.12570225980959118,
+  "tau_int": 5.94729887722383,
+  "n_eff": 33.71278359119433,
+  "traj_coverage": 0.9916805324459235,
   "traj_error": 31.541611876689146
+ },
+ "residual_semantics": {
+  "signed": 0.00019990453792761986,
+  "l1": 1.9990000000000003,
+  "propagated": 0.8636652885688629,
+  "e_true": 0.3998090758555718,
+  "eta_closed": 0.8646647167633873,
+  "recursion": 0.8632978429984748
+ },
+ "certificate_hardening": {
+  "rejected": 7,
+  "status": "rejected"
+ },
+ "device_ports": {
+  "K": {
+   "integrator_offset": 1.264257579087133,
+   "gm_mismatch": 1.1635629508677239,
+   "cap_mismatch": 0.9188028911407233
+  },
+  "identity": 500.0,
+  "ratio": 0.5,
+  "n_infeasible": 8
+ },
+ "five_types": {
+  "types": {
+   "contractive": "contractive",
+   "asymptotically stable": "asymptotically stable",
+   "semistable": "semistable",
+   "polynomially growing": "polynomially growing",
+   "expanding": "expanding"
+  },
+  "mu2": 48.99999999999999,
+  "muM": -0.5
+ },
+ "descriptor_robustness": {
+  "ratio": 3.2877468730909435e+27
+ },
+ "interface_lifecycle": {
+  "merges": 1,
+  "ids": [
+   "m0",
+   "C"
+  ],
+  "sources": [
+   "rC"
+  ]
+ },
+ "error_aware_chain": {
+  "verdict": "pass",
+  "budget_source": "dJ-allocation",
+  "missing_status": "rejected"
  },
  "checks": [
   {
@@ -282,8 +339,32 @@
    "kind": "error_control"
   },
   {
+   "name": "P0-3 负对照：signed 扣除校正 q_max=53.5 > 1 ⇒ 不满足收缩合同（不许诺长期有界）",
+   "value": "独立参考是状态复位的前提",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-3 校正算子：参考回注 q_max=0.157、ζ=1e-05 ⇒ ρ=sup(qG)=0.153 < 1",
+   "value": "不再假设 q=0",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-3 校正后覆盖：40/40 窗口 ε⁺_measured ≤ 1.2×ε⁺_predicted",
+   "value": "递推 η̄/(1−ρ)",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-3 长期界：η̄/(1−ρ)=8.839e-04 ≥ max ε⁺=3.530e-05（不再是 mean(η)）",
+   "value": "eta_bar=7.484e-04",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
    "name": "界覆盖：40/40 窗口 ε_measured ≤ 1.2×ε_predicted（覆盖率=100%）",
-   "value": "mean η=1.694e-03",
+   "value": "mean η=4.745e-03",
    "ok": true,
    "kind": "error_control"
   },
@@ -294,8 +375,8 @@
    "kind": "error_control"
   },
   {
-   "name": "长期界 η/(1−ρ)=1.694e-03 与实测 max 误差同量级（×5 内）",
-   "value": "1.694e-03 vs 8.117e-04",
+   "name": "长期界 η̄/(1−ρ)=8.839e-04 罩住校正后 ε⁺ max=3.530e-05（保守 ≤100×，传播加权 η 带来的松度）",
+   "value": "8.839e-04 vs 3.530e-05",
    "ok": true,
    "kind": "error_control"
   },
@@ -648,7 +729,7 @@
    "kind": "error_control"
   },
   {
-   "name": "P7 集成：per_element_budgets 发射（65 项，3 flagged），budget_source=dJ-allocation",
+   "name": "P7 集成：per_element_budgets 发射（65 项，1 flagged），budget_source=dJ-allocation",
    "value": "eps_J=500",
    "ok": true,
    "kind": "error_control"
@@ -756,6 +837,12 @@
    "kind": "error_control"
   },
   {
+   "name": "N4 训练/验证分离：训练分位 0.95 ⇒ 独立验证覆盖 0.92 ≥ 0.85（非严格界，无 Hessian/Lipschitz 保证）",
+   "value": "50 train / 50 val",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
    "name": "N5 大注入 ε=0.2：相对误差 7% ≫ 小注入 0.0%（不承诺）",
    "value": "非线性 DWR 有界非线性区间",
    "ok": true,
@@ -782,6 +869,24 @@
   {
    "name": "S4 熵产生排序：bad 3.0000 > ec -0.0000 > upwind -3.0000",
    "value": "系统结构的必要条件实测",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查7 保正性：upwind min=0.0000∈[0,1]（CFL=0.4）",
+   "value": "max=1.0000",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查7 保正性负对照：反耗散 min=-2.009e+31 < 0（被抓住）",
+   "value": "n_neg=64",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查7 相对熵半离散率：EC=-0.00e+00、upwind=-0.000 ≤0、bad=0.000 ≥0",
+   "value": "两解差值的能量不等式",
    "ok": true,
    "kind": "error_control"
   },
@@ -816,14 +921,20 @@
    "kind": "error_control"
   },
   {
-   "name": "K3 统计合同：QoI(z 均值) 相对误差 0.007 ≤ 0.1、协方差 0.048 ≤ 0.2",
-   "value": "8 成员系综 + 有界偏置/噪声注入",
+   "name": "K3 统计签核：差 0.005 ≤ CI 0.126（τ_int=5.9，N_eff=33.7，独立参考系综）",
+   "value": "burn-in T<20",
    "ok": true,
    "kind": "error_control"
   },
   {
-   "name": "K3 统计稳健 ≠ 轨迹稳健：QoI 误差 0.007 小而轨迹误差 31.54",
+   "name": "K3 统计稳健 ≠ 轨迹稳健：QoI 差 0.005 小而轨迹误差 31.54",
    "value": "Level 2 统计可划归成立",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "K4 轨迹合同覆盖：99%（预测 δ0·e^{λt} 封顶，非实测自证）",
+   "value": "λ_fit 样本内，非最坏上界",
    "ok": true,
    "kind": "error_control"
   },
@@ -835,6 +946,222 @@
   },
   {
    "name": "K4 负对照：expanding 无 finite_horizon ⇒ rejected",
+   "value": "rejected",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-2 反例：signed |∫r|=0.0002 ≈ 0 而真实 |e(2)|=0.3998（诊断非界）",
+   "value": "解析 e(2)=0.3996",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-2 l1 预算 ∫‖r‖=1.999 ≥ |e(2)|=0.400（收缩前提下的界）",
+   "value": "比传播界松 2.3×",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-2 传播预算 ∫‖Φ‖‖r‖=0.8637 ≥ |e(2)|=0.3998（保守动态界）",
+   "value": "eta=0.8637（含求积误差）",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-2 lognorm 闭式：r_max(e^{μΔT}−1)/μ=0.8647 ≈ 传播积分 0.8637",
+   "value": "μ=−1, r_max=1, ΔT=2",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-2 递推：ε(2)=0.8633 ≥ |e(2)|=0.3998（signed 预算会给 0）",
+   "value": "G=e^{-1}, η=传播积分",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-4 拒绝：qoi 负方向大误差 ⇒ rejected",
+   "value": "error_control eps_J violated: |qoi_estimate| 100 + B_remaind",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-4 拒绝：e_measured NaN ⇒ rejected",
+   "value": "error_control e_measured_max non-finite: not a pass",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-4 拒绝：e_predicted NaN ⇒ rejected",
+   "value": "error_control e_predicted_max non-finite: not a pass",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-4 拒绝：coverage inf ⇒ rejected",
+   "value": "error_control coverage_ratio inf not finite in [0,1]",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-4 拒绝：finite_horizon 无时窗 ⇒ rejected",
+   "value": "error_control finite_horizon=True without a concrete positiv",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-4 拒绝：预测 101 > ε_global 100 ⇒ rejected",
+   "value": "error_control eps_global accuracy violated: predicted 101 > ",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-4 拒绝：余项推高 δJ ⇒ rejected",
+   "value": "error_control eps_J violated: |qoi_estimate| 0.009 + B_remai",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-4 合法 expanding + finite_horizon + horizon_T=2 ⇒ pass",
+   "value": "pass",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-4 缺 evidence 且 workload 要求 ⇒ 证书 rejected",
+   "value": "error-control evidence required by workload but not supplied: dynamic ",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-4 默认不要求 evidence ⇒ 向后兼容（不误拒）",
+   "value": "no evidence evaluated",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-5 三端口 K_i 不同：offset 1.264、gm 1.164、cap 0.919",
+   "value": "同一节点不能共用一份灵敏度",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-5 绝对恒等式：Σ K_i·e_i=500.0000 ≈ ε_J（ΣK=1.164 保留）",
+   "value": "非归一化口径",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-5 K 翻倍 ⇒ 预算减半：429.71 → 214.86（归一化会漏掉 ΣK）",
+   "value": "ratio=0.500",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-5 ε_J 过小 ⇒ 8 元素 budget < floor（不可行）",
+   "value": "flag + 拒绝",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P0-5 P6 拒绝不可行分配：verdict=rejected",
+   "value": "error_control P7 allocation infeasible for 8 elements (budget < measur",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查6 分类 contractive ⇒ contractive",
+   "value": "contractive",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查6 分类 asymptotically stable ⇒ asymptotically stable",
+   "value": "asymptotically stable",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查6 分类 semistable ⇒ semistable",
+   "value": "semistable",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查6 分类 polynomially growing ⇒ polynomially growing",
+   "value": "polynomially growing",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查6 分类 expanding ⇒ expanding",
+   "value": "expanding",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查6 能量度量统一：μ₂=49.0 vs μ_M=-0.5（C bank 跨 10⁴ 时不同）",
+   "value": "finite_time_gain 同 M",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查6 能量度量预条件：无 M 为 asymptotically stable，有 M 变 contractive（μ_M=-0.5<0 收缩）",
+   "value": "同一口径 gain 与 μ_M",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查7 E=1e-3 I_64（det=1e-192）不误判：λ(T)=c 且有限",
+   "value": "max|λ(T)−c|=0.0e+00",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查7 相对奇异值 1e-15 ⇒ raise（cond 判据，非 det）",
+   "value": "raise",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查7 P7 伴随口径：E≠I 时 λ_last 改变 3.29e+27×（E⁻¹ 端口权重）",
+   "value": "descriptor 而非 adjoint_field",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查7 merge 事件：A+B→m0，t=0.858，3×6 Jacobian",
+   "value": "shape=(3, 6)",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查7 源生命周期：消失区域 rB 的源被移除",
+   "value": "sources={'rC': 0.002}",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查7 存活源按 id 重绑：rC=2.000e-03 未绑错（下标已变）",
+   "value": "ids=['m0', 'C']",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查9 证书挂动态证据：error_control verdict=pass",
+   "value": "pass",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查9 p7 出 dJ 分配预算：source=dJ-allocation，4 项",
+   "value": "eps_J=500.0",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "审查9 缺 evidence 且 workload 要求 ⇒ 证书 rejected",
    "value": "rejected",
    "ok": true,
    "kind": "error_control"

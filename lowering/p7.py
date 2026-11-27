@@ -90,6 +90,8 @@ class CalibPlan:
                                               #   residual_budget_ppm, floor_ppm,
                                               #   update_interval, feasible, reason}]
     eps_J_ppm: float | None = None            # QoI 总误差合同（ppm）
+    allocation_infeasible: int = 0            # 预算 < 测量底的元素数（P0-5 拒绝）
+    sensitivity_total: float | None = None    # ΣK_i（绝对口径）
 
     def as_dict(self) -> dict:
         return dict(foreground=[dict(f) for f in self.foreground],
@@ -101,12 +103,15 @@ class CalibPlan:
                                           self.per_element_budgets]
                                          if self.per_element_budgets is not None
                                          else None),
-                    eps_J_ppm=self.eps_J_ppm)
+                    eps_J_ppm=self.eps_J_ppm,
+                    allocation_infeasible=int(self.allocation_infeasible),
+                    sensitivity_total=self.sensitivity_total)
 
 
 def allocate_element_budgets(sens, eps_J_ppm: float, floors=None,
                              drift_rates=None, meas_noise_ppm: float = 100.0,
-                             loop_gain: float = 1e4) -> dict:
+                             loop_gain: float = 1e4,
+                             absolute: bool = False) -> dict:
     """ε_J 等贡献分配（§6.22 路线图⑥）：dJ 敏感度 → 逐元素残差预算。
 
     合同：δJ = Σ s_i·e_i ≤ ε_J，等贡献 s_i·e_i = ε_J/n_alloc ⇒
@@ -119,8 +124,13 @@ def allocate_element_budgets(sens, eps_J_ppm: float, floors=None,
     可行元素的背景重标间隔由 update_interval_for_budget 反解
     （interval_i = (e_i − floor_i)(1+loop_gain)/drift_i）。
 
-    参数：sens 逐元素 dJ 敏感度份额（Σ=1，来自 analysis.adjoint.
-    dJ_weights 的节点权重按元素映射；None 元素跳过）；floors 逐元素
+    P0-5：absolute=True 时 sens 是**绝对**器件灵敏度 K_i=∫|λᵀ∂F/∂θ_i|dt
+    （analysis.adjoint.port_sensitivities），保留总灵敏度 ΣK_i；
+    absolute=False 为旧口径（归一化份额，Σ≈1）。两种口径的分配
+    恒等式 Σ s_i·e_i = ε_J 都成立，但绝对口径才给出完整
+    |δJ|≤ΣK_i·δθ_i≤ε_J 合同——归一化会丢掉前置因子 Σw。
+
+    参数：sens 逐元素 dJ 敏感度（份额或绝对 K_i；None 元素跳过）；floors 逐元素
     测量底（缺省统一 meas_noise_ppm）；drift_rates 逐元素漂移速率
     （缺省/None ⇒ interval 不排程）。
 
@@ -129,6 +139,9 @@ def allocate_element_budgets(sens, eps_J_ppm: float, floors=None,
     复核（fp 级），是 ε_J 合同的总账。
     """
     s = np.asarray([0.0 if v is None else float(v) for v in sens], dtype=float)
+    if np.any(s < 0):
+        raise ValueError("灵敏度必须 >= 0（|·| 积分口径）")
+    sensitivity_total = float(s.sum())
     n_total = s.size
     n_alloc = int(np.sum(s > 0))
     if eps_J_ppm <= 0:
@@ -180,6 +193,7 @@ def allocate_element_budgets(sens, eps_J_ppm: float, floors=None,
     return dict(items=items,
                 identity_residual=abs(acc - float(eps_J_ppm)),
                 n_allocated=n_alloc, n_infeasible=n_infeasible,
+                sensitivity_total=sensitivity_total, absolute=bool(absolute),
                 eps_J_ppm=float(eps_J_ppm))
 
 
@@ -218,10 +232,37 @@ class Config:
 # ---------------------------------------------------------------------------
 # 主入口
 # ---------------------------------------------------------------------------
+def qoi_adjoint_for_config(A_v, E_v, qoi, T, t_grid=None) -> np.ndarray:
+    """P7 的伴随场（审查7）：E≠I 时必须用 descriptor 伴随。
+
+    普通 adjoint_field(A_v,...) 在 descriptor 缩放系统 E ẋ = A x 上是
+    错的——λ 生成元是 (E⁻¹A)ᵀ，源端口还要夹 E⁻¹（见 analysis.adjoint）。
+    E=I 或 None 时退化为解析/采样 adjoint。
+    """
+    from analysis.adjoint import (adjoint_field, descriptor_adjoint_field,
+                                  dJ_weights_exact)
+    A_v = np.asarray(A_v, dtype=float)
+    q = np.asarray(qoi, dtype=float)
+    t = (np.asarray(t_grid, dtype=float) if t_grid is not None
+         else np.linspace(0.0, float(T), 65))
+    if E_v is not None and np.any(np.abs(np.asarray(E_v, dtype=float)
+                                         - np.eye(A_v.shape[0])) > 1e-12):
+        return descriptor_adjoint_field(E_v, A_v, q, t)
+    diag_scale = max(1.0, float(np.abs(np.diag(A_v)).max()))
+    if np.abs(A_v - np.diag(np.diag(A_v))).max() <= 1e-9 * diag_scale:
+        lam = np.empty((A_v.shape[0], t.size))
+        gamma = -np.diag(A_v)
+        for k, tk in enumerate(t):
+            lam[:, k] = q * np.exp(-gamma * (float(T) - tk))
+        return lam
+    return adjoint_field(A_v, q, t)
+
+
 def generate_config(discretized, cert, scaling,
                     twin=None, C_bank: float = C_BANK_F,
                     meas_noise_ppm: float = 100.0,
-                    qoi=None, eps_J=None, T_horizon=None) -> Config:
+                    qoi=None, eps_J=None, T_horizon=None,
+                    device_sensitivities=None) -> Config:
     """把 (Discretized, Certificate, ScalingResult, CalibratedTwin) 编成配置。
 
     逻辑（每条都是消费既有证据，不重算）：
@@ -456,38 +497,44 @@ def generate_config(discretized, cert, scaling,
     # 同一物理口径）。分配恒等式 Σ s_i·e_i = ε_J 由等贡献构造保证。
     per_element_budgets = None
     eps_J_used = None
+    alloc = None                     # 未声明 ε_J 时保持 None（向后兼容）
     if (qoi is not None and eps_J is not None and T_horizon is not None
-            and A_v is not None):
-        from analysis.adjoint import (adjoint_field, dJ_weights,
-                                      dJ_weights_exact)
-        qoi_arr = np.asarray(qoi, dtype=float)
-        t_grid = np.linspace(0.0, float(T_horizon), 65)
-        diag_scale = max(1.0, float(np.abs(np.diag(A_v)).max()))
-        if np.abs(A_v - np.diag(np.diag(A_v))).max() <= 1e-9 * diag_scale:
-            # 对角实负（spectral tile 形态）：闭式权重——刚性系统的
-            # 梯形采样陷阱（快模态伴随在 t=T 处 1/γ 尖峰欠采样，权重
-            # 退化成 1/n 端点伪影，见 analysis.adjoint 记录）必须避开
-            w = dJ_weights_exact(A_v, qoi_arr, float(T_horizon))
+            and A_v is not None) or device_sensitivities is not None:
+        absolute = device_sensitivities is not None
+        if absolute:
+            # P0-5：器件参数绝对灵敏度 K_i（不同端口各算各的），
+            # |δJ| ≤ Σ K_i·δθ_i ≤ eps_J —— 保留前置因子 ΣK_i。
+            sens = [float(device_sensitivities.get(states[i], 0.0))
+                    if i < len(states) else None
+                    for i in range(len(elements))]
+            if sum(float(v) for v in sens if v is not None) <= 0:
+                raise ValueError("device_sensitivities 全零：无分配对象")
         else:
-            # 非对角走采样，但分辨率守卫 fail-closed：γ_max·Δt > 1
-            # 说明快模态伴随尖峰欠采样，权重不可信（宁缺毋滥）
-            lam_v = np.linalg.eigvals(A_v)
-            gamma_max = float(np.max(-lam_v.real))
-            if gamma_max * (float(T_horizon) / (len(t_grid) - 1)) > 1.0:
-                raise ValueError(
-                    "伴随采样分辨率不足：γ_max·Δt=%.3g > 1（快模态 1/γ "
-                    "尖峰欠采样，dJ 权重不可信）——加密 t_grid 或改用 "
-                    "对角闭式" % (gamma_max * float(T_horizon)
-                                  / (len(t_grid) - 1)))
-            w = dJ_weights(adjoint_field(A_v, qoi_arr, t_grid), t_grid)
-        if w.shape[0] != len(states):
-            raise ValueError("qoi 维度必须等于状态数 %d" % len(states))
-        sens = [float(w[i]) if i < len(states) else None
-                for i in range(len(elements))]
+            # 审查7：E≠I 走 descriptor 伴随；源端口夹 E⁻¹（积分器 offset）。
+            qoi_arr = np.asarray(qoi, dtype=float)
+            t_grid = np.linspace(0.0, float(T_horizon), 65)
+            E_v = getattr(scaled, "E", None)
+            lam = qoi_adjoint_for_config(A_v, E_v, qoi_arr,
+                                        float(T_horizon), t_grid)
+            w_abs = np.array([np.trapezoid(np.abs(lam[i]), t_grid)
+                              for i in range(lam.shape[0])])
+            if E_v is not None and np.any(np.abs(np.asarray(E_v, dtype=float)
+                                                 - np.eye(A_v.shape[0])) > 1e-12):
+                diag_E = np.diag(np.asarray(E_v, dtype=float))
+                if np.abs(np.asarray(E_v) - np.diag(diag_E)).max() > 1e-9:
+                    raise ValueError("非对角 E 的端口权重需完整 E⁻¹ 投影，"
+                                     "本配置路径只支持对角电容度量")
+                w_abs = w_abs / np.abs(diag_E)
+            w = w_abs / max(float(w_abs.sum()), 1e-300)
+            if w.shape[0] != len(states):
+                raise ValueError("qoi 维度必须等于状态数 %d" % len(states))
+            sens = [float(w[i]) if i < len(states) else None
+                    for i in range(len(elements))]
         drift = ([bg_rate] * len(elements)) if bg_rate > 0.0 else None
         alloc = allocate_element_budgets(sens, float(eps_J), floors=None,
                                          drift_rates=drift,
-                                         meas_noise_ppm=meas_noise_ppm)
+                                         meas_noise_ppm=meas_noise_ppm,
+                                         absolute=absolute)
         per_element_budgets = []
         for it in alloc["items"]:
             it = dict(it)
@@ -498,17 +545,27 @@ def generate_config(discretized, cert, scaling,
         eps_J_used = float(eps_J)
         budget_source = "dJ-allocation"
         notes.append(
-            "eps_J=%.4g ppm per-element dJ allocation: %d/%d elements "
-            "allocated, %d infeasible (budget < floor), identity residual "
-            "%.2e — per-element budgets OVERRIDE the global heuristic "
-            "residual_budget_ppm" % (eps_J, alloc["n_allocated"],
-                                     len(elements), alloc["n_infeasible"],
-                                     alloc["identity_residual"]))
+            "eps_J=%.4g ppm per-element dJ allocation (%s, total sensitivity "
+            "%.4g): %d/%d elements allocated, %d infeasible (budget < "
+            "floor), identity residual %.2e — per-element budgets OVERRIDE "
+            "the global heuristic residual_budget_ppm"
+            % (eps_J, "absolute K_i" if absolute else "normalized shares",
+               alloc["sensitivity_total"], alloc["n_allocated"],
+               len(elements), alloc["n_infeasible"],
+               alloc["identity_residual"]))
+        if alloc["n_infeasible"] > 0:
+            flags.append("P0-5: %d dJ-allocated element budgets below "
+                         "measurement floor — infeasible, redesign devices "
+                         "or relax eps_J" % alloc["n_infeasible"])
 
     plan = CalibPlan(foreground=foreground, background=background,
                      residual_budget_ppm=budget, budget_source=budget_source,
                      notes=notes, per_element_budgets=per_element_budgets,
-                     eps_J_ppm=eps_J_used)
+                     eps_J_ppm=eps_J_used,
+                     allocation_infeasible=(alloc["n_infeasible"]
+                                            if alloc is not None else 0),
+                     sensitivity_total=(alloc["sensitivity_total"]
+                                        if alloc is not None else None))
 
     src = dict(alpha=alpha, lam_max=lam_max,
                cert_status=status, binding_axis=binding,

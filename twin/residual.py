@@ -31,6 +31,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
+from scipy.linalg import expm
 
 __all__ = [
     "WindowResidual",
@@ -45,19 +46,37 @@ __all__ = [
 
 @dataclass
 class WindowResidual:
-    """一个检查窗口的残差记录（§6.22 evidence 对象）。"""
+    """一个检查窗口的残差记录（§6.22 P0-2 语义拆分）。
+
+    三种量必须分开，不能互相替代：
+      residual_signed      ∫r dt —— 诊断/校正估计（可正负抵消）
+      residual_l1_bound    ∫‖r‖ dt —— 保守预算（Φ 未知时的上界前提）
+      propagated_residual  ∫‖Φ(t1,s)‖‖r(s)‖ ds —— 动态误差预算（Φ 已知）
+    eta 取 propagated_residual（线性/已知 A）或 residual_l1_bound
+    （仅当已知收缩 ‖Φ‖≤1）+ 求积误差 + 测量底。
+    R 保留为 signed 的别名（向后兼容），但**不是**累计误差界。
+    """
     t0: float
     t1: float
-    R: np.ndarray                 # 残差向量 = ∫r dt（状态空间的注入积累）
-    eta: float                    # ‖R‖：误差递推的新增预算
-    quad_points: int = 0          # 积分用的采样点数（诚实记录网格）
+    R: np.ndarray                            # residual_signed 的别名
+    eta: float                               # 保守新增误差预算（非 ‖R‖）
+    residual_signed: np.ndarray | None = None
+    residual_l1_bound: float | None = None
+    propagated_residual: float | None = None
+    quad_error: float = 0.0
+    meas_floor: float = 0.0
+    eta_assumption: str = ""
+    quad_points: int = 0
     meta: dict = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return dict(t0=self.t0, t1=self.t1,
-                    R_norm=float(np.linalg.norm(self.R)),
-                    eta=self.eta, quad_points=self.quad_points,
-                    meta=dict(self.meta))
+                    residual_signed_norm=float(np.linalg.norm(self.R)),
+                    residual_l1_bound=self.residual_l1_bound,
+                    propagated_residual=self.propagated_residual,
+                    eta=self.eta, eta_assumption=self.eta_assumption,
+                    quad_error=self.quad_error, meas_floor=self.meas_floor,
+                    quad_points=self.quad_points, meta=dict(self.meta))
 
 
 def window_integral_residual(rhs, t_grid, x_traj) -> WindowResidual:
@@ -77,32 +96,66 @@ def window_integral_residual(rhs, t_grid, x_traj) -> WindowResidual:
     F = np.array([np.asarray(rhs(xi, ti), dtype=float) for xi, ti in zip(x, t)])
     integral = np.array([np.trapezoid(F[:, j], t) for j in range(x.shape[1])])
     R = x[-1] - x[0] - integral
+    # 源样本 r_i ≈ (x_{i+1}−x_i)/dt − F(x_i,t_i)（前向差分；求积误差
+    # 诚实记入 quad_error）。signed 与 l1 由同一批样本积分，避免
+    # 两次独立抽样造成口径不一致。
+    dt_loc = np.diff(t)[:, None]
+    r_samples = np.diff(x, axis=0) / dt_loc - F[:-1]
+    l1 = float(np.trapezoid(np.linalg.norm(r_samples, axis=1), t[:-1]))
     h = float(np.max(np.diff(t)))
     # 梯形误差量级：‖ẍ‖·T·h²/12 的上界估计用 ‖ΔF‖ 近似
     dF = float(np.max(np.linalg.norm(np.diff(F, axis=0), axis=1))) if F.shape[0] > 1 else 0.0
+    q_err = dF * (t[-1] - t[0]) * h / 8.0
     return WindowResidual(t0=float(t[0]), t1=float(t[-1]), R=R,
-                          eta=float(np.linalg.norm(R)),
+                          residual_signed=R.copy(),
+                          residual_l1_bound=l1,
+                          propagated_residual=None,       # 非线性：Φ 未知，不外推
+                          eta=l1 + q_err, quad_error=q_err,
+                          eta_assumption="l1 bound valid if ||Phi||<=1 "
+                                         "(contraction must be certified)",
                           quad_points=int(t.shape[0]),
                           meta=dict(quad="trapezoid",
-                                    trapz_err_scale=dF * (t[-1] - t[0]) * h / 8.0))
+                                    trapz_err_scale=q_err))
 
 
 def linear_window_residual(A, t_grid, x_traj) -> WindowResidual:
-    """线性 ẋ=Ax 的窗口残差：∫Ax dt = A·∫x dt，一次矩阵乘完成。"""
+    """线性 ẋ=Ax+r 的窗口残差 + **传播加权的保守新增误差界**。
+
+    R=∫r dt 仍只用于诊断/校正；eta=∫‖Φ(t1,s)‖‖r(s)‖ds + 求积误差，
+    满足 ‖∫Φr‖ ≤ eta（线性 LTI，源样本由轨迹前向差分得到）。
+    """
     A = np.asarray(A, dtype=float)
     t = np.asarray(t_grid, dtype=float)
     x = np.asarray(x_traj, dtype=float)
     integral = np.array([np.trapezoid(x[:, j], t) for j in range(x.shape[1])])
     R = x[-1] - x[0] - A @ integral
-    return WindowResidual(t0=float(t[0]), t1=float(t[-1]), R=R,
-                          eta=float(np.linalg.norm(R)),
+    dt_loc = np.diff(t)[:, None]
+    r_samples = np.diff(x, axis=0) / dt_loc - x[:-1] @ A.T
+    l1 = float(np.trapezoid(np.linalg.norm(r_samples, axis=1), t[:-1]))
+    T = float(t[-1])
+    g = np.array([np.linalg.norm(expm(A * (T - ti)), 2)
+                  * np.linalg.norm(r_samples[i])
+                  for i, ti in enumerate(t[:-1])])
+    prop = float(np.trapezoid(g, t[:-1]))
+    dF = float(np.max(np.linalg.norm(np.diff(x @ A.T, axis=0), axis=1)))
+    h = float(np.max(np.diff(t)))
+    q_err = dF * (T - t[0]) * h / 8.0
+    return WindowResidual(t0=float(t[0]), t1=T, R=R,
+                          residual_signed=R.copy(), residual_l1_bound=l1,
+                          propagated_residual=prop, eta=prop + q_err,
+                          quad_error=q_err,
+                          eta_assumption="propagated LTI integral with "
+                                         "sampled r (trapezoid), no cancellation",
                           quad_points=int(t.shape[0]),
                           meta=dict(quad="trapezoid", form="linear"))
 
 
 def injection_budget(residuals) -> list:
-    """窗口残差序列 → 新增误差预算序列 [η_0, η_1, …]。
+    """窗口残差序列 → **保守**新增误差预算序列 [η_0, η_1, …]。
 
+    取 WindowResidual.eta（传播加权积分或经认证收缩下的 l1 界），
+    **不是** ‖∫r dt‖——后者可因注入正负抵消而低估甚至归零
+    （P0-2 反例：ė=−e+r，+1 后 −1，signed R=0 而 e(2)=0.3996）。
     供 error_propagation.error_recursion_bound 的 etas 参数使用。
     """
     return [float(w.eta) for w in residuals]

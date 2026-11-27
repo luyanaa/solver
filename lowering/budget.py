@@ -68,6 +68,8 @@ class BudgetInput:
     error_control: dict | None = None      # lowering.error_control.ErrorControlResult.as_dict()
                                            # §6.22 运行时误差控制合同：分类/覆盖/
                                            # IR/调度。字段缺失或界未覆盖 ⇒ rejected
+    require_error_control: bool = False    # workload 声明动态误差合同 ⇒ 没有
+                                           # evidence 也必须拒绝（不许静默继续编译）
     scaling: object | None = None          # ScalingResult：给定时 slack/Γ/σ_y/‖H‖∞
                                            # 在其 .scaled（物理时间）descriptor 上评；
                                            # delta_A_norm 按相对失配自动缩放
@@ -264,10 +266,28 @@ def _error_control_verdict(ec: dict):
         return "rejected", dict(ec), (
             "error_control expanding without finite_horizon declaration: "
             "no infinite-horizon trajectory promise")
+    if finite:
+        hT = ec.get("horizon_T")
+        if (not isinstance(hT, (int, float)) or not math.isfinite(hT)
+                or hT <= 0):
+            return "rejected", dict(ec), (
+                "error_control finite_horizon=True without a concrete "
+                "positive horizon_T: cannot verify the runtime window")
     n_win = ec.get("n_windows", 0)
     cov = ec.get("coverage_ratio", 0.0)
     e_meas = ec.get("e_measured_max")
     e_pred = ec.get("e_predicted_max")
+    if not isinstance(cov, (int, float)) or not math.isfinite(cov) \
+            or cov < 0.0 or cov > 1.0:
+        return "rejected", dict(ec), (
+            "error_control coverage_ratio %s not finite in [0,1]"
+            % _fmt(cov))
+    if isinstance(e_meas, (int, float)) and not math.isfinite(e_meas):
+        return "rejected", dict(ec), (
+            "error_control e_measured_max non-finite: not a pass")
+    if isinstance(e_pred, (int, float)) and not math.isfinite(e_pred):
+        return "rejected", dict(ec), (
+            "error_control e_predicted_max non-finite: not a pass")
     detail = ("cls=%s, n_windows=%s, coverage=%s, e_measured_max=%s, "
               "e_predicted_max=%s, ir_improve=%s, schedule_dT=%s"
               % (cls, _fmt(n_win), _fmt(cov), _fmt(e_meas), _fmt(e_pred),
@@ -277,11 +297,12 @@ def _error_control_verdict(ec: dict):
                    "qoi_cancellation=%s (estimate, not a bound)"
                    % (_fmt(ec.get("qoi_estimate")), _fmt(ec.get("qoi_tolerance")),
                       _fmt(ec.get("qoi_cancellation"))))
+    cov_thr = ec.get("coverage_threshold", 1.0)
     if isinstance(n_win, (int, float)) and n_win > 0 and not (
-            isinstance(cov, (int, float)) and cov >= 1.0):
+            isinstance(cov, (int, float)) and cov >= cov_thr):
         return "rejected", dict(ec), (
-            "error_control bound coverage %s < 1.0 over %s windows: %s"
-            % (_fmt(cov), _fmt(n_win), detail))
+            "error_control bound coverage %s < threshold %s over %s windows: %s"
+            % (_fmt(cov), _fmt(cov_thr), _fmt(n_win), detail))
     if not isinstance(e_meas, (int, float)) or not isinstance(e_pred,
                                                               (int, float)):
         return "rejected", dict(ec), (
@@ -299,12 +320,31 @@ def _error_control_verdict(ec: dict):
             return "rejected", dict(ec), (
                 "error_control qoi_estimate non-finite (NaN/inf): "
                 "not a pass — %s" % detail)
-        if qoi_est > qoi_tol:
+        rem = ec.get("qoi_remainder", 0.0)
+        if not isinstance(rem, (int, float)) or not math.isfinite(rem) \
+                or rem < 0:
             return "rejected", dict(ec), (
-                "error_control eps_J violated: qoi_estimate %s > tolerance %s "
-                "(cancellation=%s): %s"
-                % (_fmt(qoi_est), _fmt(qoi_tol),
+                "error_control qoi_remainder invalid: %s" % _fmt(rem))
+        if abs(qoi_est) + rem > qoi_tol:
+            return "rejected", dict(ec), (
+                "error_control eps_J violated: |qoi_estimate| %s + "
+                "B_remainder %s > tolerance %s (cancellation=%s): %s"
+                % (_fmt(abs(qoi_est)), _fmt(rem), _fmt(qoi_tol),
                    _fmt(ec.get("qoi_cancellation")), detail))
+    if int(ec.get("allocation_infeasible", 0)) > 0:
+        return "rejected", dict(ec), (
+            "error_control P7 allocation infeasible for %s elements "
+            "(budget < measurement floor): redesign devices or relax tol"
+            % ec.get("allocation_infeasible"))
+    # ε_global 是独立条件：界覆盖 ≠ 精度达标（pred=101, measured=100 仍超标）
+    g_tol = ec.get("global_tolerance")
+    if g_tol is not None:
+        if (not isinstance(g_tol, (int, float)) or not math.isfinite(g_tol)
+                or g_tol <= 0 or e_pred > g_tol):
+            return "rejected", dict(ec), (
+                "error_control eps_global accuracy violated: predicted %s > "
+                "tolerance %s (coverage alone is not accuracy): %s"
+                % (_fmt(e_pred), _fmt(g_tol), detail))
     if e_meas > e_pred:
         return "rejected", dict(ec), (
             "error_control e_measured_max %s > e_predicted_max %s: %s"
@@ -442,6 +482,10 @@ def compile_budget(inp: BudgetInput, s_max_threshold: float = S_PEAK_THRESHOLD) 
             "deadline+residual facts instead of an ε_c verdict — they are "
             "not silently marked infeasible or feasible on timing")
 
+    if inp.error_control is None and inp.require_error_control:
+        reasons.append("error-control evidence required by workload but "
+                       "not supplied: dynamic contract cannot be certified "
+                       "(no silent compile)")
     if inp.error_control is not None:
         verdict, val, detail = _error_control_verdict(inp.error_control)
         items["error_control"] = dict(value=val, verdict=verdict, detail=detail)
@@ -474,7 +518,8 @@ def compile_budget(inp: BudgetInput, s_max_threshold: float = S_PEAK_THRESHOLD) 
 def evaluate_sys(sys: Descriptor, spec: HardwareSpec, metric=None, loop=None,
                  multirate=None, manifold=None, sde_cert=None, reg=None,
                  scaling=None, gamma_M=None, hinf=None, lyap=None,
-                 constraint=None, error_control=None) -> Certificate:
+                 constraint=None, error_control=None,
+                 require_error_control=False) -> Certificate:
     """便捷入口：由 (sys, spec) + 可选证据直接建 BudgetInput 聚合。
 
     scaling: ScalingResult（lowering.scaling）—— 给定时证书评在物理时间
@@ -489,4 +534,5 @@ def evaluate_sys(sys: Descriptor, spec: HardwareSpec, metric=None, loop=None,
                                       reg=reg, scaling=scaling,
                                       gamma_M=gamma_M, hinf=hinf, lyap=lyap,
                                       constraint=constraint,
-                                      error_control=error_control))
+                                      error_control=error_control,
+                                      require_error_control=require_error_control))
