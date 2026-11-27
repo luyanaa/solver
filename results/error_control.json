@@ -90,6 +90,22 @@
    "calib_floor": 1e-06
   }
  },
+ "adjoint_qoi": {
+  "w": [
+   0.2952699750849632,
+   0.20195475260092122,
+   0.14796680240904994,
+   0.11466108925338317,
+   0.09282156711757514,
+   0.07769411620076118,
+   0.06671084419082934,
+   0.0029208531425167343
+  ],
+  "dJ_hi": 0.001264244985133487,
+  "dJ_lo": 1.2475018069206182e-05,
+  "cancellation": 1.0,
+  "eps_J_pass": true
+ },
  "checks": [
   {
    "name": "IR 前提：rho_pred=kappa*u_a=0.066 < 1（修正闭环合法）",
@@ -322,6 +338,66 @@
   {
    "name": "证书聚合：纯 IR 静态事实 ⇒ pass 但声明非动态判决",
    "value": "pass",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "A1 终端条件：λ(T)=c（伴随场构造正确）",
+   "value": "max dev=0.00e+00",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "A1 权重排序：w ∝ 1/γ（慢模态主导），w_high/w_low=101.1",
+   "value": "w=[0.295, 0.202, 0.148, 0.115, 0.093, 0.078, 0.067, 0.003]",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "A2 恒等式（纯 bias）：δJ₁=2.140e-03 vs 实测 2.141e-03，相对误差 0.0% < 5%",
+   "value": "cancellation=1.00",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "A2 恒等式（bias+noise）：偏差 2.309e-06 ≤ 0.3×Σ|贡献|=2.094e-03",
+   "value": "δJ₁=2.094e-03 actual=2.096e-03",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "A3 精度分配：同范数 bias 的 δJ 比 101.3× ≈ w 比 101.1×（×2.5 内）",
+   "value": "δJ_hi=1.264e-03 δJ_lo=1.248e-05",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "A4 双轨：δJ=1.250e-05 < ε_J=1e-04（QoI 合同通过）而 ε_global=2.499e-04 > ε_J（场失真只能靠全局轨兜住）",
+   "value": "budget 节省：节点 7 免校正",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "A4 反面：高 w 节点同范数 bias ⇒ δJ=1.264e-03 > ε_J（必须校正）",
+   "value": "dJ_hi/dJ_lo=101×",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "证书聚合：ε_J 声明且 δJ ≤ ε_J ⇒ pass（cancellation 进 detail）",
+   "value": "pass",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "证书聚合：δJ > ε_J ⇒ rejected（ε_J 合同违反）",
+   "value": "rejected",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "证书聚合：声明 ε_J 但缺 δJ ⇒ rejected（malformed）",
+   "value": "rejected",
    "ok": true,
    "kind": "error_control"
   }

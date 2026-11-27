@@ -46,4 +46,16 @@
   [PASS] evaluate_sys 转发：error_control 进 items（verdict=pass）              cert.error_control=True
   [PASS] 证书聚合：纯 IR 静态事实 ⇒ pass 但声明非动态判决                                   pass
 
-39/39 checks passed
+[case_adjoint_qoi]  恒等式对账 / 抵消指标 / 精度分配 / 双轨必要性
+  [PASS] A1 终端条件：λ(T)=c（伴随场构造正确）                                          max dev=0.00e+00
+  [PASS] A1 权重排序：w ∝ 1/γ（慢模态主导），w_high/w_low=101.1                        w=[0.295, 0.202, 0.148, 0.115, 0.093, 0.078, 0.067, 0.003]
+  [PASS] A2 恒等式（纯 bias）：δJ₁=2.140e-03 vs 实测 2.141e-03，相对误差 0.0% < 5%      cancellation=1.00
+  [PASS] A2 恒等式（bias+noise）：偏差 2.309e-06 ≤ 0.3×Σ|贡献|=2.094e-03            δJ₁=2.094e-03 actual=2.096e-03
+  [PASS] A3 精度分配：同范数 bias 的 δJ 比 101.3× ≈ w 比 101.1×（×2.5 内）              δJ_hi=1.264e-03 δJ_lo=1.248e-05
+  [PASS] A4 双轨：δJ=1.250e-05 < ε_J=1e-04（QoI 合同通过）而 ε_global=2.499e-04 > ε_J（场失真只能靠全局轨兜住） budget 节省：节点 7 免校正
+  [PASS] A4 反面：高 w 节点同范数 bias ⇒ δJ=1.264e-03 > ε_J（必须校正）                  dJ_hi/dJ_lo=101×
+  [PASS] 证书聚合：ε_J 声明且 δJ ≤ ε_J ⇒ pass（cancellation 进 detail）              pass
+  [PASS] 证书聚合：δJ > ε_J ⇒ rejected（ε_J 合同违反）                               rejected
+  [PASS] 证书聚合：声明 ε_J 但缺 δJ ⇒ rejected（malformed）                          rejected
+
+49/49 checks passed

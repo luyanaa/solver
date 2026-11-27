@@ -523,6 +523,146 @@ def case_constraint_fabric():
                 cls=pc.cls, rA=rA, rB=rB, schedule=sch)
 
 
+# ---------------------------------------------------------------- ε_J 双轨
+
+def case_adjoint_qoi():
+    """§6.22 续：adjoint ε_J 双轨——QoI 导向的误差估计与精度分配。
+
+    线性恒等式 δJ = λ(0)ᵀe(0) + ∫λᵀr dt 逐路径成立，本 case 直接对账：
+      A1 δJ₁（窗口伴随加权残差）vs 真实 cᵀe(T)——纯 bias 与 bias+noise；
+      A2 cancellation_factor：<1 时各窗口贡献正负抵消，恒等式仍成立
+         （线性系统 δJ₁ 是估计的极限=真值），但 δJ 小 ≠ 场误差小；
+      A3 精度分配：同样范数的 bias，高 w 节点 vs 低 w 节点的 δJ 差
+         ≈ w 之比（实测 100.8×）——校正预算按 w 排序；
+      A4 双轨必要性：低 w 节点 bias 使 δJ 通过 ε_J 而 ε_global 违约
+         ——ε_J 单独存在会掩盖场失真，两轨必须同时记录。
+    """
+    emit("[case_adjoint_qoi]  恒等式对账 / 抵消指标 / 精度分配 / 双轨必要性")
+    from analysis.adjoint import adjoint_field, dJ_weights, qoi_error_estimate
+
+    N = 8
+    A = np.diag(-0.5 * np.arange(1, N + 1))
+    c = np.ones(N)
+    c[7] = 0.05                       # QoI 对快模态几乎不可观
+    T = 2.0
+    t = np.linspace(0.0, T, 81)
+    lam = adjoint_field(A, c, t)
+    add_check("A1 终端条件：λ(T)=c（伴随场构造正确）",
+              "max dev=%.2e" % np.max(np.abs(lam[:, -1] - c)),
+              np.allclose(lam[:, -1], c))
+    w = dJ_weights(lam, t)
+    add_check("A1 权重排序：w ∝ 1/γ（慢模态主导），w_high/w_low=%.1f"
+              % (w[0] / w[7]),
+              "w=%s" % np.round(w, 3).tolist(),
+              np.all(np.diff(w) <= 1e-12) and w[0] / w[7] > 50.0)
+
+    def hw_run(bias, r_noise, seed):
+        rng = np.random.default_rng(seed)
+        dt = 2e-4
+        x = np.zeros(N)
+        traj = [x.copy()]
+        for _ in range(int(round(T / dt))):
+            x = x + dt * (A @ x + bias + r_noise * rng.uniform(-1.0, 1.0, size=N))
+            traj.append(x.copy())
+        return np.array(traj)
+
+    def windows_and_estimate(traj, bias, r_noise, seed):
+        rng = np.random.default_rng(seed)
+        dt = 2e-4
+        K = 40
+        sub = (len(traj) - 1) // K
+        dT = sub * dt
+        Rs, centers = [], []
+        for k in range(K):
+            rows = traj[k * sub:(k + 1) * sub + 1]
+            res = linear_window_residual(A, np.arange(sub + 1) * dt, rows)
+            Rs.append(res.R)
+            centers.append((k + 0.5) * dT)
+        est = qoi_error_estimate(lam, t, Rs, centers)
+        return est
+
+    # A2 纯 bias：恒等式逐路径成立
+    bias = np.full(N, 5e-4)
+    traj = hw_run(bias, 0.0, 101)
+    est = windows_and_estimate(traj, bias, 0.0, 101)
+    dJ_actual = float(c @ (traj[-1] - 0.0))
+    rel = abs(est["delta_J"] - dJ_actual) / max(abs(dJ_actual), 1e-300)
+    add_check("A2 恒等式（纯 bias）：δJ₁=%.3e vs 实测 %.3e，相对误差 %.1f%% < 5%%"
+              % (est["delta_J"], dJ_actual, 100 * rel),
+              "cancellation=%.2f" % est["cancellation_factor"], rel < 0.05)
+
+    # bias + noise：恒等式按路径成立，窗口常数近似吃掉部分精度
+    traj_n = hw_run(bias, 1e-2, 102)
+    est_n = windows_and_estimate(traj_n, bias, 1e-2, 102)
+    dJ_actual_n = float(c @ (traj_n[-1] - 0.0))
+    err_n = abs(est_n["delta_J"] - dJ_actual_n)
+    add_check("A2 恒等式（bias+noise）：偏差 %.3e ≤ 0.3×Σ|贡献|=%.3e"
+              % (err_n, est_n["abs_sum"]),
+              "δJ₁=%.3e actual=%.3e" % (est_n["delta_J"], dJ_actual_n),
+              err_n <= 0.3 * est_n["abs_sum"])
+
+    # A3 精度分配：同范数 bias，节点 0（高 w）vs 节点 7（低 w）
+    def dJ_of(node):
+        b = np.zeros(N)
+        b[node] = 1e-3
+        tr = hw_run(b, 0.0, 200 + node)
+        est_k = windows_and_estimate(tr, b, 0.0, 200 + node)
+        return est_k["delta_J"]
+    dJ_hi, dJ_lo = dJ_of(0), dJ_of(7)
+    ratio = dJ_hi / max(abs(dJ_lo), 1e-300)
+    add_check("A3 精度分配：同范数 bias 的 δJ 比 %.1f× ≈ w 比 %.1f×（×2.5 内）"
+              % (ratio, w[0] / w[7]),
+              "δJ_hi=%.3e δJ_lo=%.3e" % (dJ_hi, dJ_lo),
+              abs(ratio - w[0] / w[7]) / (w[0] / w[7]) < 1.5)
+
+    # A4 双轨必要性：低 w 节点 bias —— ε_J 通过而 ε_global 违约
+    eps_J = 1e-4
+    b_lo = np.zeros(N)
+    b_lo[7] = 1e-3
+    tr_lo = hw_run(b_lo, 0.0, 301)
+    dJ_lo2 = float(c @ (tr_lo[-1] - 0.0))
+    e_global = float(np.linalg.norm(tr_lo[-1]))
+    add_check("A4 双轨：δJ=%.3e < ε_J=%.0e（QoI 合同通过）而 ε_global=%.3e > ε_J"
+              "（场失真只能靠全局轨兜住）"
+              % (dJ_lo2, eps_J, e_global),
+              "budget 节省：节点 7 免校正", dJ_lo2 < eps_J and e_global > eps_J)
+
+    # A4 反面：高 w 节点同范数 bias 必须校正（δJ 违约 ε_J）
+    tr_hi = hw_run(np.concatenate([[1e-3], np.zeros(N - 1)]), 0.0, 302)
+    dJ_hi2 = float(c @ (tr_hi[-1] - 0.0))
+    add_check("A4 反面：高 w 节点同范数 bias ⇒ δJ=%.3e > ε_J（必须校正）" % dJ_hi2,
+              "dJ_hi/dJ_lo=%.0f×" % (dJ_hi2 / max(abs(dJ_lo2), 1e-300)),
+              dJ_hi2 > eps_J)
+
+    # 证书：ε_J 字段进聚合
+    ec_q = ErrorControlResult(cls="contracting", n_windows=40, coverage_ratio=1.0,
+                              e_measured_max=8.1e-4, e_predicted_max=1.69e-3,
+                              qoi_estimate=float(dJ_lo2), qoi_tolerance=eps_J,
+                              qoi_cancellation=0.31).as_dict()
+    from lowering.budget import _error_control_verdict
+    v, _, d = _error_control_verdict(ec_q)
+    add_check("证书聚合：ε_J 声明且 δJ ≤ ε_J ⇒ pass（cancellation 进 detail）", v,
+              v == "pass" and "cancellation" in d)
+    ec_qv = dict(ec_q, qoi_estimate=5e-4)
+    v, _, d = _error_control_verdict(ec_qv)
+    add_check("证书聚合：δJ > ε_J ⇒ rejected（ε_J 合同违反）", v,
+              v == "rejected" and "eps_J" in d)
+    ec_qm = dict(ec_good_stub(), qoi_tolerance=1e-4)
+    v, _, _ = _error_control_verdict(ec_qm)
+    add_check("证书聚合：声明 ε_J 但缺 δJ ⇒ rejected（malformed）", v, v == "rejected")
+
+    return dict(w=w.tolist(), dJ_hi=dJ_hi, dJ_lo=dJ_lo,
+                cancellation=est_n["cancellation_factor"],
+                eps_J_pass=bool(dJ_lo2 < eps_J))
+
+
+def ec_good_stub():
+    """合法基底证据（无 ε_J 字段）——供 ε_J malformed 检查复用。"""
+    return ErrorControlResult(cls="contracting", n_windows=40, coverage_ratio=1.0,
+                              e_measured_max=8.1e-4,
+                              e_predicted_max=1.69e-3).as_dict()
+
+
 # ---------------------------------------------------------------- main
 
 def main():
@@ -534,6 +674,8 @@ def main():
     dif = case_diffusion_windows()
     emit("")
     con = case_constraint_fabric()
+    emit("")
+    adj = case_adjoint_qoi()
     n_pass = sum(1 for c in _checks if c["ok"])
     emit("")
     emit("%d/%d checks passed" % (n_pass, len(_checks)))
@@ -548,7 +690,7 @@ def main():
                              section="DESIGN.md §6.22",
                              model="behavioral: quantize + bounded noise + bias"),
                    poisson_ir=ir, diffusion=dif, constraint_fabric=con,
-                   checks=_checks)
+                   adjoint_qoi=adj, checks=_checks)
     with open(os.path.join(out_dir, "error_control.json"), "w") as fh:
         json.dump(payload, fh, indent=1, ensure_ascii=False)
     return n_pass == len(_checks)

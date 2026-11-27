@@ -1025,6 +1025,15 @@ Fail-closed B2 extension（`extract_b2.py`、`results/b2_extract.json` 的 `stat
 - **C2 约束网自校准（本节最重要的架构结论）**：mismatch 偏置 δI 会被 KCL 残差 r = I − G·V_m **直接暴露**——I 是数字配置，精确已知，残差里的 −δI 项不依赖任何对 δI 的先验估计。实测两个 regime：量化主导（标称 1e-3 dev，u_a=2⁻¹⁰）改进 13.5×（2.87e-6→2.12e-7）；mismatch 主导（10% dev 压力注入，安静核 u_a=2⁻¹²）改进 **60.9×**，最终误差 5.46e-8 **低于** mismatch 地板 3.04e-7。即：约束 fabric 在数字残差通路上是自校准的，mismatch 地板不是精度极限——这是 §3.6 "物理残差 R(x)=0（ΣI、ΣV）做自监督" 的定量版。可达精度的真正瓶颈是修正解自身的量化地板（κ·u_a 级）；读出精度 u_meas 一阶相消（测量与残差看到同一个 δV_m）。§6.22 N1 的教训同构：粗 ADC 残差通路拖垮 attainable。
 - **C3 调度与 calib 语义对账**：约束网漂移是中性累积（λ=0），预算式 ΔT ≤ (ε−floor)(1+T)/drift_rate 与 `twin/calib.py` 的 residual = drift_rate·interval/(1+loop_gain) + floor 在 loop_gain=0 时严格重合（实测 ΔT=9.99 s、predicted_residual=1.000e-3 ≤ ε）。两条公式不一致即说明有界性/线性累积假设被违反。calib_floor ≥ ε ⇒ raise。
 - **P6 证书挂接**：`Certificate.error_control` 可选证据字段 + `_error_control_verdict` 聚合（缺字段 ⇒ rejected；expanding 无 finite_horizon 声明 ⇒ rejected；n_windows>0 且 coverage<1 ⇒ rejected；e_measured_max > e_predicted_max ⇒ rejected；纯 IR 静态事实 pass 但 detail 声明"非动态判决"——与 constraint STEADY 同口径）。负对照四情形 + `evaluate_sys` 转发均验收。assumptions 记录：覆盖检查只对**声明的误差模型**（行为级）负责，不是 SPICE 级 claim。
+**Adjoint ε_J 双轨（2026-11-27，`analysis/adjoint.py`，bench 49/49）：**
+
+全局合同 ε_global 保证物理场不失真；ε_J 只校正**对目标结果有影响的误差**。线性 ẋ=Ax+r、终端 QoI J=cᵀx(T) 时 δJ = λ(0)ᵀe(0) + ∫λᵀr dt 是**恒等式**（λ(t)=expm(Aᵀ(T−t))c），第一级估计 δJ₁=Σ_k λᵀR_k 直接对账实测：纯 bias 相对误差 0.0%（2.140e-3 vs 2.141e-3），bias+noise 偏差 2.3e-6 ≤ 0.3×Σ|贡献|。但 δJ₁ **不是严格上界**——逐窗口贡献可正负抵消，`cancellation_factor=|Σ|/Σ|·|` 如实记录，抵消严重时 δJ 小≠误差贡献小，只能靠 ε_global 兜底（双轨存在的理由）。非线性/离散 DWR 情形估计另有偏差，本节不承诺。
+
+- **精度分配**：w_i=∫|λ_i|dt 为逐节点 QoI 敏感度（慢模态主导：w∝1/γ，w_high/w_low=101）。同样范数的 bias 注在高 w 节点 vs 低 w 节点，δJ 比 101.3× ≈ w 比 101.1×——校正/校准预算按 w 排序，**低权重节点不烧预算**。
+- **双轨必要性（A4 实测）**：低 w 节点 bias 使 δJ=1.25e-5 < ε_J=1e-4（QoI 合同通过）而 ε_global=2.50e-4 > ε_J——ε_J 单独存在会掩盖场失真，两轨必须同时记录；反面：高 w 节点同范数 bias ⇒ δJ=1.26e-3 > ε_J（必须校正）。这与 §1 的"residual 小≠解误差小"是同一类诚实边界在 QoI 轴上的镜像。
+- **证书挂接**：`ErrorControlResult` 增加 qoi_estimate/qoi_tolerance/qoi_cancellation；声明 ε_J 且 δJ>ε_J ⇒ rejected，声明 ε_J 但缺 δJ ⇒ rejected（malformed），pass 时 cancellation 进 detail 并标注 "estimate, not a bound"。
+
+**诚实边界**：伴随场是 E=I 口径（descriptor/E≠I 伴随是 TODO，不静默声称支持）；δJ₁ 的恒等式地位依赖线性——非线性系统的 DWR 一级估计有额外偏差（伴随加权残差可能正负抵消到失去界的意义），届时须配离散伴随或 MC 覆盖检验；shock displacement 对 QoI 的界面项（激波问题的 δJ 主体）仍是显式 TODO。
 
 ---
 
@@ -1326,6 +1335,9 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
         ✅ slack.py       # 六轴 slack 向量（鲁棒拆失配/接口）+ 不可行原因
         ✅ skew.py        # DDE → E=I+A∘T；均匀延迟闭式极点、τ_crit、相位预算
         ✅ sde.py         # Itô/Stratonovich、线性乘性协方差、均方稳定、噪声可实现性、wong_zakai_factor
+        ✅ adjoint.py      # §6.22 续 ε_J 双轨：伴随场 λ(t)=expm(Aᵀ(T−t))c、δJ₁=ΣλᵀR_k
+                          # （线性恒等式，实测 0.0% 偏差）、cancellation_factor、
+                          # dJ 逐节点权重（w∝1/γ，δJ 比 101×≈w 比）——估计不是上界
         ✅ error_propagation.py  # §6.22 有限时间误差传播：classify_propagation（收缩/中性/扩张
                           # + 非正规瞬态标注）、μ₂ 对数范数、‖Φ(T,0)‖、泄漏型 dM/dt 率、
                           # 校正调度 ΔT=(1/λ)ln((ε+r_max/λ)/(e₀+r_max/λ))、长期界 η/(1−ρ)

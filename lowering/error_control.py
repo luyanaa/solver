@@ -64,6 +64,10 @@ class ErrorControlResult:
         （不许诺无限时窗轨迹精度）；
       * n_windows > 0 且 coverage_ratio < 1.0 ⇒ rejected（界未覆盖）；
       * e_measured_max > e_predicted_max ⇒ rejected；
+      * qoi_tolerance 声明且 qoi_estimate 缺失 ⇒ rejected（malformed）；
+      * qoi_tolerance 声明且 qoi_estimate > qoi_tolerance ⇒ rejected
+        （ε_J 合同违反）；qoi_cancellation 进 detail——δJ₁ 是估计不是
+        上界，抵消严重时靠 ε_global 兜底（双轨合同的分工）。
       * 其余 ⇒ pass（IR/调度数字进 detail，不是可行性判决）。
     """
     kind: str = "error_control"
@@ -76,6 +80,9 @@ class ErrorControlResult:
     steady_bound: float | None = None
     ir_improve: float | None = None
     schedule_dT: float | None = None
+    qoi_estimate: float | None = None      # δJ₁：伴随加权残差一级估计
+    qoi_tolerance: float | None = None     # ε_J：QoI 合同（声明才判）
+    qoi_cancellation: float | None = None  # |Σ|/Σ|·|：→0 时 δJ₁ 不可单独信任
     finite_horizon: bool = False
     notes: list = field(default_factory=list)
 
@@ -87,6 +94,9 @@ class ErrorControlResult:
                     e_predicted_max=float(self.e_predicted_max),
                     eta_mean=self.eta_mean, steady_bound=self.steady_bound,
                     ir_improve=self.ir_improve, schedule_dT=self.schedule_dT,
+                    qoi_estimate=self.qoi_estimate,
+                    qoi_tolerance=self.qoi_tolerance,
+                    qoi_cancellation=self.qoi_cancellation,
                     finite_horizon=bool(self.finite_horizon),
                     notes=list(self.notes))
 

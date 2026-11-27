@@ -5,6 +5,7 @@
 """
 
 from .descriptor import Descriptor
+from .adjoint import adjoint_field, dJ_weights, qoi_error_estimate
 from .error_propagation import (PropagationClass, classify_propagation,
                                  conservation_drift_rate,
                                  correction_interval, error_recursion_bound,
@@ -29,6 +30,7 @@ __all__ = [
     "PropagationClass", "classify_propagation", "finite_time_gain",
     "logarithmic_norm", "conservation_drift_rate", "correction_interval",
     "steady_bound", "error_recursion_bound",
+    "adjoint_field", "qoi_error_estimate", "dJ_weights",
     "hinf_norm", "resolvent_peak", "peak_with_projection",
     "tail_exponent", "energy_tail", "fourier_metrics", "shock_sensor",
     "delay_mass_matrix", "skew_descriptor", "skew_report",

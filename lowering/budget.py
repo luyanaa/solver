@@ -271,6 +271,11 @@ def _error_control_verdict(ec: dict):
               "e_predicted_max=%s, ir_improve=%s, schedule_dT=%s"
               % (cls, _fmt(n_win), _fmt(cov), _fmt(e_meas), _fmt(e_pred),
                  _fmt(ec.get("ir_improve")), _fmt(ec.get("schedule_dT"))))
+    if ec.get("qoi_estimate") is not None:
+        detail += (", qoi_estimate=%s, qoi_tolerance=%s, "
+                   "qoi_cancellation=%s (estimate, not a bound)"
+                   % (_fmt(ec.get("qoi_estimate")), _fmt(ec.get("qoi_tolerance")),
+                      _fmt(ec.get("qoi_cancellation"))))
     if isinstance(n_win, (int, float)) and n_win > 0 and not (
             isinstance(cov, (int, float)) and cov >= 1.0):
         return "rejected", dict(ec), (
@@ -280,6 +285,21 @@ def _error_control_verdict(ec: dict):
                                                               (int, float)):
         return "rejected", dict(ec), (
             "error_control e_measured_max/e_predicted_max missing: %s" % detail)
+    # ε_J 双轨：qoi_tolerance 声明才判（§6.22 续）。δJ₁ 是估计不是上界——
+    # cancellation_factor 进 detail，抵消严重时靠 ε_global 兜底。
+    qoi_tol = ec.get("qoi_tolerance")
+    qoi_est = ec.get("qoi_estimate")
+    if qoi_tol is not None:
+        if not isinstance(qoi_est, (int, float)):
+            return "rejected", dict(ec), (
+                "error_control qoi_tolerance declared but qoi_estimate "
+                "missing: %s" % detail)
+        if qoi_est > qoi_tol:
+            return "rejected", dict(ec), (
+                "error_control eps_J violated: qoi_estimate %s > tolerance %s "
+                "(cancellation=%s): %s"
+                % (_fmt(qoi_est), _fmt(qoi_tol),
+                   _fmt(ec.get("qoi_cancellation")), detail))
     if e_meas > e_pred:
         return "rejected", dict(ec), (
             "error_control e_measured_max %s > e_predicted_max %s: %s"
