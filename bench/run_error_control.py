@@ -47,6 +47,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from analysis.adjoint import (adjoint_field, dJ_weights, dJ_weights_exact)
 from analysis.error_propagation import (classify_propagation,
                                         conservation_drift_rate,
                                         correction_interval, steady_bound)
@@ -689,7 +690,7 @@ def _central_flux(a, b):
 
 
 def _fv_riemann_run(uL, uR, n, T, flux, bias, r_noise, seed, cfl=0.45,
-                    u0=None):
+                    u0=None, state_sources=None):
     """Riemann 初值的周期 FV Euler 步进 + 逐步**守恒型**硬件注入。
 
     注入模型：bias 需满足 Σbias=0（电流镜失配的保守型口径，slack.py
@@ -720,6 +721,13 @@ def _fv_riemann_run(uL, uR, n, T, flux, bias, r_noise, seed, cfl=0.45,
         xi = rng.uniform(-1.0, 1.0, size=n)
         xi = xi - xi.mean()                       # 守恒型噪声（Σξ=0）
         inj = bias + r_noise * xi
+        if state_sources:
+            # 跟材料态走的源（§6.22 路线图①）：注入到**当前值**落在
+            # [lo, hi] 带内的 cell——硬件语义是偏置电流影响持有该状态
+            # 的 gm cell，激波扫过后 cell 换了状态就不再注入（dwell
+            # time 积累由此自然涌现，无需人为遮罩）。
+            for lo, hi, rate in state_sources:
+                inj = inj + rate * ((u >= lo) & (u <= hi))
         F = flux(u, np.roll(u, -1))
         u = u + dt * (-(F - np.roll(F, 1)) / dx + inj)
         inj_l1 += float(np.sum(np.abs(inj)) * dt * dx)  # L1 单位（×dx），与状态更新同一次采样
@@ -1193,6 +1201,244 @@ def case_multi_shock():
                 dX=dX, pred=pred, dJ=dJ)
 
 
+# ------------------------------------------------------------ ε_J 进校准计划
+
+def case_epsj_allocation():
+    """§6.22 路线图⑥：ε_J 分配进 P7 校准计划。
+
+    把 dJ 敏感度（adjoint 权重）变成逐元素残差预算：等贡献
+    s_i·e_i = ε_J/n ⇒ e_i = ε_J/(n·s_i)——敏感度高的元素拿更紧的
+    预算（更短的重标间隔），零敏感度元素不分配（误差只进 ε_global）。
+    可行性对账（calib.py 诚实口径）：预算 < 测量底 ⇒ flagged，不许诺
+    做不到的数字。generate_config(qoi=, eps_J=, T_horizon=) 启用后
+    plan.budget_source="dJ-allocation"，per-element 预算 OVERRIDE
+    全局启发式；不声明时行为不变（run_calib 62/62 回归保障）。
+    """
+    emit("[case_epsj_allocation]  等贡献分配 / 反比权重 / 可行性 / P7 集成")
+    from lowering.p7 import allocate_element_budgets, generate_config
+    from bench.run_calib import _diffusion_bundle
+    from twin.calib import CalibratedTwin, calibrate_background
+
+    # --- 纯分配器：8 模态系统的 dJ 权重（c7=0 ⇒ 零敏感度元素）---
+    N = 8
+    A = np.diag(-0.5 * np.arange(1, N + 1))
+    c = np.ones(N)
+    c[7] = 0.0
+    t = np.linspace(0.0, 2.0, 81)
+    w = dJ_weights(adjoint_field(A, c, t), t)
+    eps_J, floor_ppm, drift = 500.0, 100.0, 500.0
+    alloc = allocate_element_budgets(w.tolist(), eps_J,
+                                     drift_rates=[drift] * N,
+                                     meas_noise_ppm=floor_ppm)
+    items = alloc["items"]
+    add_check("A 分配恒等式：|Σ s_i·e_i − ε_J|=%.2e（fp 级，ε_J 合同总账）"
+              % alloc["identity_residual"],
+              "n_alloc=%d" % alloc["n_allocated"],
+              alloc["identity_residual"] <= 1e-9 * eps_J)
+
+    b_hi = items[0]["residual_budget_ppm"]    # 最高权重 ⇒ 最紧预算
+    b_lo = items[6]["residual_budget_ppm"]    # 最低非零权重 ⇒ 最松
+    ratio = b_lo / b_hi
+    add_check("A 预算反比权重：e_0/e_6=%.3f ≈ w_6/w_0=%.3f（1%% 内）"
+              % (b_hi / b_lo, w[6] / w[0]),
+              "b_0=%.1f b_6=%.1f ppm" % (b_hi, b_lo),
+              abs((b_lo / b_hi) - (w[0] / w[6])) / (w[0] / w[6]) < 0.01)
+
+    add_check("A 零权重元素：不分配（budget=None，误差只进 ε_global）",
+              items[7]["reason"], items[7]["residual_budget_ppm"] is None
+              and not items[7]["feasible"])
+
+    iv_hi = items[0]["update_interval"]
+    iv_lo = items[6]["update_interval"]
+    add_check("A 背景间隔：高权重元素更短（%.1f < %.1f，重标更勤）"
+              % (iv_hi, iv_lo),
+              "interval ∝ budget−floor", iv_hi < iv_lo)
+
+    # --- 可行性对账：给最紧元素一个高于其预算的测量底 ⇒ flagged ---
+    floors = [floor_ppm] * N
+    floors[0] = 400.0                          # > e_0=241.6 ⇒ 做不到
+    alloc_f = allocate_element_budgets(w.tolist(), eps_J,
+                                       floors=floors,
+                                       drift_rates=[drift] * N,
+                                       meas_noise_ppm=floor_ppm)
+    it0 = alloc_f["items"][0]
+    add_check("A 可行性对账：budget %.1f < floor 400 ⇒ flagged（不许诺）"
+              % it0["residual_budget_ppm"],
+              "n_infeasible=%d" % alloc_f["n_infeasible"],
+              (not it0["feasible"]) and "undeliverable" in it0["reason"])
+
+    # --- P7 集成：diffusion-1d 锚点（64 状态），qoi=全 1 ⇒ 全元素分配，
+    # 等贡献下最紧预算 = 500/(64·w_max) 必然低于 100 ppm 测量底 ⇒
+    # flagged —— 这正是诚实口径要抓的：ε_J 太小/元素太多时许诺不了。
+    d, sc, cert = _diffusion_bundle()
+    n_states = len(list(getattr(d, "states", None) or []))
+    twin = CalibratedTwin(params={"gm_over_c": 2.0e6})
+    twin.apply_background("gm_over_c", calibrate_background(
+        {"drift_rate_ppm_per_unit": 500.0}, 10.0, 100.0))
+    qoi = np.ones(n_states)
+    cfg = generate_config(d, cert, sc, twin=twin, qoi=qoi.tolist(),
+                          eps_J=500.0, T_horizon=1.0)
+    peb = cfg.plan.per_element_budgets
+    n_flag = sum(1 for it in (peb or []) if not it["feasible"])
+    add_check("P7 集成：per_element_budgets 发射（%d 项，%d flagged），"
+              "budget_source=%s" % (len(peb or []), n_flag,
+                                    cfg.plan.budget_source),
+              "eps_J=%.0f" % cfg.plan.eps_J_ppm,
+              peb is not None and n_flag >= 1
+              and cfg.plan.budget_source == "dJ-allocation")
+    ident = sum(it["dJ_weight"] * it["residual_budget_ppm"]
+                for it in peb if it["residual_budget_ppm"] is not None)
+    add_check("P7 集成：计划层恒等式 |Σ s_i·e_i − ε_J|=%.2e"
+              % abs(ident - 500.0),
+              "flagged 预算仍计入恒等式（分配数学 vs 可交付性分立）",
+              abs(ident - 500.0) <= 1e-6)
+
+    # --- 采样陷阱检查：刚性系统的 dJ 采样权重退化成端点伪影 ---
+    A_v = np.diag(sc.scaled.A.diagonal()) if hasattr(sc, "scaled") else A
+    lam_v = np.linalg.eigvals(A_v)
+    gamma_max = float(np.max(-lam_v.real))
+    w_sampled = dJ_weights(adjoint_field(A_v, qoi, t), t)
+    w_exact = dJ_weights_exact(A_v, qoi, 2.0)
+    spread_s = max(w_sampled) / min(w_sampled)
+    spread_e = max(w_exact) / min(w_exact)
+    add_check("A 采样陷阱：γ_max·Δt=%.1f ≫ 1 ⇒ 采样权重比 %.1f（端点伪影，"
+              "近均匀）vs 解析 %.0f（集中慢模态）——刚性系统必须走闭式"
+              % (gamma_max * (t[1] - t[0]), spread_s, spread_e),
+              "γ_max=%.3g" % gamma_max,
+              spread_s < 2.0 and spread_e > 100.0)
+
+    # 向后兼容：不声明 ε_J ⇒ 行为不变（run_calib 的全局启发式口径）
+    cfg2 = generate_config(d, cert, sc, twin=twin)
+    add_check("向后兼容：不声明 ε_J ⇒ per_element_budgets=None，"
+              "budget_source=%s（启发式不变）" % cfg2.plan.budget_source,
+              "run_calib 62/62 回归保障",
+              cfg2.plan.per_element_budgets is None
+              and cfg2.plan.budget_source != "dJ-allocation")
+
+    return dict(identity=alloc["identity_residual"], b_hi=b_hi, b_lo=b_lo,
+                n_flag_p7=n_flag)
+
+
+# ------------------------------------------------------------ dwell-time 演化
+
+def case_runtime_dwell():
+    """§6.22 路线图①：运行时源的 dwell-time 界面演化（三运行对照）。
+
+    多激波 case 的诚实边界（u2 微扰取 IC）在此收口：运行时源（双激波
+    夹层内的均匀质量源 ε）的偏差只在 cell 的 **dwell time** 内积累
+    （出生时零、被 shock B 吞掉时达 ε·dwell(t)，dwell = W(t)/(u2−s23)
+    随夹层收窄而衰减）⇒ 运行时源敏感度被系统性地压低。解析：
+
+        δx_b(T) = (ε/2)·∫dwell = (ε/2)·0.2667（T=0.4 窗口）
+        δX(T)   = 0.09ε  vs  IC 微扰 0.3ε  ⇒ 衰减因子 0.3
+
+    显式界面演化器（evolve_shock_interfaces）逐步推进 (x, uL, uR)
+    三元组 + 合并事件，FV 三运行（clean / IC / 运行时源）对账：
+      G1 模型 sanity（clean 界面轨迹 = 解析）
+      F1 δx_b(T/4) 模型 vs FV（亚 cell）
+      F2 δX(T) 模型 vs FV
+      F3 衰减因子：δX_runtime/δX_IC ≈ 0.3（运行时源 ≠ IC 微扰，
+         定量否证"源和 IC 等价"的天真假设）
+      F4 ε_J 证书：运行时源 QoI 证据进聚合
+    """
+    emit("[case_runtime_dwell]  界面演化器 / dwell 衰减 / 三运行对账")
+    from lowering.error_control import evolve_shock_interfaces
+
+    u1, u2, u3 = 1.0, 0.6, 0.0
+    x2, x3 = 0.3, 0.6
+    n, T = 256, 0.8
+    dx = 1.0 / n
+    eps = 2e-3
+    centers = (np.arange(n) + 0.5) * dx
+    u2_mask = (centers >= x2) & (centers < x3)
+
+    shocks0 = [dict(x0=x2, uL=u1, uR=u2), dict(x0=x3, uL=u2, uR=u3)]
+    t4 = round(T / 4, 6)
+
+    # G1：模型 sanity（clean 界面轨迹 = 解析 Riemann 演化）
+    m_clean = evolve_shock_interfaces(shocks0, {}, T,
+                                      snap_times=[T / 4, T])
+    xa4, xb4 = (m_clean["traj"][t4][0][0],
+                m_clean["traj"][t4][1][0])
+    add_check("G1 模型 clean 界面（t=%.2f）：x_a=%.4f x_b=%.4f vs 解析 "
+              "(%.2f, %.2f)（±1 cell）"
+              % (t4, xa4, xb4, x2 + 0.8 * t4, x3 + 0.3 * t4),
+              "merges=%s" % [("%.3f" % g["t"], "%.3f" % g["x"])
+                             for g in m_clean["merges"]],
+              abs(xa4 - (x2 + 0.8 * t4)) <= dx
+              and abs(xb4 - (x3 + 0.3 * t4)) <= dx
+              and abs(m_clean["merges"][0]["t"] - 0.6) <= dx
+              and abs(m_clean["merges"][0]["x"] - 0.78) <= dx)
+
+    # 三次 FV 运行（同 seed，确定性）
+    u0_clean = np.where(centers < x2, u1, np.where(centers < x3, u2, u3))
+    u0_ic = np.where(centers < x2, u1,
+                     np.where(centers < x3, u2 + eps, u3))
+    # 运行时源：跟 u2 材料态走的值带注源 [0.6, 0.65]（覆盖新生 0.6 与
+    # 已积累 ε·t 的 cell；fan 区间值 0.6 的 cell 也会被注入——其偏差
+    # 困在 fan 特征线上到不了激波，对 δX 无贡献，实测见 F2/F3）
+    state_src = [(u2, u2 + 0.05, eps)]
+    x, snaps_c, _ = _fv_riemann_run(u1, u3, n, T, _godunov_flux,
+                                    np.zeros(n), 0.0, seed=81, u0=u0_clean)
+    _, snaps_i, _ = _fv_riemann_run(u1, u3, n, T, _godunov_flux,
+                                    np.zeros(n), 0.0, seed=81, u0=u0_ic)
+    _, snaps_r, _ = _fv_riemann_run(u1, u3, n, T, _godunov_flux,
+                                    np.zeros(n), 0.0, seed=81, u0=u0_clean,
+                                    state_sources=state_src)
+    m_rt = evolve_shock_interfaces(shocks0, {1: eps}, T,
+                                   snap_times=[T / 4, T])
+
+    # F1：合并激波位移（T=0.8，材料耗尽 ⇒ 无在途质量污染）——质量等价
+    # 位置（括号内 (u−uR) 质量折算的位移），亚 cell 可比（fp 精度）。
+    # 注意 _jump_positions 的插值分数恒等于面位置（局部中点水平被
+    # 消掉），只能给 ±1 cell——亚 cell 位移必须走质量等价口径。
+    def _front_mass(x_arr, u_arr, i_lo, i_hi, uL_loc, uR_loc):
+        return float(x_arr[i_lo] + np.sum(u_arr[i_lo:i_hi] - uR_loc)
+                     * dx / (uL_loc - uR_loc))
+
+    u_T_c = snaps_c[round(T, 6)]
+    i_f = int(np.argmin(u_T_c))               # 合并激波右侧最低谷
+    i_lo, i_hi = max(i_f - 16, 0), min(i_f + 8, n)
+    p_c = _front_mass(x, u_T_c, i_lo, i_hi, u1, u3)
+    p_i = _front_mass(x, snaps_i[round(T, 6)], i_lo, i_hi, u1, u3)
+    p_r = _front_mass(x, snaps_r[round(T, 6)], i_lo, i_hi, u1, u3)
+    dX_fv = p_r - p_c
+    dX_ic = p_i - p_c
+    dX_model = m_rt["X_T"] - m_clean["X_T"]
+    add_check("F1 δX(T)：FV %.3e vs 界面演化模型 %.3e（±50%%，"
+              "质量等价位置，材料已耗尽无在途污染）"
+              % (dX_fv, dX_model),
+              "clean p=%.4f" % p_c,
+              abs(dX_fv - dX_model) <= 0.5 * abs(dX_model) + 1e-9)
+
+    # F2：dwell 衰减因子——窗口质量比 δJ_rt/δJ_IC（解析 0.3：夹层内
+    # 源只在 dwell time 内积累，IC 微扰则全程全额）
+    win = (x >= 0.82) & (x <= 0.98)             # 含合并激波，避开 fan 缘 0.8
+    J = lambda uu: float(np.sum(uu[win]) * dx)
+    dJ_rt = J(snaps_r[round(T, 6)]) - J(snaps_c[round(T, 6)])
+    dJ_ic = J(snaps_i[round(T, 6)]) - J(snaps_c[round(T, 6)])
+    ratio = dJ_rt / max(abs(dJ_ic), 1e-300)
+    add_check("F2 dwell 衰减：δJ_runtime/δJ_IC=%.2f ∈ [0.1, 0.5]"
+              "（解析 0.3——运行时源 ≠ IC 微扰，dwell time 是衰减根源）"
+              % ratio,
+              "δJ_IC=%.3e δJ_rt=%.3e" % (dJ_ic, dJ_rt),
+              0.1 <= ratio <= 0.5 and dJ_rt < dJ_ic)
+
+    # F3：ε_J 证书（运行时源 QoI：estimate 口径进聚合）
+    ec = ErrorControlResult(cls="neutral", n_windows=1, coverage_ratio=1.0,
+                            e_measured_max=abs(dJ_rt),
+                            e_predicted_max=abs(dJ_rt),
+                            qoi_estimate=abs(dJ_rt), qoi_tolerance=1e-3,
+                            qoi_cancellation=None).as_dict()
+    from lowering.budget import _error_control_verdict
+    v, _, dv = _error_control_verdict(ec)
+    add_check("F3 ε_J 证书：运行时源 δJ=%.3e ≤ ε_J ⇒ pass（estimate 口径）"
+              % abs(dJ_rt), v, v == "pass" and "estimate" in dv)
+
+    return dict(dX_fv=dX_fv, dX_model=dX_model, dX_ic=dX_ic, ratio=ratio,
+                dJ_rt=dJ_rt, dJ_ic=dJ_ic)
+
+
 # ---------------------------------------------------------------- main
 
 def main():
@@ -1212,6 +1458,10 @@ def main():
     dwr = case_shock_dwr()
     emit("")
     mul = case_multi_shock()
+    emit("")
+    alc = case_epsj_allocation()
+    emit("")
+    dwl = case_runtime_dwell()
     n_pass = sum(1 for c in _checks if c["ok"])
     emit("")
     emit("%d/%d checks passed" % (n_pass, len(_checks)))
@@ -1227,7 +1477,8 @@ def main():
                              model="behavioral: quantize + bounded noise + bias"),
                    poisson_ir=ir, diffusion=dif, constraint_fabric=con,
                    adjoint_qoi=adj, burgers=bur, shock_dwr=dwr,
-                   multi_shock=mul, checks=_checks)
+                   multi_shock=mul, epsj_alloc=alc, runtime_dwell=dwl,
+                   checks=_checks)
     with open(os.path.join(out_dir, "error_control.json"), "w") as fh:
         json.dump(payload, fh, indent=1, ensure_ascii=False)
     return n_pass == len(_checks)

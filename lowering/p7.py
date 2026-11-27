@@ -33,7 +33,7 @@ import numpy as np
 from dataclasses import dataclass, field
 
 __all__ = ["ElementConfig", "CalibPlan", "Config", "generate_config",
-           "C_BANK_CODES"]
+           "allocate_element_budgets", "C_BANK_CODES"]
 
 # 集成器 tile 的名义电容（计划层面的占位；PDK 数字来自 twin.spice.extract）
 C_BANK_F = 1e-12
@@ -83,15 +83,104 @@ class CalibPlan:
     foreground: list              # [{quantity, method, stimulus, ...}]
     background: dict              # {"rate_ppm_per_unit", "reference", "update_interval"}
     residual_budget_ppm: float | None   # None ⇒ 噪声轴未评估，不承诺
-    budget_source: str = "none"   # "noise-axis" | "floored" | "none"
+    budget_source: str = "none"   # "noise-axis" | "dJ-allocation" | "none"
     notes: list[str] = field(default_factory=list)
+    # --- ε_J 逐元素分配（§6.22 路线图⑥；qoi+eps_J 声明时启用）---
+    per_element_budgets: list | None = None   # [{element, state, dJ_weight,
+                                              #   residual_budget_ppm, floor_ppm,
+                                              #   update_interval, feasible, reason}]
+    eps_J_ppm: float | None = None            # QoI 总误差合同（ppm）
 
     def as_dict(self) -> dict:
         return dict(foreground=[dict(f) for f in self.foreground],
                     background=dict(self.background),
                     residual_budget_ppm=self.residual_budget_ppm,
                     budget_source=self.budget_source,
-                    notes=list(self.notes))
+                    notes=list(self.notes),
+                    per_element_budgets=([dict(x) for x in
+                                          self.per_element_budgets]
+                                         if self.per_element_budgets is not None
+                                         else None),
+                    eps_J_ppm=self.eps_J_ppm)
+
+
+def allocate_element_budgets(sens, eps_J_ppm: float, floors=None,
+                             drift_rates=None, meas_noise_ppm: float = 100.0,
+                             loop_gain: float = 1e4) -> dict:
+    """ε_J 等贡献分配（§6.22 路线图⑥）：dJ 敏感度 → 逐元素残差预算。
+
+    合同：δJ = Σ s_i·e_i ≤ ε_J，等贡献 s_i·e_i = ε_J/n_alloc ⇒
+    e_i = ε_J/(n_alloc·s_i)。敏感度高的元素拿**更紧**的预算（更短的
+    重标间隔），敏感度为零的元素不分配（QoI 不可观，其误差只进
+    ε_global 全局轨——双轨分工，见 §6.22 adjoint 小节）。
+
+    可行性（calib.py 诚实口径）：e_i < floor_i（测量底）⇒ flagged
+    infeasible——预算低于测量底是许诺做不到的数字，计划只标不承诺；
+    可行元素的背景重标间隔由 update_interval_for_budget 反解
+    （interval_i = (e_i − floor_i)(1+loop_gain)/drift_i）。
+
+    参数：sens 逐元素 dJ 敏感度份额（Σ=1，来自 analysis.adjoint.
+    dJ_weights 的节点权重按元素映射；None 元素跳过）；floors 逐元素
+    测量底（缺省统一 meas_noise_ppm）；drift_rates 逐元素漂移速率
+    （缺省/None ⇒ interval 不排程）。
+
+    返回 dict(items=[...], identity_residual, n_allocated, n_infeasible,
+    eps_J_ppm)。identity_residual = |Σ s_i·e_i − ε_J|：分配恒等式
+    复核（fp 级），是 ε_J 合同的总账。
+    """
+    s = np.asarray([0.0 if v is None else float(v) for v in sens], dtype=float)
+    n_total = s.size
+    n_alloc = int(np.sum(s > 0))
+    if eps_J_ppm <= 0:
+        raise ValueError("eps_J_ppm 必须 > 0")
+    if n_alloc == 0:
+        raise ValueError("所有元素 dJ 敏感度为零：ε_J 分配无对象"
+                         "（检查 qoi 是否为全零向量）")
+    floors_arr = (np.full(n_total, float(meas_noise_ppm)) if floors is None
+                  else np.asarray([float(meas_noise_ppm) if v is None else float(v)
+                                   for v in floors], dtype=float))
+    drift_arr = (np.full(n_total, np.nan) if drift_rates is None
+                 else np.asarray([np.nan if v is None else float(v)
+                                  for v in drift_rates], dtype=float))
+
+    from twin.calib import update_interval_for_budget
+
+    items = []
+    acc = 0.0
+    n_infeasible = 0
+    for i in range(n_total):
+        if s[i] <= 0:
+            items.append(dict(index=i, dJ_weight=0.0,
+                              residual_budget_ppm=None,
+                              floor_ppm=float(floors_arr[i]),
+                              update_interval=None, feasible=False,
+                              reason="zero dJ weight: not allocated "
+                                     "(error goes to eps_global only)"))
+            continue
+        e_i = eps_J_ppm / (n_alloc * s[i])
+        acc += s[i] * e_i
+        feasible = bool(e_i >= floors_arr[i])
+        interval = None
+        if feasible and np.isfinite(drift_arr[i]) and drift_arr[i] > 0:
+            interval = update_interval_for_budget(drift_arr[i], e_i,
+                                                  float(floors_arr[i]),
+                                                  loop_gain)
+        if not feasible:
+            n_infeasible += 1
+        items.append(dict(index=i, dJ_weight=float(s[i]),
+                          residual_budget_ppm=float(e_i),
+                          floor_ppm=float(floors_arr[i]),
+                          update_interval=(float(interval)
+                                           if interval is not None else None),
+                          feasible=feasible,
+                          reason=("" if feasible else
+                                  "budget %.4g ppm < floor %.4g ppm: "
+                                  "undeliverable (raise eps_J, lower floor, "
+                                  "or drop the element)" % (e_i, floors_arr[i]))))
+    return dict(items=items,
+                identity_residual=abs(acc - float(eps_J_ppm)),
+                n_allocated=n_alloc, n_infeasible=n_infeasible,
+                eps_J_ppm=float(eps_J_ppm))
 
 
 @dataclass
@@ -131,7 +220,8 @@ class Config:
 # ---------------------------------------------------------------------------
 def generate_config(discretized, cert, scaling,
                     twin=None, C_bank: float = C_BANK_F,
-                    meas_noise_ppm: float = 100.0) -> Config:
+                    meas_noise_ppm: float = 100.0,
+                    qoi=None, eps_J=None, T_horizon=None) -> Config:
     """把 (Discretized, Certificate, ScalingResult, CalibratedTwin) 编成配置。
 
     逻辑（每条都是消费既有证据，不重算）：
@@ -151,7 +241,10 @@ def generate_config(discretized, cert, scaling,
         预算已经越界，配置如实放大 σ_scale=axis 值并 flag，不自造裕度）；
       * residual_budget 取 max(标定噪声底, noise 轴隐含的容许分数误差)，
         且 plan.residual_budget ≥ meas_noise_ppm（承诺不能低于测量底）。
-        floor/axis 是启发式：跨轴的 dJ 敏感度分配是 B2 refinement；
+        声明 qoi+eps_J+T_horizon 时启用 **ε_J 逐元素分配**（§6.22 路线
+        图⑥）：dJ 敏感度（analysis.adjoint，物理时间 A_v 上的伴随权重）
+        按等贡献 e_i = ε_J/(n·s_i) 分配逐元素预算，floor 可行性对账 +
+        逐元素背景间隔反解——per-element 预算 OVERRIDE 全局启发式；
       * 证书不可行/rejected ⇒ 对应元素 flagged=True，plan 只标不计划。
     """
     desc = getattr(discretized, "descriptor", discretized)
@@ -358,9 +451,64 @@ def generate_config(discretized, cert, scaling,
         from twin.calib import update_interval_for_budget
         background["update_interval"] = update_interval_for_budget(
             bg_rate, budget, meas_noise_ppm)
+    # ---- ε_J 逐元素分配（§6.22 路线图⑥）：声明 qoi+eps_J+T_horizon
+    # 且系数图可用时启用；dJ 权重算在**物理时间** A_v 上（与元素预算
+    # 同一物理口径）。分配恒等式 Σ s_i·e_i = ε_J 由等贡献构造保证。
+    per_element_budgets = None
+    eps_J_used = None
+    if (qoi is not None and eps_J is not None and T_horizon is not None
+            and A_v is not None):
+        from analysis.adjoint import (adjoint_field, dJ_weights,
+                                      dJ_weights_exact)
+        qoi_arr = np.asarray(qoi, dtype=float)
+        t_grid = np.linspace(0.0, float(T_horizon), 65)
+        diag_scale = max(1.0, float(np.abs(np.diag(A_v)).max()))
+        if np.abs(A_v - np.diag(np.diag(A_v))).max() <= 1e-9 * diag_scale:
+            # 对角实负（spectral tile 形态）：闭式权重——刚性系统的
+            # 梯形采样陷阱（快模态伴随在 t=T 处 1/γ 尖峰欠采样，权重
+            # 退化成 1/n 端点伪影，见 analysis.adjoint 记录）必须避开
+            w = dJ_weights_exact(A_v, qoi_arr, float(T_horizon))
+        else:
+            # 非对角走采样，但分辨率守卫 fail-closed：γ_max·Δt > 1
+            # 说明快模态伴随尖峰欠采样，权重不可信（宁缺毋滥）
+            lam_v = np.linalg.eigvals(A_v)
+            gamma_max = float(np.max(-lam_v.real))
+            if gamma_max * (float(T_horizon) / (len(t_grid) - 1)) > 1.0:
+                raise ValueError(
+                    "伴随采样分辨率不足：γ_max·Δt=%.3g > 1（快模态 1/γ "
+                    "尖峰欠采样，dJ 权重不可信）——加密 t_grid 或改用 "
+                    "对角闭式" % (gamma_max * float(T_horizon)
+                                  / (len(t_grid) - 1)))
+            w = dJ_weights(adjoint_field(A_v, qoi_arr, t_grid), t_grid)
+        if w.shape[0] != len(states):
+            raise ValueError("qoi 维度必须等于状态数 %d" % len(states))
+        sens = [float(w[i]) if i < len(states) else None
+                for i in range(len(elements))]
+        drift = ([bg_rate] * len(elements)) if bg_rate > 0.0 else None
+        alloc = allocate_element_budgets(sens, float(eps_J), floors=None,
+                                         drift_rates=drift,
+                                         meas_noise_ppm=meas_noise_ppm)
+        per_element_budgets = []
+        for it in alloc["items"]:
+            it = dict(it)
+            idx = it["index"]
+            it["element"] = elements[idx].name
+            it["state"] = states[idx] if idx < len(states) else None
+            per_element_budgets.append(it)
+        eps_J_used = float(eps_J)
+        budget_source = "dJ-allocation"
+        notes.append(
+            "eps_J=%.4g ppm per-element dJ allocation: %d/%d elements "
+            "allocated, %d infeasible (budget < floor), identity residual "
+            "%.2e — per-element budgets OVERRIDE the global heuristic "
+            "residual_budget_ppm" % (eps_J, alloc["n_allocated"],
+                                     len(elements), alloc["n_infeasible"],
+                                     alloc["identity_residual"]))
+
     plan = CalibPlan(foreground=foreground, background=background,
                      residual_budget_ppm=budget, budget_source=budget_source,
-                     notes=notes)
+                     notes=notes, per_element_budgets=per_element_budgets,
+                     eps_J_ppm=eps_J_used)
 
     src = dict(alpha=alpha, lam_max=lam_max,
                cert_status=status, binding_axis=binding,

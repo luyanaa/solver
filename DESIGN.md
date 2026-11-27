@@ -1059,15 +1059,31 @@ Fail-closed B2 extension（`extract_b2.py`、`results/b2_extract.json` 的 `stat
 - **逐个激波线性叠加失效（E5）**：单激波界面模型只看终态相邻态 ⇒ 预测 δX=0，实测 4.88e-4——相互作用敏感度不可省略，必须显式界面状态演化（合并时刻 t_m 由闭合率决定、与 u2 无关这一解析事实，正是叠加模型丢失的 INFORMATION）。这把 shock-DWR 的"线性叠加不成立"从 caveat 升级为带解析敏感度系数的实测命题。
 - **检测器工程化**：Euler+Godunov 把激波展宽到 2-4 cell（n=256 时 (1,0.6) 激波三格各降 ~0.07），间断检测必须低阈值+4dx 聚类，否则一道激波被计成多跳（实测翻车）。ε_J 证书：跨合并激波窗口的部分质量 QoI，界面项占比 81%，δJ ≤ ε_J ⇒ pass。
 
-**诚实边界**：u2 微扰取 IC（真 Riemann 态变更）而非运行时源——运行时源在双激波夹层内有 dwell-time 积累（cell 被 shock2 吞掉前只积累部分偏差），是显式界面状态演化的后续内容；两态以上敏感度系数的解析式依赖逐段 Riemann 结构，一般流场须离散伴随；L1 收缩仍是标量凸通量口径。
+**诚实边界**：运行时源的 dwell-time 效应已由界面演化器收口（见下）；两态以上敏感度系数的解析式依赖逐段 Riemann 结构，一般流场须离散伴随；L1 收缩仍是标量凸通量口径。
+**运行时源 dwell-time 界面演化（2026-11-27，路线图①完成，bench case_runtime_dwell，85/85）：**
+
+多激波 case 的诚实边界（u2 微扰取 IC）在此收口。`lowering/error_control.evolve_shock_interfaces`：显式界面状态演化器——每道激波 (x, uL, uR) 三元组沿时间推进，区域均匀源 ε 的偏差只在 cell 的 **dwell time** 内积累（dwell = W(t)/(uL−s⁰)，夹层收窄 ⇒ dwell 衰减），被下游激波吸收进左态；合并事件把 (uL_左, uR_右) 并成单激波、被并区域的源随之消失。模型中心近似：新生态偏差（龄期 ~dt）忽略。
+
+- **dwell 衰减定量实测（F2）**：运行时源（跟 u2 材料态走的值带注源 [0.6,0.65]——硬件语义：偏置电流影响持有该状态的 gm cell）的窗口质量位移 δJ_rt=1.56e-4 vs IC 微扰 δJ_IC=6.02e-4，比值 **0.26 ≈ 解析 0.3**——"运行时源 ≠ IC 微扰"从定性警告变成带系数的实测命题（IC 微扰全程全额积累，运行时源只在 dwell 内积累）。
+- **界面演化模型 vs FV（F1）**：合并激波位移 δX 实测 1.56e-4 vs 模型 1.41e-4（偏差 11%）；clean 界面轨迹精确（x_a/x_b/合并事件 ±1 cell）。模型足以做运行时注入口径的敏感度预测（路线图⑥的激波邻域联动即以此为接口）。
+- **测量口径教训（实测翻车入库）**：(a) 固定空间 mask 的源注入打在已被激波扫过的 cell 上——运行时源必须**跟材料态走**（值带注源：当前值 ∈ [u2, u2+0.05] 的 cell）；(b) `_jump_positions` 的局部中点插值分数恒等于面位置（构造性恒等），亚 cell 位移必须走**质量等价位置**（括号内 (u−uR) 质量折算）；(c) T=0.8 材料已耗尽 ⇒ 无在途质量污染，括号干净。
+- **ε_J 证书（F3）**：运行时源 QoI estimate 口径进聚合，δJ ≤ ε_J ⇒ pass。
+**ε_J 分配进 P7 校准计划（2026-11-27，路线图⑥完成，bench case_epsj_allocation，81/81）：**
+
+- **等贡献分配落地**：`lowering/p7.allocate_element_budgets` 把 dJ 权重变成逐元素残差预算——s_i·e_i = ε_J/n_alloc ⇒ e_i = ε_J/(n·s_i)，分配恒等式 Σ s_i·e_i = ε_J 精确到 fp（5.7e-14），预算反比权重（e_0/e_6 = 0.226 = w_6/w_0），零敏感度元素不分配（误差只进 ε_global——双轨分工），背景重标间隔由 `update_interval_for_budget` 逐元素反解（高权重 ⇒ 重标更勤）。
+- **generate_config(qoi=, eps_J=, T_horizon=)**：声明后 plan.budget_source="dJ-allocation"、per_element 预算 OVERRIDE 全局启发式；不声明时行为不变（run_calib 62/62 回归通过）。
+- **可行性对账是真正的牙齿**：diffusion-1d（64 态）+ ε_J=500 ppm + 测量底 100 ppm ⇒ 大部分元素预算 < 测量底被 **flagged undeliverable**（诚实口径：ε_J 太小/元素太多时计划不许诺，要么提高 ε_J 要么降测量底）；分配恒等式仍精确（分配数学 vs 可交付性分立）。
+- **刚性采样陷阱（本轮新发现，adjoint.py 记录）**：dJ 权重的梯形采样对刚性系统失效——快模态伴随 λ_i(t)=c_i·e^{−γ_i(T−t)} 在 t=T 处是 1/γ_i 尖峰，65 点均匀网格完全分辨不了，实测权重退化成 1/n 端点伪影（spread=1.0）而解析权重 spread=4096。修复：`dJ_weights_exact`（对角实负系统闭式 (1−e^{−γT})/γ，p7 优先走闭式）；非对角走采样 + 分辨率守卫 fail-closed（γ_max·Δt>1 ⇒ raise，宁缺毋滥）。
+
+**诚实边界**：分配假设元素残差到 QoI 的映射是线性的（s_i 常数）——运行时状态相关的敏感度（激波邻域）尚需界面态演化联动；c≥0 逐模态口径（signed QoI 拒绝）；非对角 A 的采样路径依赖调用方保证分辨率。
 **剩余路线（2026-11-27 收口，按依赖序；已完成项见上六轮）：**
 
-1. **运行时源的 dwell-time 界面演化**：多激波 case 的 u2 微扰取 IC；运行时源在双激波夹层内只积累部分偏差（cell 被 shock2 吞掉前的 dwell time），需要显式界面状态演化（每道激波的 (位置, 左态, 右态) 三元组沿时间推进 + 合并事件），这是把 E4 敏感度从 IC 口径推广到运行时注入口径的前提。
+1. ~~**运行时源的 dwell-time 界面演化**~~（✅ 2026-11-27 已实现：`evolve_shock_interfaces` 界面状态演化器 + 值带注源 FV 对账，dwell 衰减因子实测 0.26 ≈ 解析 0.3，见上 dwell-time 小节）
 2. **descriptor/E≠I 伴随**：`analysis/adjoint.py` 目前 E=I 口径；descriptor 伴随（λ 经 Eᵀ 加权回退）打通后 ε_J 双轨才能覆盖 T4 spectral/stiff tile 的 descriptor 形式。
 3. **非线性 DWR 与离散伴随**：δJ₁ 恒等式依赖线性；非线性系统的一级估计有额外偏差（伴随加权残差正负抵消），须配离散伴随或 MC 覆盖检验，并给出可证的覆盖概率口径。
 4. **Euler/NS 外推**：L1 收缩是标量凸通量口径；Euler/NS 须 entropy-stable DG/通量差分 + 界面态（接触间断/涡量）敏感度，L1→相对熵不等式。
 5. **混沌系统合同**：有限预测窗 + 统计量/QoI 验证（shadowing/ensemble），对接 §1 Level 2 统计可划归——扩张模态的调度公式终点是 raise，不许诺轨迹精度。
-6. **ε_J 分配进 P7 校准计划**：dJ 权重（adjoint.py）与界面敏感度（DWR）目前只进 evidence；p7 的 per-element residual_budget 还是启发式（floor/noise 轴），应消费 dJ/界面敏感度做逐元素分配，并回填 `bench/run_calib` 的预算口径。
+6. ~~**ε_J 分配进 P7 校准计划**~~（✅ 2026-11-27 已实现：`p7.allocate_element_budgets` + `generate_config(qoi=, eps_J=, T_horizon=)`，见上 ε_J 分配小节；剩余子项：激波邻域界面敏感度联动需界面态演化先行）
 7. **全量回归**：`bench.run_all` 重跑（套件数 26），刷新 2026-11-20 的全仓验收记录。
 
 ---
@@ -1497,7 +1513,13 @@ Stage-A 退出条件 1–3 由 §6.10/§6.13 与 `bench/problems.py` 三锚覆�
                                     # 界面项 ≥21× 主导、光滑预测=保守上界低 10×、
                                     # 空间分配 100×）/ 多激波相互作用
                                     # （解析合并 t_m=0.6 命中、中间态敏感度
-                                    # 穿透合并 ∂X/∂u2=t_m/2、叠加失效实测）（72/72）
+                                    # 穿透合并 ∂X/∂u2=t_m/2、叠加失效实测）
+                                    # / ε_J 分配进 P7 校准计划（等贡献恒等式
+                                    # fp 级、可行性对账 flagged、刚性采样陷阱
+                                    # → dJ_weights_exact 闭式）
+                                    # / dwell-time 界面演化（evolve_shock_
+                                    # interfaces：运行时源敏感度衰减 0.26≈0.3、
+                                    # 模型 vs FV 偏差 11%、值带注源口径）（85/85）
         ✅ run_stagea.py            # A4/A8/A9 收尾：shear 换基判定（Γ 5.12 /
                                     # scaled / eigvec=1+κ(Φ)=20 税）/ VdP
                                     # （不稳定工点 ⇒ 回退，reduce=poly）/

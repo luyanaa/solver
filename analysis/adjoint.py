@@ -35,6 +35,7 @@ __all__ = [
     "adjoint_field",
     "qoi_error_estimate",
     "dJ_weights",
+    "dJ_weights_exact",
 ]
 
 
@@ -91,6 +92,42 @@ def qoi_error_estimate(lam_field, t_grid, window_rs, window_centers) -> dict:
     )
 
 
+def dJ_weights_exact(A, c, T: float) -> np.ndarray:
+    """对角实负系统的解析 dJ 权重：w_i ∝ c_i·(1−e^{−γ_iT})/γ_i。
+
+    **刚性系统的梯形采样陷阱**（实测 diffusion-1d n=64）：快模态的
+    伴随 λ_i(t) = c_i·e^{−γ_i(T−t)} 在 t=T 处是 1/γ_i 尖峰，均匀网格
+    （65 点、Δt=1/64）完全分辨不了——dJ_weights 的梯形积分只剩 t=T
+    端点样本的贡献，权重退化成 1/n 均匀（端点伪影），而解析权重
+    应集中在慢模态（w ∝ 1/γ，比值 ~10³）。γ_max·Δt ≫ 1 的刚性系统
+    **必须**走本闭式；非对角系统逐模态 |·| 不可对角化，只能采样，
+    调用方自行保证 γ_max·Δt ≪ 1（否则权重不可信，宁缺毋滥）。
+
+    只支持 A 在标准基下近对角且特征值实负（spectral tile 的形态）；
+    否则 raise，不静默回退到不可信的采样。
+    """
+    A = np.asarray(A, dtype=float)
+    c = np.asarray(c, dtype=float)
+    if A.shape[0] != c.shape[0] or A.shape[0] != A.shape[1]:
+        raise ValueError("A 方阵、c 维度匹配")
+    off = np.abs(A - np.diag(np.diag(A))).max()
+    scale = max(1.0, float(np.abs(np.diag(A)).max()))
+    if off > 1e-9 * scale:
+        raise ValueError("A 非对角（off=%.3g）：解析权重只支持对角实负"
+                         "系统；非对角请用 dJ_weights 采样并保证 "
+                         "γ_max·Δt ≪ 1" % off)
+    gamma = -np.diag(A)
+    if np.any(gamma <= 0):
+        raise ValueError("存在非负特征值：不是收缩对角系统，闭式不适用")
+    if np.any(c < 0):
+        raise ValueError("c 含负分量：|·| 逐模态口径要求 c ≥ 0（QoI 同向）")
+    w = c * (1.0 - np.exp(-gamma * T)) / gamma
+    s = float(w.sum())
+    if s <= 0:
+        raise ValueError("权重全零：c=0 或 T 过短")
+    return w / s
+
+
 def dJ_weights(lam_field, t_grid) -> np.ndarray:
     """逐节点 QoI 敏感度权重 w_i = ∫|λ_i(t)|dt（归一到 Σw=1）。
 
@@ -101,6 +138,9 @@ def dJ_weights(lam_field, t_grid) -> np.ndarray:
     lam = np.asarray(lam_field, dtype=float)
     t = np.asarray(t_grid, dtype=float)
     w = np.array([np.trapezoid(np.abs(lam[i, :]), t) for i in range(lam.shape[0])])
+    # 采样分辨率自查（诚实口径）：γ_max·Δt ≫ 1 的快模态伴随在 t=T
+    # 处是 1/γ 尖峰，均匀网格必然欠采样——见 dJ_weights_exact 的
+    # 陷阱记录。这里不静默修正，调用方按 γ_max·Δt 自查。
     s = float(w.sum())
     if s <= 0:
         raise ValueError("伴随场全零：c=0 或系统在 (0,T) 内完全衰减")

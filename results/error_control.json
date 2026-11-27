@@ -140,6 +140,20 @@
   "pred": 0.0006,
   "dJ": 0.0006015624999945665
  },
+ "epsj_alloc": {
+  "identity": 5.684341886080802e-14,
+  "b_hi": 241.20278074584263,
+  "b_lo": 1067.5916325915616,
+  "n_flag_p7": 3
+ },
+ "runtime_dwell": {
+  "dX_fv": 0.0001564290607998231,
+  "dX_model": 0.0001405007014014803,
+  "dX_ic": 0.0006015624992133928,
+  "ratio": 0.26003911290114634,
+  "dJ_rt": 0.00015642977885318293,
+  "dJ_ic": 0.0006015624999945665
+ },
  "checks": [
   {
    "name": "IR 前提：rho_pred=kappa*u_a=0.066 < 1（修正闭环合法）",
@@ -569,6 +583,84 @@
   },
   {
    "name": "E6 ε_J 证书：δJ=6.016e-04（界面项占比 81%）≤ ε_J ⇒ pass",
+   "value": "pass",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "A 分配恒等式：|Σ s_i·e_i − ε_J|=5.68e-14（fp 级，ε_J 合同总账）",
+   "value": "n_alloc=7",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "A 预算反比权重：e_0/e_6=0.226 ≈ w_6/w_0=0.226（1% 内）",
+   "value": "b_0=241.2 b_6=1067.6 ppm",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "A 零权重元素：不分配（budget=None，误差只进 ε_global）",
+   "value": "zero dJ weight: not allocated (error goes to eps_global only)",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "A 背景间隔：高权重元素更短（2824.3 < 19353.8，重标更勤）",
+   "value": "interval ∝ budget−floor",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "A 可行性对账：budget 241.2 < floor 400 ⇒ flagged（不许诺）",
+   "value": "n_infeasible=1",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P7 集成：per_element_budgets 发射（65 项，3 flagged），budget_source=dJ-allocation",
+   "value": "eps_J=500",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "P7 集成：计划层恒等式 |Σ s_i·e_i − ε_J|=0.00e+00",
+   "value": "flagged 预算仍计入恒等式（分配数学 vs 可交付性分立）",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "A 采样陷阱：γ_max·Δt=125663.7 ≫ 1 ⇒ 采样权重比 1.0（端点伪影，近均匀）vs 解析 4096（集中慢模态）——刚性系统必须走闭式",
+   "value": "γ_max=5.03e+06",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "向后兼容：不声明 ε_J ⇒ per_element_budgets=None，budget_source=none（启发式不变）",
+   "value": "run_calib 62/62 回归保障",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "G1 模型 clean 界面（t=0.20）：x_a=0.4600 x_b=0.6600 vs 解析 (0.46, 0.66)（±1 cell）",
+   "value": "merges=[('0.600', '0.780')]",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "F1 δX(T)：FV 1.564e-04 vs 界面演化模型 1.405e-04（±50%，质量等价位置，材料已耗尽无在途污染）",
+   "value": "clean p=0.8829",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "F2 dwell 衰减：δJ_runtime/δJ_IC=0.26 ∈ [0.1, 0.5]（解析 0.3——运行时源 ≠ IC 微扰，dwell time 是衰减根源）",
+   "value": "δJ_IC=6.016e-04 δJ_rt=1.564e-04",
+   "ok": true,
+   "kind": "error_control"
+  },
+  {
+   "name": "F3 ε_J 证书：运行时源 δJ=1.564e-04 ≤ ε_J ⇒ pass（estimate 口径）",
    "value": "pass",
    "ok": true,
    "kind": "error_control"

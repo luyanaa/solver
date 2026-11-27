@@ -51,6 +51,7 @@ __all__ = [
     "classify_constraint",
     "constraint_refine",
     "constraint_schedule",
+    "evolve_shock_interfaces",
 ]
 
 
@@ -251,3 +252,83 @@ def constraint_schedule(mesh: ConstraintMesh, c_node: float,
         drift_rate=drift_rate,
         calib_floor=calib_floor,
     )
+
+
+def evolve_shock_interfaces(shocks, sources, T: float, dt: float | None = None,
+                            snap_times=None) -> dict:
+    """显式界面状态演化（§6.22 路线图①）：激波 (x, uL, uR) 三元组沿时间
+    推进 + 区域源 dwell 积累 + 合并事件。
+
+    模型（Burgers/Riemann 行为级，逐段激波）：
+      * 激波 i 速度 s_i = (uL_i + uR_i + dev_i)/2，dev_i 是其**左态**
+        的运行时偏差——来自它左侧区域的均匀源 ε_i：cell 在区域内以
+        当地状态速度对流，被激波吞掉时已积累 ε_i·dwell_i，
+        dwell_i = W_i/(uL_i − s_i⁰)（W_i 区域宽，uL_i−s_i⁰ 是 cell
+        对激波的追赶率）；准静态口径（dwell 随时间缓变）。
+      * 新生态偏差（激波 i−1 右面刚出的 cell，龄期 ~dt）被忽略：
+        ε·dt ≪ ε·dwell——这是模型的中心近似，run_error_control 的
+        case_runtime_dwell 用 FV 实测对账。
+      * 合并：相邻激波位置交叠 ⇒ 合并为 (uL_左, uR_右) 单激波，被并
+        区域的源随之消失（区域没了，源就没了一一 u2 夹层被吞完后
+        其中间态不再存在）。
+
+    参数：shocks=[{x0, uL, uR}] 从左到右（周期域；wrap 稀疏波不含在
+    内，调用方保证 QoI 窗口避开）；sources={i: rate}，i 是**激波
+    序号**（其左侧区域的均匀质量源，非守恒——显式声明口径）。
+
+    返回 dict(traj={t: [(x, uL, uR), ...]}, merges=[{t, x}], X(T))。
+    诚实边界：单激波线性化 + 准静态 dwell；激波相互作用多次/源很强
+    时偏差不是逐段可加的，须显式界面状态演化升级为离散伴随。
+    """
+    if dt is None:
+        dt = T / 4000.0
+    nst = int(round(T / dt))
+    dt = T / nst
+    want = set(round(float(v), 6) for v in (snap_times or
+                                            [T / 4, T / 2, 3 * T / 4, T, T]))
+    want.add(round(float(T), 6))
+
+    cur = [dict(x=float(s["x0"]), uL=float(s["uL"]), uR=float(s["uR"]))
+           for s in shocks]
+    traj = {}
+    merges = []
+    rec = lambda: dict((round(t, 6), [(round(s["x"], 9), s["uL"], s["uR"])
+                                      for s in cur]))
+    t = 0.0
+    if 0.0 in want:
+        traj[0.0] = rec()[0.0]
+    for k in range(nst):
+        # 区域宽与追赶率（合并事件重排后按当前激波列表算）
+        speeds = []
+        for i, s in enumerate(cur):
+            rate = sources.get(i, 0.0)
+            dev = 0.0
+            if rate != 0.0 and i > 0:
+                W = s["x"] - cur[i - 1]["x"]
+                chase = s["uL"] - (s["uL"] + s["uR"]) / 2.0
+                if chase > 0:
+                    dwell = max(W / chase, 0.0)
+                    dev = rate * dwell
+            speeds.append((s["uL"] + dev + s["uR"]) / 2.0)
+        for i, s in enumerate(cur):
+            s["x"] += speeds[i] * dt
+        t = round((k + 1) * dt, 9)
+        # 合并检测（左到右，交叠即并）
+        merged = []
+        i = 0
+        while i < len(cur):
+            if i + 1 < len(cur) and cur[i + 1]["x"] <= cur[i]["x"]:
+                merges.append(dict(t=t, x=float(cur[i + 1]["x"])))
+                merged.append(dict(x=cur[i + 1]["x"], uL=cur[i]["uL"],
+                                   uR=cur[i + 1]["uR"]))
+                i += 2
+            else:
+                merged.append(dict(x=cur[i]["x"], uL=cur[i]["uL"],
+                                   uR=cur[i]["uR"]))
+                i += 1
+        cur = merged
+        tt = round(t, 6)
+        if tt in want:
+            traj[tt] = [(s["x"], s["uL"], s["uR"]) for s in cur]
+    return dict(traj=traj, merges=merges,
+                X_T=(cur[-1]["x"] if cur else float("nan")))

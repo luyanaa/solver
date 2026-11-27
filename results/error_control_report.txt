@@ -87,4 +87,21 @@
   [PASS] E5 叠加失效：单激波模型预测 δX=0，实测 4.883e-04 ≥ 10³×fp 底（相互作用界面态不可省略）        failure factor: 预测0 vs 实测5e-04
   [PASS] E6 ε_J 证书：δJ=6.016e-04（界面项占比 81%）≤ ε_J ⇒ pass                    pass
 
-72/72 checks passed
+[case_epsj_allocation]  等贡献分配 / 反比权重 / 可行性 / P7 集成
+  [PASS] A 分配恒等式：|Σ s_i·e_i − ε_J|=5.68e-14（fp 级，ε_J 合同总账）                n_alloc=7
+  [PASS] A 预算反比权重：e_0/e_6=0.226 ≈ w_6/w_0=0.226（1% 内）                     b_0=241.2 b_6=1067.6 ppm
+  [PASS] A 零权重元素：不分配（budget=None，误差只进 ε_global）                           zero dJ weight: not allocated (error goes to eps_global only)
+  [PASS] A 背景间隔：高权重元素更短（2824.3 < 19353.8，重标更勤）                            interval ∝ budget−floor
+  [PASS] A 可行性对账：budget 241.2 < floor 400 ⇒ flagged（不许诺）                  n_infeasible=1
+  [PASS] P7 集成：per_element_budgets 发射（65 项，3 flagged），budget_source=dJ-allocation eps_J=500
+  [PASS] P7 集成：计划层恒等式 |Σ s_i·e_i − ε_J|=0.00e+00                          flagged 预算仍计入恒等式（分配数学 vs 可交付性分立）
+  [PASS] A 采样陷阱：γ_max·Δt=125663.7 ≫ 1 ⇒ 采样权重比 1.0（端点伪影，近均匀）vs 解析 4096（集中慢模态）——刚性系统必须走闭式 γ_max=5.03e+06
+  [PASS] 向后兼容：不声明 ε_J ⇒ per_element_budgets=None，budget_source=none（启发式不变） run_calib 62/62 回归保障
+
+[case_runtime_dwell]  界面演化器 / dwell 衰减 / 三运行对账
+  [PASS] G1 模型 clean 界面（t=0.20）：x_a=0.4600 x_b=0.6600 vs 解析 (0.46, 0.66)（±1 cell） merges=[('0.600', '0.780')]
+  [PASS] F1 δX(T)：FV 1.564e-04 vs 界面演化模型 1.405e-04（±50%，质量等价位置，材料已耗尽无在途污染） clean p=0.8829
+  [PASS] F2 dwell 衰减：δJ_runtime/δJ_IC=0.26 ∈ [0.1, 0.5]（解析 0.3——运行时源 ≠ IC 微扰，dwell time 是衰减根源） δJ_IC=6.016e-04 δJ_rt=1.564e-04
+  [PASS] F3 ε_J 证书：运行时源 δJ=1.564e-04 ≤ ε_J ⇒ pass（estimate 口径）            pass
+
+85/85 checks passed
