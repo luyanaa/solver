@@ -3245,11 +3245,11 @@
     "MOS noise is measured here (unlike IHP's PSP103 OSDI gap), but it enters this lane only through the map, not through the QoI (the QoI is deterministic operator error)"
   ],
   "_meta": {
-    "git_sha": "4b8c8e1c5232131be6cea2e9bbc31f069d9a5387",
+    "git_sha": "a16be859d0e6a6acaa375357de8f7dd90ed69a46",
     "git_dirty": true,
     "bench_module": "bench.run_gf180_joint",
     "command": "python3 -m bench.run_gf180_joint",
-    "timestamp_utc": "2026-11-27T10:47:07+00:00",
+    "timestamp_utc": "2026-11-27T12:39:32+00:00",
     "python_version": "3.14.7",
     "numpy_version": "2.5.4",
     "scipy_version": "1.18.1"

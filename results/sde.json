@@ -437,11 +437,11 @@
     "n_passed": 27
   },
   "_meta": {
-    "git_sha": "4b8c8e1c5232131be6cea2e9bbc31f069d9a5387",
+    "git_sha": "a16be859d0e6a6acaa375357de8f7dd90ed69a46",
     "git_dirty": true,
     "bench_module": "bench.run_sde",
     "command": "python3 -m bench.run_sde",
-    "timestamp_utc": "2026-11-27T10:35:06+00:00",
+    "timestamp_utc": "2026-11-27T12:26:16+00:00",
     "python_version": "3.14.7",
     "numpy_version": "2.5.4",
     "scipy_version": "1.18.1"

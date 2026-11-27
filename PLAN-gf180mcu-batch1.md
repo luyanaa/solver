@@ -8,14 +8,14 @@
 - 接口层排序 `HBT ≫ gf180 > sky130 ≫ 短沟道 MOS`（§6.9 λ 表）：gf180 `nfet_03v3` @10 µA 实测 λ=0.034/V、r_o=2.84 MΩ，是**纯 CMOS 里最好的接口器件**（比 IHP MOS 好 28×，比 HBT 差 2.5×）；
 - 单通量源方案在 gf180 上实测把镜像误差从 7.1e-3 压到 8.1e-6（**880×**，四工艺中最大）——T5 的核心机制在无 HBT 时仍然成立；
 - gf180 用 BSIM4，ngspice 原生支持 `.noise`：**MOS γ_eff 可以在 pre-silicon 实测**（IHP MOS 的 PSP103 OSDI 噪声在 ngspice-44.2 未实现、只能推导口径——gf180 反而补上这个洞）；
-- open PDK + 本机工具链齐全：ngspice / xschem / magic 8.3.685 / klayout / yosys 均已安装；PDK 在 `~/.ciel/ciel/gf180mcu/versions/792ef670.../gf180mcuA`（libs.ref/libs.tech），标准单元与 SRAM 宏在 `/grid/gf180mcu`；
+- open PDK + 本机工具链齐全：ngspice / xschem / magic 8.3.685 / klayout / yosys 均已安装；PDK 在 `~/.ciel/ciel/gf180mcu/versions/792ef670.../gf180mcuD`（libs.ref/libs.tech），标准单元与 SRAM 宏在 `/grid/gf180mcu`；
 - 已知坑已有记录：直接 include `sm141064.ngspice` 必须补 `.param fnoicor=0`（`twin/spice/extract.py` 已处理）。
 
 ## 1. 需要先冻结的决策（B0-gf180 修订，写进 DESIGN.md §7.5）
 
 | 决策 | 内容 | 依据 |
 |---|---|---|
-| 工艺 | GF180MCU B1L（3.3V 主 + 5V 模拟档） | λ 表、无 HBT 但 5V 给 v_swing 头 room |
+| 工艺 | **GF180MCU D（gf180mcuD）B1L**（3.3V 主 + 6V 模拟档；PDK `792ef670`） | D 是唯一 m4m5 MIM 物理合法的变体（A 的 mimcap 落 m2m3）；A/D 的 ngspice kit 逐字节相同，primitive bank 零差异继承（§6.25 变体锁定段）；5 层金属给长主干 M5 40 Ω/□ |
 | 模拟器件 | nfet/pfet_03v3（逻辑接口）+ nfet/pfet_05v0（积分器 gm、镜像）| 5V 饱和摆幅 vs gm/ID 折衷，两档都提取后定 |
 | 存 state | MIM 电容（C_bank 梯度 1×/4×/16×，`C_BANK_F=1pF` 对齐 `lowering/p7.py`） | §3.1「C 是资源」 |
 | 接口镜像 | MOS 单通量源（shared reference），1:1/1:4/1:16 阵列 | §6.9：880× 机制在 gf180 实测成立 |
@@ -44,7 +44,7 @@ T1–T10 的 tile 子集沿用 B0 冻结表，第一颗只上 **T1（4–8 积�
 
 ### G3 — 原理图与行为级对账（xschem + ngspice，~2 周）
 - xschem 画 batch-1 全部模拟块：gm-cell + C_bank 积分器（T1）、16-cell 单通量源链（T5 缩版）、route tester（长度/扇出矩阵 + all-pass pad，T7）、噪声源 bank（T8）、SAR ADC + 电流 DAC 测试通道；
-- 每块先跑 transistor SPICE 再过 macromodel，两者极点/增益/噪声 PSD 对到 ±20%（口径记录）；route tester 的实测 t50/相位与 `route_contract.py` 四判据对账（wire RC 参数改用 gf180 金属层表重跑）；
+- 每块先跑 transistor SPICE 再过 macromodel，两者极点/增益/噪声 PSD 对到 ±20%（口径记录）；route tester 的实测 t50/相位与 `route_contract.py` 四判据对账（wire RC 用 **D 版**五层 stack：M3 10.094 aF/µm²+30.021 aF/µm、90 Ω/□，M5 40 Ω/□；线电容只有 magic tech 有，ngspice kit 无此模型，故 T7 网表用 10 段 π 型梯显式建出 80.4 fF）；
 - 交付 `hw/gf180/batch1/`（xschem 原理图 + ngspice testbench + 对账记录进 results）。
 验收线：每块有一张"SPICE vs macromodel vs §6.xx 预测"三方表；对不上的项按"按实测记录"原则写回 DESIGN，不许修齐。
 

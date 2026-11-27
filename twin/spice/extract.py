@@ -22,7 +22,11 @@ def _first(pattern):
 
 
 SKY = _first(CIEL + "/sky130/versions/*/sky130A")
-GF = _first(CIEL + "/gf180mcu/versions/*/gf180mcuA")
+# gf180mcuD: the wafer.space target variant (5 metals, m4m5 MIM legal). The A
+# and D ngspice kits are byte-identical, so the lambda table below is
+# variant-independent; only the back end differs (see extract_gf180.py).
+GF_VARIANT = "gf180mcuD"
+GF = _first(CIEL + "/gf180mcu/versions/*/" + GF_VARIANT)
 IHP = _first(CIEL + "/ihp-sg13/versions/*/ihp-sg13g2")
 
 PDKS = {

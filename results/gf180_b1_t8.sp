@@ -8,9 +8,9 @@
 * The (b) load is a 10 k resistor (its 4.07 nV/rtHz is 3 nV input-referred,
 * below the MOS term; an ideal VCCS load was tried first and the OP collapsed
 * to v(d)=0 because the MOS channel and the VCCS have equal conductance there).
-* Tokens: /home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuA/libs.tech/ngspice = PDK ngspice dir, /home/yanlu/solver/results = results dir.
-.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuA/libs.tech/ngspice/sm141064.ngspice" typical
-.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuA/libs.tech/ngspice/sm141064.ngspice" mimcap_typical
+* Tokens: /home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.tech/ngspice = PDK ngspice dir, /home/yanlu/solver/results = results dir.
+.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.tech/ngspice/sm141064.ngspice" typical
+.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.tech/ngspice/sm141064.ngspice" mimcap_typical
 .param fnoicor=0
 .param sw_stat_global=0
 .param sw_stat_mismatch=0

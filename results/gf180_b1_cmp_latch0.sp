@@ -10,7 +10,7 @@
 *              the transient is used, fitted for the regeneration time
 *              constant in the linear window.
 * Tokens: NGS, OUT, TAG, MM, SEED, and the REGEN_BLOCK line.
-.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuA/libs.tech/ngspice/sm141064.ngspice" typical
+.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.tech/ngspice/sm141064.ngspice" typical
 .param fnoicor=0
 .param sw_stat_global=0
 .param sw_stat_mismatch=0

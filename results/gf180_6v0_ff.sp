@@ -1,5 +1,5 @@
 * gf180 corner probe 6v0_ff (6v0, ff)
-.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuA/libs.tech/ngspice/sm141064.ngspice" ff
+.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.tech/ngspice/sm141064.ngspice" ff
 .param fnoicor=0
 .param sw_stat_global=0
 .param sw_stat_mismatch=0
@@ -50,7 +50,7 @@ Vgn gtn 0 6
 Vgp gtp 0 0
 Itg b 0 dc 2u
 * --- MIM cap probe: 22.36u x 22.36u = 500 um2 @ 2 fF/um2 = 1 pF nominal
-.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuA/libs.tech/ngspice/sm141064.ngspice" mimcap_typical
+.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.tech/ngspice/sm141064.ngspice" mimcap_typical
 Vcb cbn 0 dc 1.5 ac 1
 Xcb cbn 0 cap_mim_2f0_m4m5_noshield c_length=22.36u c_width=22.36u
 .control

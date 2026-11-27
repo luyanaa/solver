@@ -62,7 +62,14 @@ from twin.spice.extract_b2 import (NL, K_B, Q_E, OUT, N_MC_LOCAL, IHP,
                                    _settle, _thd)
 
 CIEL = os.path.expanduser("~/.ciel/ciel")
-GF = sorted(glob.glob(CIEL + "/gf180mcu/versions/*/gf180mcuA"))[0]
+# G1-G3 target: gf180mcu**D** (5 metals; the only variant where the m4m5 MIM
+# the batch-1 netlists instantiate is physically legal -- gf180mcuA has metal1-3
+# only and its magic tech puts mimcap on metal2..metal3). The ngspice kits of A
+# and D are byte-identical, so every device-level number extracted here transfers
+# between variants unchanged; the variant only fixes the back end (metal layers,
+# MIM stack, per-layer R/C). PLAN-gf180mcu-batch1 pins D for the wafer.space run.
+GF_VARIANT = "gf180mcuD"
+GF = sorted(glob.glob(CIEL + "/gf180mcu/versions/*/" + GF_VARIANT))[0]
 NGS = GF + "/libs.tech/ngspice"
 
 FOUR_KT = 4.0 * K_B * 300.0
@@ -570,7 +577,8 @@ def parse_mc(out, fam):
 def extract_all():
     t0 = time.time()
     res = dict(kind="gf180_extract", meta=dict(
-        pdk="gf180mcu", version=os.path.basename(os.path.dirname(GF)),
+        pdk="gf180mcu", variant=GF_VARIANT,
+        version=os.path.basename(os.path.dirname(GF)),
         i_bias_a=I_BIAS, w_um=W_INT * 1e6, l_um=L_INT * 1e6,
         noise_band=(1e3, 1e9), n_mc=N_MC_SEEDS, mc_seed_base=MC_SEED_BASE),
         corners={}, mc={}, noise={}, pvt={}, joint={}, parasitics=None,

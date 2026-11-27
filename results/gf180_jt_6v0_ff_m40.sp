@@ -1,5 +1,5 @@
 * gf180 PVT jt_6v0_ff_m40 (6v0, ff, -40 C, 6 V)
-.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuA/libs.tech/ngspice/sm141064.ngspice" ff
+.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.tech/ngspice/sm141064.ngspice" ff
 .param fnoicor=0
 .param sw_stat_global=0
 .param sw_stat_mismatch=0

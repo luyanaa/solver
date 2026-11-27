@@ -18,7 +18,7 @@ It needs `results/gf180_extract.json` (G1) for its macro column:
 |---|---|---|---|
 | `t1_integrator.sp` | T1 state | replica-diode-biased nMOS gm cell (10 µA, 10u/1u) + one `cap_mim_2f0_m4m5_noshield` 22.36×22.36 µm (1.0163 pF) + ideal 10 µA sink load | a0 = 331.12, f_3dB = 63.26 kHz; macro 333.59 / 63.23 kHz |
 | `t5_flux_chain16.sp` | T5 flux | 16 × 1 pF nodes, 15 `nfet_03v3` 10u/1u pass elements (gate at vdd), source-held, plus a 2-node calibration cell and a 0.1 V step | DC gain 1.0000, R_chord 1189 Ω, g_ss 1.43 mS, τ₁ 187.8 ns vs 73.1 ns composition (tax ×2.57) |
-| `t7_route_tester.sp` | T7 route | two rm3 wires (1000u×2u = 500□, 100u×2u = 50□) four-wire probed, then the 1 mm wire as a route into a 1 pF MIM load driven by a gm cell | 0.0906 Ω/□ (rsh_rm3 0.090), 1 mm route invisible (63.3 vs 63.3 kHz), wire t50 1.38 ps = 5.0 % of the 27.8 ps 1° budget |
+| `t7_route_tester.sp` | T7 route | two rm3 wires (1000u×2u = 500□, 100u×2u = 50□) four-wire probed; then TWO parallel driver+1 pF loads, differing only in the wire model: (i) lumped rm3 45.3 Ω, (ii) 10-section π ladder (4.53 Ω/section, 4.02/8.04…/4.02 fF = 80.4 fF total from the D stack) | 0.0906 Ω/□ (rsh_rm3 0.090); lumped pole 63.3 kHz (= no-wire 63.3), ladder pole 58.6 kHz = −7.31 % vs C-ratio prediction −7.33 %; wire t50 1.38 ps = 5.0 % of the 27.8 ps 1° budget |
 | `t8_noise_bank.sp` | T8 noise | (a) replica of the extractor's cell (100 kΩ load), (b) m = 1/2/4/8 bank (10 kΩ loads), (c) kT/C anchor (1 kΩ + 1 pF MIM), (d) W=100u clean cell | kT/C 63.52 µV vs 63.83 µV (−0.5 %); bank 16.15→10.42 nV/√Hz (×8 area → ×1.55, **not** √8) |
 | `t9_dac5.sp` | T9 statistics | 5-bit binary current DAC, `m=1/2/4/8/16` mirror legs, ideal `S` switches, 1 kΩ summing load, one process per code | LSB 11.100 µA (λ-corrected 11.612), FS 336.55 µA = 30.32 LSB, INL(FS) −2.19 % vs λ −1.19 % |
 | `t10_comparator.sp` | T10 constraint/event | nMOS input pair + cross-coupled regeneration pair, 100 kΩ loads, 20 µA tail, `{REGEN_BLOCK}` OFF/ON variants, `{MM}`/`{SEED}` mismatch tokens | offset −0.000 mV (nominal), 4-draw σ 1.84 mV vs Pelgrom 2.29 mV, τ_reg 0.38 ns, 1 V delay 7.07 ns |
@@ -57,8 +57,14 @@ It needs `results/gf180_extract.json` (G1) for its macro column:
 
 ## Two process-data sources that disagree
 
-PDK `res_typical` says `rsh_rm1..rm4 = 0.09 Ω/□`; magic's `gf180mcuA.tech` prints
-`metal3 10` (a different unit convention). SPICE wins for the resistance. The
+Target variant is **gf180mcuD**, not A: D's magic tech puts `mimcap` on metal4,
+so the m4m5 device every netlist here instantiates is legal only in B/C/D. A/D
+ngspice kits are byte-identical and the D re-extraction reproduces A's numbers
+field-for-field, so the primitive bank carries over unchanged (DESIGN 6.25).
+
+PDK `res_typical` says `rsh_rm1..rm4 = 0.09 Ω/□`; D's magic `resist` table prints
+90/90/90/90/40, i.e. it agrees (A's tech carries a second table with a 10 entry
+that was once read as 10 Ω/□). SPICE wins for the resistance. The
 ngspice kit has **no wire capacitance model at all**, so wire C is taken from the
 tech file's "Nominal capacitances" table (foundry doc PDS_035_03): M3 areacap
 10.094 aF/µm², perimeter 30.021 aF/µm. That is a layout-document number, not a

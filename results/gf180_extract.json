@@ -2,6 +2,7 @@
   "kind": "gf180_extract",
   "meta": {
     "pdk": "gf180mcu",
+    "variant": "gf180mcuD",
     "version": "792ef67037d74c8c51811eab3ce23cf793491296",
     "i_bias_a": 1e-05,
     "w_um": 10.0,
@@ -2116,5 +2117,5 @@
       ]
     }
   },
-  "runtime_s": 158.5
+  "runtime_s": 82.7
 }

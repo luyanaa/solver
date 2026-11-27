@@ -1,5 +1,5 @@
 * gf180 PVT pvt_3v3_t27_v30 (3v3, typical, 27 C, 3 V)
-.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuA/libs.tech/ngspice/sm141064.ngspice" typical
+.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.tech/ngspice/sm141064.ngspice" typical
 .param fnoicor=0
 .param sw_stat_global=0
 .param sw_stat_mismatch=0

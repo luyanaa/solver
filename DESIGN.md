@@ -1161,6 +1161,12 @@ P7 原来只回答"给定 ε_J，每个器件要多准"。反过来：给定器�
 
 B0 的工艺从 SG13G2 切到 **GF180MCU**（PLAN-gf180mcu-batch1.md 批准的 G1）。这一节是切换的全部依据：每一个数都来自 ngspice-44.2 在 PDK `792ef670` 上的实测，10 个 fail-closed block（corner / nmos+pmos noise / TG noise / 48×2 mismatch MC / Pelgrom / 18 PVT / 8 joint / pre-PEX / transient）全绿。
 
+**变体锁定：`gf180mcuD`（2026-11-27）。** 安装树里 A/B/C/D 四个变体俱全；A 只有 metal1–3，D 有 metal1–5。**A 与 D 的 ngspice kit 三个文件逐字节相同**（`sm141064.ngspice` 69bf67dc…、`sm141064_mim.ngspice` 7170d4da…、`design.ngspice` 3e8463…），所以本节全部器件级数字在 A 上同样成立——用 D 重跑 `results/gf180_extract.json` 后**逐字段零差异**（只有 `meta.variant` 从空变成 `gf180mcuD`），这是「primitive bank 可整体继承」的实测证据，不是假设。
+
+变体差别只在后端，而它决定 MIM 的合法性：A 的 magic tech 把 `mimcap` 放在 `metal2`（唯一合法叠层 **m2m3**），D 放在 `metal4`（唯一合法叠层 **m4m5**）。batch-1 全部网表实例化的 `cap_mim_2f0_m4m5_noshield` **在 A 上物理不合法、在 D 上正好合法**。`sm141064_mim.ngspice` 两版都含 m2m3/m3m4/m4m5/m5m6 四个模型，「能找到模型」不等于「能在该变体上画出来」。
+
+D 的五层 stack（magic tech "Nominal capacitances"，typical 角，aF/µm² 面 + aF/µm 周）：M1 29.304/39.431、M2 15.016/33.298、M3 10.094/30.021、M4 7.602/28.153、M5 **5.798/30.386**；方阻 M1–M4 **90 Ω/□**、M5 **40 Ω/□**。A 的 M1–M3 数值与 D 相同（A 的 tech 另有第二张 `resist` 表印 metal3=10/15，曾被读成 10 Ω/□，实为第二张表条目，SPICE `rsh_rm3=0.09` 一直是对的）。这些后端数字只在 P5/B3 版图和 §6.27(c) 的线模型里用，器件数字不受影响。
+
 **(a) 器件族与几何约束。** PDK 提供 3.3 V（`nfet_03v3`/`pfet_03v3`，bin 从 L=0.28 µm 起）与 **6.0 V**（`nfet_06v0`/`pfet_06v0`，bin 从 **L=0.6 µm** 起）两档；计划里写的"5 V"按 PDK 实际是 6 V。6 V 族的 0.5 µm 长度落不进任何 bin，ngspice 报 `could not find a valid modelname` —— 这是**版图规则**（第一批的 TG 用 0.7 µm），不是脚本 bug，`families['6v0']['l_tg']` 记录在案。
 
 **(b) 镜像：系统误差由 λ·ΔVds 决定，共享参考把它清零。**
@@ -1227,7 +1233,7 @@ B0 的工艺从 SG13G2 切到 **GF180MCU**（PLAN-gf180mcu-batch1.md 批准的 G
 
 **(d) 诚实边界。** 失配 draw 的跨角组合是声明的复合口径；`full` 是连续 trim 的上界（100 ppm floor，真实 trim 码范围是 B3）；6.0 V 行是"若建在 6 V 器件上"的反事实，不是第二颗芯片的计划；P 表是 pre-silicon，无 PEX/EM/热；`complete` 只表示 14 项检查全过，不表示硅上会一样。
 
-### 6.27 第一批测试台的三方对账：每个 tile 一个结构、每个数三列（`hw/gf180/batch1/`、`bench/run_gf180_batch1.py`、`results/gf180_batch1.json`，18/18）
+### 6.27 第一批测试台的三方对账：每个 tile 一个结构、每个数三列（`hw/gf180/batch1/`、`bench/run_gf180_batch1.py`、`results/gf180_batch1.json`，20/20）
 
 §6.25 给的是**器件**的数；这一节是**tile** 的数。批一的 characterization vehicle 每个 tile 都有一份跑通的 ngspice 网表（`hw/gf180/batch1/*.sp`，xschem 图纸后补，网表为准），G3 的对账脚本把每一行都排成三列：
 
@@ -1256,11 +1262,31 @@ a0 的 macro−SPICE = +0.7%，极点 +0.05%；design 列慢 6.8%，差额就是
 - 模式一：**τ₁=187.8 ns**（阶跃后 60–250 ns 的指数尾拟合，残差 0.002，950 点）。合成预测 C/(g λ₁)=**73.1 ns**，其中 λ₁=2(1−cos(π/31))=0.01025（15 个自由节点、一个端点被源保持的正确的模一特征值）——**实测/合成 = 2.57×**，这是"每节点链路寄生电容税"：合成里没有 per-node 的结电容/线电容，方向只能更慢，所以这条只记 tax、不设比值 gate。1 mm M3 线的 80 fF 只解释其中一小部分，剩下的是 pass 管的 C_ds/C_gd 与 MIM 的下极板。
 - 口径教训（写进代码注释）：`ac dec 40` 下 −3 dB 必须**在对数频率上插值**；直接取"第一个低于 −3 dB 的栅格点"会虚报 5.7%（66.8 vs 63.3 kHz）。`wrdata` 的复数向量是 (f, re, im) 三列，低频段 re≈|H| 会掩盖这一点。
 
-**(c) T7 route：金属方阻对上，1 mm 线在 1 pF 后面不可见，27.8 ps 预算只花 5%。**
+**(c) T7 route：串联 R 不可见这句话只对了一半——把线电容真的放进网表，极点 −7.31%，与 C 比预测的 7.33% 逐位对上。**
 
+网表现在有**两条并行路径**（同一 gm 驱动、同一 1 pF MIM 负载），差只在线模型：
+
+| 路径 | 线的模型 | 极点 |
+|---|---|---|
+| lumped-R | `rm3` 45.3 Ω 纯串联，无 C | **63.3 kHz**（= 无线 T1 63.3 kHz） |
+| distributed | 10 段 π 梯：每段 4.53 Ω，节点对地 8.04 fF、两端 4.02 fF（总 80.4 fF） | **58.6 kHz** |
+
+- 分布式路径的极点 **58.6 kHz vs C 比预测 63.26×(1.0163/1.0967)=58.6 kHz，误差 0.02%**；位移 **−7.31% vs 预测 −7.33%**。这条 gate（T7d，<8%）第一次把「线电容」从纸面算例变成网表可观测量。
+- 为什么 lumped 路径看不见：45 Ω 只有 2.48 MΩ 驱动阻抗的 **0.0018%**，串联 R 在 1 pF 面前确实可以忽略；**能被看见的只有并联 C**。所以 T7b 的旧结论现在被精确限界为「串联 R 不可见」，T7e 补上"并联 C 可见（7.3%）"——这正是 P0-D 的实测定性。
 - 四线法两条 `rm3` 线（500 方 / 50 方）都给 **0.0906 Ω/□** vs PDK `rsh_rm3=0.09`（+0.66%）。
-- 1 mm×2 µm 线（45.3 Ω）串在 gm 驱动与 1 pF MIM 之间：极点 **63.3 kHz vs 无线的 T1 63.3 kHz**（4 位有效数字相同）——45 Ω 在 1/(2π·2.48 MΩ·1 pF) 面前看不见。按 magic tech 的标称电容（M3 10.094 aF/µm² + 30.021 aF/µm 周长）算 C_wire=80.4 fF、t50=0.3795·RC=**1.38 ps**，是 §6.15 在 100 MHz 的 1° 预算（27.8 ps）的 **5.0%**。
-- 两个工艺数据源冲突，按以下规则记录：PDK `res_typical` 里 rm1–rm4 全是 0.09 Ω/□；magic tech 的 `metal3 10` 是另一套口径（mΩ/□ 量级），**以 SPICE 模型为准**并把冲突留在本节。ngspice kit **完全没有线电容模型**，所以线电容只能取 magic tech 的 "Nominal capacitances"（源文档 PDS_035_03），并在 DESIGN 里标明它是版图文档值、不是 SPICE 值。
+- 线自身 t50=0.3795·RC=**1.38 ps**，是 §6.15 在 100 MHz 的 1° 预算（27.8 ps）的 **5.0%**——线延迟本身仍然便宜，贵的是它对**节点极点**的 7.3% 收税（C 被 1 pF bank 摊薄后才这么小；节点 C 降到 100 fF 时同一根线就是 −45%）。
+- **D 版五层金属 stack（magic tech "Nominal capacitances" typical 角 + SPICE rsh），1 mm×2 µm 直导线**：
+
+| 层 | R (Ω) | C (fF) | t50 (ps) |
+|---|---|---|---|
+| M1 | 45.0 | 137.6 | 2.35 |
+| M2 | 45.0 | 96.8 | 1.65 |
+| **M3** | **45.0** | **80.4** | **1.37** |
+| M4 | 45.0 | 71.6 | 1.22 |
+| **M5** | **20.0** | **72.5** | **0.55** |
+
+  M5 的 40 Ω/□ 把 R 砍半、C 却因周长占比更大而略升，净得 t50 减半——**长主干走 M5，局部扇出走 M3**，这是 B0-gf180 版图阶段的第一条 stack 规则。
+- 三个数据源口径，全部留在本节：(1) PDK `res_typical` rm1–rm4 全 0.09 Ω/□，magic tech 的 `resist` 表对 D 印 90/90/90/90/40（**一致**）；A 版 tech 另有第二张表印 `metal3 10`，曾被读成"10 Ω/□"，实为第二张表条目，SPICE 的 0.09 一直是对的。(2) ngspice kit **没有线电容模型**，线 C 只能取 magic tech 的标称表（源文档 PDS_035_03），标明"版图文档值、非 SPICE 值"。(3) 边缘电容含在周长项里（30 aF/µm），所以细线的 C/长度不是常数——2 µm 宽时 80.4 fF/mm，其中 75% 来自周长项（20.2 面 + 60.2 周）。
 
 **(d) T8 噪声银行：kT/C 锚 0.5%，但 PDK 的白噪声不按面积缩放。** 三个探针：
 
@@ -1417,9 +1443,9 @@ B0 把 §3 的 10-tile 表收敛成一颗可流片的 characterization vehicle�
 
 **这笔修订买什么、卖什么。** 买：开源 PDK 全链路（ngspice/magic/klayout/xschem 已装，单次 ngspice 0.2–0.9 s，10 个 block 全量 78 s）、双电压档、triode 噪声可测、48-draw MC 确定性。卖：接口 λ 差 2.9×（共享参考钳位必须真的做进版图，不能只在网表里"想"）、没有 HBT 的 38.7/V 的 g_m/I_C、6 V 器件的 L 下限 0.6 µm 限制驱动尺寸。**κ_hw 的账不变**：gf180 的 r_o=2.5 MΩ 与 C=1 pF 给出 τ=2.5 µs、f_τ=64 kHz 的 intrinsic 极点（§6.25(f) 的 3.80 τ 建立实测），κ_hw 仍必须在 C1 实测，不能从 PDK 抄。
 
-**B0-gf180 退出条件（与 (c) 同一张表，只换数字）。** 每个 tile 的 `(E,A,B,C)`/`‖H‖₂`/`‖H‖∞`/power/area 五行用 §6.25 的数字填；T1 的 `target_gm_over_c` 由 P7 的 `a_ii` 定，g_m 用 134.7 µS@10.5 µA 的实测点；T5 的单通量源镜像用 3.3 V 的钳位结构；T10 的约束网失配地板用 3.36%；T7 的 wire/buffer 参数换 gf180 金属层（G3 从 PDK tech 文件取 R/C，不用 IHP 的数）。
+**B0-gf180 退出条件（与 (c) 同一张表，只换数字）。** 每个 tile 的 `(E,A,B,C)`/`‖H‖₂`/`‖H‖∞`/power/area 五行用 §6.25 的数字填；T1 的 `target_gm_over_c` 由 P7 的 `a_ii` 定，g_m 用 134.7 µS@10.5 µA 的实测点；T5 的单通量源镜像用 3.3 V 的钳位结构；T10 的约束网失配地板用 3.36%；T7 的 wire/buffer 参数换 gf180 **D 版**金属层（§6.27(c) 的五层 R/C 表；长主干走 M5 40 Ω/□ + 72.5 fF/mm，局部扇出走 M3；线 C 只能取 magic tech，ngspice kit 无此模型）。
 
-**G1–G3 的收口状态（2026-11-27）。** 三个前置门全绿：G1 primitive 基线 27/27（§6.25，`results/gf180_extract.json` + `results/gf180.json`）；G2 MOS-only 的 P 表 14/14（§6.26，`results/gf180_joint.json`，96 行全 bias-valid、`full` 在 1%/2%/5% 三档全 1.00）；G3 batch-1 测试台三方对账 18/18（§6.27，`hw/gf180/batch1/` 五个跑通的网表 + `results/gf180_batch1.json`）。三项 C1 首测项已登记进 §6.27(g)：T5 的 per-node 寄生税 ×2.57、T8 的白噪声-面积缩放（×8 面积只给 ×1.55）、T9 的 m 缩放 DNL（INL −2.19% vs λ 预测的 −1.19%）。G4（版图/PEX）之前的规格表已经可以按 §6.25/§6.26/§6.27 的实测填，不再有 TARGET 占位。
+**G1–G3 的收口状态（2026-11-27）。** 三个前置门全绿：G1 primitive 基线 27/27（§6.25，`results/gf180_extract.json` + `results/gf180.json`）；G2 MOS-only 的 P 表 14/14（§6.26，`results/gf180_joint.json`，96 行全 bias-valid、`full` 在 1%/2%/5% 三档全 1.00）；G3 batch-1 测试台三方对账 **20/20**（§6.27，`hw/gf180/batch1/` 六个跑通的网表 + `results/gf180_batch1.json`）。G3 本轮补了 T7d/T7e：把 magic-tech 线电容做成 10 段 π 型梯进网表，极点从 63.3 kHz 掉到 58.6 kHz（−7.31% vs C 比预测 −7.33%），把「1 mm 线不可见」精确限界为「串联 R 不可见、并联 C 收 7.3% 税」。三项 C1 首测项已登记进 §6.27(g)：T5 的 per-node 寄生税 ×2.57、T8 的白噪声-面积缩放（×8 面积只给 ×1.55）、T9 的 m 缩放 DNL（INL −2.19% vs λ 预测的 −1.19%）。G4（版图/PEX）之前的规格表已经可以按 §6.25/§6.26/§6.27 的实测填，不再有 TARGET 占位。
 
 ### Phase 8：heterogeneous substrates（研究阶段，按 §3.7 的优先级）
 

@@ -7,8 +7,8 @@
 *
 * The runner substitutes 0..1 (0 or 1) and/or {CODE}; one process per code
 * because a single ngspice DC sweep cannot drive 5 independent bit sources.
-* Tokens: /home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuA/libs.tech/ngspice = PDK ngspice dir, /home/yanlu/solver/results = results dir, 16 = code label.
-.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuA/libs.tech/ngspice/sm141064.ngspice" typical
+* Tokens: /home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.tech/ngspice = PDK ngspice dir, /home/yanlu/solver/results = results dir, 16 = code label.
+.lib "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.tech/ngspice/sm141064.ngspice" typical
 .param fnoicor=0
 .param sw_stat_global=0
 .param sw_stat_mismatch=0

@@ -32,12 +32,43 @@ XMi w gin 0 0 nfet_03v3 w=10u l=1u
 Vgac gb gin 0 dc 0 ac 1
 XW3 w z rm3 r_length=1000u r_width=2u
 XCz z 0 cap_mim_2f0_m4m5_noshield c_length=22.36u c_width=22.36u
+* --- second path: same driver cell, but the 1 mm wire is a 10-section
+*     distributed pi-RC ladder. The PDK's ngspice kit models rm3 as a SERIES
+*     resistor only -- there is no wire-capacitance model anywhere in the kit --
+*     so each shunt C here is the magic-tech nominal for metal3
+*     (10.094 aF/um^2 x 2000 um^2 + 30.021 aF/um x 4004 um = 80.4 fF),
+*     split 4.02 / 8.04 ... 8.04 / 4.02 so the total is exact and the two end
+*     caps are half sections. R total = 45.3 ohm in 10 pieces of 4.53 ohm.
+Ila2 vdd wb dc 10u
+XMib wb gin 0 0 nfet_03v3 w=10u l=1u
+Rw0 wb s1 4.53
+Rw1 s1 s2 4.53
+Rw2 s2 s3 4.53
+Rw3 s3 s4 4.53
+Rw4 s4 s5 4.53
+Rw5 s5 s6 4.53
+Rw6 s6 s7 4.53
+Rw7 s7 s8 4.53
+Rw8 s8 s9 4.53
+Rw9 s9 zb 4.53
+CwE wb 0 4.02f
+Cw1 s1 0 8.04f
+Cw2 s2 0 8.04f
+Cw3 s3 0 8.04f
+Cw4 s4 0 8.04f
+Cw5 s5 0 8.04f
+Cw6 s6 0 8.04f
+Cw7 s7 0 8.04f
+Cw8 s8 0 8.04f
+Cw9 s9 0 8.04f
+CwL zb 0 4.02f
+XCzb zb 0 cap_mim_2f0_m4m5_noshield c_length=22.36u c_width=22.36u
 .control
 op
 let r1 = 0.1/i(vm1)
 let r2 = 0.1/i(vm2)
-echo T7OP $&r1 $&r2 $&v(w) $&v(z)
+echo T7OP $&r1 $&r2 $&v(w) $&v(z) $&v(wb) $&v(zb)
 ac dec 40 1 1e8
-wrdata {OUT}/b1_t7_ac.dat v(z) v(w)
+wrdata {OUT}/b1_t7_ac.dat v(z) v(w) v(zb) v(wb)
 .endc
 .end

@@ -40,9 +40,22 @@ PHASE_BUDGET_1DEG_S = 27.8e-12      # DESIGN 6.15: 100 MHz, 1 degree
 VDD = 3.3
 # magic tech "Nominal capacitances" (gf180mcuA.tech, from the foundry doc
 # PDS_035_03): metal3 areacap 10.094 aF/um^2, perimeter 30.021 aF/um.
-M3_AREACAP_AF_UM2 = 10.094
-M3_PERIMCAP_AF_UM = 30.021
-M3_RSH_OHM_SQ = 0.090               # res_typical rsh_rm3 (the SPICE model)
+# ----- gf180mcuD stack (magic tech "Nominal capacitances", typical corner) ----
+# A has metal1-3 only; D has metal1-5 and is the wafer.space target. Its MIM
+# lives on metal4..metal5, so the m4m5 device every batch-1 netlist instantiates
+# is legal ONLY in B/C/D. The ngspice kits of A and D are byte-identical, so the
+# primitive bank transfers; only these back-end numbers are variant-specific.
+M1_AREACAP_AF_UM2, M1_PERIMCAP_AF_UM, M1_RSH_OHM_SQ = 29.304, 39.431, 0.090
+M2_AREACAP_AF_UM2, M2_PERIMCAP_AF_UM, M2_RSH_OHM_SQ = 15.016, 33.298, 0.090
+M3_AREACAP_AF_UM2, M3_PERIMCAP_AF_UM, M3_RSH_OHM_SQ = 10.094, 30.021, 0.090
+M4_AREACAP_AF_UM2, M4_PERIMCAP_AF_UM, M4_RSH_OHM_SQ = 7.602, 28.153, 0.090
+M5_AREACAP_AF_UM2, M5_PERIMCAP_AF_UM, M5_RSH_OHM_SQ = 5.798, 30.386, 0.040
+
+
+def wire_rc(area_af, peri_af, rsh, l_um, w_um):
+    """Distributed-wire R and C for a straight l x w rectangle (magic-tech C)."""
+    c = (area_af * l_um * w_um + peri_af * 2 * (l_um + w_um)) * 1e-18
+    return rsh * l_um / w_um, c
 PAR_VTH_UM = 7.148e-3               # PDK fets_mm par_vth (V * um)
 CHECKS = []
 
@@ -186,22 +199,39 @@ def main():
     # T7  route tester
     # =====================================================================
     t7 = run("t7", _load("t7_route_tester.sp"))
-    r1, r2, vw, vz = op_row(t7, "T7OP")
-    n_sq1 = 1000e-6 / 2e-6
-    rsh = r1 / n_sq1
+    r1, r2, vw, vz, vwb, vzb = op_row(t7, "T7OP")
+    rsh = r1 / (1000e-6 / 2e-6)
     f7, yz = ac(os.path.join(OUT, "b1_t7_ac.dat"), 0)
     _, yw = ac(os.path.join(OUT, "b1_t7_ac.dat"), 1)
-    fp_z = f3db(f7, yz)
-    c_wire = (M3_AREACAP_AF_UM2 * 1000.0 * 2.0
-              + M3_PERIMCAP_AF_UM * 2 * (1000.0 + 2.0)) * 1e-18
+    _, yzb = ac(os.path.join(OUT, "b1_t7_ac.dat"), 2)
+    _, ywb = ac(os.path.join(OUT, "b1_t7_ac.dat"), 3)
+    fp_z, fp_zb = f3db(f7, yz), f3db(f7, yzb)
+    c_wire = wire_rc(M3_AREACAP_AF_UM2, M3_PERIMCAP_AF_UM, M3_RSH_OHM_SQ,
+                     1000.0, 2.0)[1]
     t50_wire = 0.3795 * r1 * c_wire
-    print("\n--- T7 route tester (M3 wire through the PDK's rm3 model) ---")
+    # the ladder path shares the SAME driver and load, so its pole should be the
+    # lumped one scaled by C_total/C_old: (C_mim + C_wire)/C_mim.
+    fp_pred = fp_z * cmim / (cmim + c_wire)
+    stack = {}
+    for nm, a, p_, rs in (("M1", M1_AREACAP_AF_UM2, M1_PERIMCAP_AF_UM, M1_RSH_OHM_SQ),
+                          ("M2", M2_AREACAP_AF_UM2, M2_PERIMCAP_AF_UM, M2_RSH_OHM_SQ),
+                          ("M3", M3_AREACAP_AF_UM2, M3_PERIMCAP_AF_UM, M3_RSH_OHM_SQ),
+                          ("M4", M4_AREACAP_AF_UM2, M4_PERIMCAP_AF_UM, M4_RSH_OHM_SQ),
+                          ("M5", M5_AREACAP_AF_UM2, M5_PERIMCAP_AF_UM, M5_RSH_OHM_SQ)):
+        r, c = wire_rc(a, p_, rs, 1000.0, 2.0)
+        stack[nm] = dict(rsh_ohm_sq=rs, r_ohm=r, c_f=c,
+                         t50_s=0.3795 * r * c)
+    print("\n--- T7 route tester (gf180mcuD stack; M3 wire through rm3) ---")
+    print("  per-layer 1 mm x 2 um route (magic-tech C, SPICE rsh):")
+    for nm in ("M1", "M2", "M3", "M4", "M5"):
+        print("    %s  rsh %.2f  R %6.1f ohm  C %5.1f fF  t50 %5.2f ps"
+              % (nm, stack[nm]["rsh_ohm_sq"], stack[nm]["r_ohm"],
+                 stack[nm]["c_f"] * 1e15, stack[nm]["t50_s"] * 1e12))
     print("  sheet R %.4f ohm/sq vs rsh_rm3 %.3f (%.1f %%)"
           % (rsh, M3_RSH_OHM_SQ, 100 * (rsh / M3_RSH_OHM_SQ - 1)))
-    print("  1000 um x 2 um: R %.1f ohm, declared C %.1f fF (magic tech) -> t50 %.2f ps"
-          % (r1, c_wire * 1e15, t50_wire * 1e12))
-    print("  driver pole with the wire %.1f kHz vs T1 without any wire %.1f kHz"
-          % (fp_z / 1e3, fp_sp / 1e3))
+    print("  lumped-R path: %.1f kHz (no wire %.1f kHz); 10-section pi-RC ladder:"
+          " %.1f kHz (C-ratio prediction %.1f kHz)"
+          % (fp_z / 1e3, fp_sp / 1e3, fp_zb / 1e3, fp_pred / 1e3))
     chk("T7a metal sheet resistance matches the PDK resistor model (<5 %)",
         abs(rsh / M3_RSH_OHM_SQ - 1) < 0.05,
         "rm3 %.4f ohm/sq; the 100 um wire independently gives %.4f"
@@ -215,12 +245,29 @@ def main():
         "t50 %.2f ps vs %.1f ps at 100 MHz (%.1f %%)"
         % (t50_wire * 1e12, PHASE_BUDGET_1DEG_S * 1e12,
            100 * t50_wire / PHASE_BUDGET_1DEG_S))
+    chk("T7d the distributed ladder lands on the C-ratio prediction (<8 %)",
+        abs(fp_zb / fp_pred - 1) < 0.08,
+        "%.1f kHz vs %.1f kHz (%.1f %%); the wire's 45 ohm is %.4f %% of the "
+        "2.48 Mohm driver, so only its shunt C can move the pole"
+        % (fp_zb / 1e3, fp_pred / 1e3, 100 * (fp_zb / fp_pred - 1),
+           100 * r1 / ro))
+    chk("T7e shunt wire C is NOT invisible once it is actually in the netlist",
+        0.05 < (1 - fp_zb / fp_z) < 0.15,
+        "ladder vs lumped-R: %.2f %% (predicted %.2f %%); T7b only ever proved "
+        "the SERIES R negligible, because the PDK kit has no wire-C model"
+        % (100 * (1 - fp_zb / fp_z), 100 * (1 - cmim / (cmim + c_wire))))
     out["t7"] = dict(rsh_ohm_sq=rsh, r_1000um_ohm=r1, r_100um_ohm=r2,
                      c_wire_f=c_wire, t50_wire_s=t50_wire,
                      fp_with_wire_hz=fp_z, fp_without_hz=fp_sp,
-                     note="magic's tech file prints metal3 = 10 (mohm/sq) while the "
-                          "ngspice res_typical rm3 model says 0.090 ohm/sq; SPICE is "
-                          "used and the conflict is recorded in DESIGN 6.27")
+                     fp_ladder_hz=fp_zb, fp_ladder_pred_hz=fp_pred,
+                     stack=stack,
+                     note="gf180mcuD stack: the ngspice kit models rm3 as a series "
+                          "resistor only; wire C comes from the magic-tech nominal "
+                          "table and is modelled here as a 10-section pi ladder. "
+                          "T7b's 'invisible' claim therefore covers the series R, "
+                          "not the shunt C (T7e). metal3 rsh: SPICE 0.09 vs magic "
+                          "'resist' 90 (A's tech also prints a 10 entry from a "
+                          "second table; D prints 90)")
 
     # =====================================================================
     # T8  noise bank
