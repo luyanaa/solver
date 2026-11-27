@@ -1,0 +1,654 @@
+
+ /----------------------------------------------------------------------------\
+ |  yosys -- Yosys Open SYnthesis Suite                                       |
+ |  Copyright (C) 2012 - 2025  Claire Xenia Wolf <claire@yosyshq.com>         |
+ |  Distributed under an ISC-like license, type "license" to see terms        |
+ \----------------------------------------------------------------------------/
+ Yosys 0.52 (git sha1 fee39a3284c90249e1d9684cf6944ffbbcbb8f90)
+
+-- Running command `read_verilog /home/yanlu/solver/results/fsm_h2.v; hierarchy -top calib_fsm; proc; opt; techmap; opt; ltp; dfflibmap -liberty /home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.ref/gf180mcu_fd_sc_mcu7t5v0/lib/gf180mcu_fd_sc_mcu7t5v0__ss_125C_3v00.lib; abc -liberty /home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.ref/gf180mcu_fd_sc_mcu7t5v0/lib/gf180mcu_fd_sc_mcu7t5v0__ss_125C_3v00.lib; opt_clean; stat -liberty /home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.ref/gf180mcu_fd_sc_mcu7t5v0/lib/gf180mcu_fd_sc_mcu7t5v0__ss_125C_3v00.lib' --
+
+1. Executing Verilog-2005 frontend: /home/yanlu/solver/results/fsm_h2.v
+Parsing Verilog input from `/home/yanlu/solver/results/fsm_h2.v' to AST representation.
+Generating RTLIL representation for module `\calib_fsm'.
+Successfully finished Verilog frontend.
+
+2. Executing HIERARCHY pass (managing design hierarchy).
+
+2.1. Analyzing design hierarchy..
+Top module:  \calib_fsm
+
+2.2. Analyzing design hierarchy..
+Top module:  \calib_fsm
+Removed 0 unused modules.
+
+3. Executing PROC pass (convert processes to netlists).
+
+3.1. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Cleaned up 0 empty switches.
+
+3.2. Executing PROC_RMDEAD pass (remove dead branches from decision trees).
+Marked 7 switch rules as full_case in process $proc$/home/yanlu/solver/results/fsm_h2.v:85$15 in module calib_fsm.
+Removed a total of 0 dead cases.
+
+3.3. Executing PROC_PRUNE pass (remove redundant assignments in processes).
+Removed 0 redundant assignments.
+Promoted 1 assignment to connection.
+
+3.4. Executing PROC_INIT pass (extract init attributes).
+
+3.5. Executing PROC_ARST pass (detect async resets in processes).
+Found async reset \rst_n in `\calib_fsm.$proc$/home/yanlu/solver/results/fsm_h2.v:85$15'.
+
+3.6. Executing PROC_ROM pass (convert switches to ROMs).
+Converted 0 switches.
+<suppressed ~9 debug messages>
+
+3.7. Executing PROC_MUX pass (convert decision trees to multiplexers).
+Creating decoders for process `\calib_fsm.$proc$/home/yanlu/solver/results/fsm_h2.v:85$15'.
+     1/8: $3\k[31:0]
+     2/8: $0\hist[15:0] [15:8]
+     3/8: $0\hist[15:0] [7:0]
+     4/8: $1\k[31:0]
+     5/8: $2\k[31:0]
+     6/8: $0\settle[1:0]
+     7/8: $0\retry_cnt[1:0]
+     8/8: $0\state[2:0]
+
+3.8. Executing PROC_DLATCH pass (convert process syncs to latches).
+
+3.9. Executing PROC_DFF pass (convert process syncs to FFs).
+Creating register for signal `\calib_fsm.\state' using process `\calib_fsm.$proc$/home/yanlu/solver/results/fsm_h2.v:85$15'.
+  created $adff cell `$procdff$126' with positive edge clock and positive level reset.
+Creating register for signal `\calib_fsm.\retry_cnt' using process `\calib_fsm.$proc$/home/yanlu/solver/results/fsm_h2.v:85$15'.
+  created $adff cell `$procdff$131' with positive edge clock and positive level reset.
+Creating register for signal `\calib_fsm.\k' using process `\calib_fsm.$proc$/home/yanlu/solver/results/fsm_h2.v:85$15'.
+  created $dff cell `$procdff$138' with positive edge clock.
+Creating register for signal `\calib_fsm.\settle' using process `\calib_fsm.$proc$/home/yanlu/solver/results/fsm_h2.v:85$15'.
+  created $adff cell `$procdff$143' with positive edge clock and positive level reset.
+Creating register for signal `\calib_fsm.\hist' using process `\calib_fsm.$proc$/home/yanlu/solver/results/fsm_h2.v:85$15'.
+  created $adff cell `$procdff$148' with positive edge clock and positive level reset.
+
+3.10. Executing PROC_MEMWR pass (convert process memory writes to cells).
+
+3.11. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Found and cleaned up 9 empty switches in `\calib_fsm.$proc$/home/yanlu/solver/results/fsm_h2.v:85$15'.
+Removing empty process `calib_fsm.$proc$/home/yanlu/solver/results/fsm_h2.v:85$15'.
+Cleaned up 9 empty switches.
+
+3.12. Executing OPT_EXPR pass (perform const folding).
+Optimizing module calib_fsm.
+<suppressed ~18 debug messages>
+
+4. Executing OPT pass (performing simple optimizations).
+
+4.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module calib_fsm.
+
+4.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\calib_fsm'.
+<suppressed ~69 debug messages>
+Removed a total of 23 cells.
+
+4.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \calib_fsm..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+    dead port 2/2 on $mux $procmux$33.
+Removed 1 multiplexer ports.
+<suppressed ~6 debug messages>
+
+4.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \calib_fsm.
+Performed a total of 0 changes.
+
+4.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\calib_fsm'.
+Removed a total of 0 cells.
+
+4.6. Executing OPT_DFF pass (perform DFF optimizations).
+Adding EN signal on $procdff$148 ($adff) from module calib_fsm (D = \hist [7:0], Q = \hist [15:8]).
+Adding EN signal on $procdff$148 ($adff) from module calib_fsm (D = \digest_in, Q = \hist [7:0]).
+Adding EN signal on $procdff$126 ($adff) from module calib_fsm (D = $procmux$96_Y, Q = \state).
+Adding EN signal on $procdff$143 ($adff) from module calib_fsm (D = $procmux$66_Y, Q = \settle).
+Adding EN signal on $procdff$131 ($adff) from module calib_fsm (D = $procmux$90_Y, Q = \retry_cnt).
+Adding EN signal on $procdff$138 ($dff) from module calib_fsm (D = $3\k[31:0], Q = \k).
+
+4.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \calib_fsm..
+Removed 11 unused cells and 74 unused wires.
+<suppressed ~13 debug messages>
+
+4.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module calib_fsm.
+<suppressed ~2 debug messages>
+
+4.9. Rerunning OPT passes. (Maybe there is more to do..)
+
+4.10. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \calib_fsm..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~3 debug messages>
+
+4.11. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \calib_fsm.
+Performed a total of 0 changes.
+
+4.12. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\calib_fsm'.
+<suppressed ~12 debug messages>
+Removed a total of 4 cells.
+
+4.13. Executing OPT_DFF pass (perform DFF optimizations).
+
+4.14. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \calib_fsm..
+Removed 0 unused cells and 4 unused wires.
+<suppressed ~1 debug messages>
+
+4.15. Executing OPT_EXPR pass (perform const folding).
+Optimizing module calib_fsm.
+
+4.16. Rerunning OPT passes. (Maybe there is more to do..)
+
+4.17. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \calib_fsm..
+  Creating internal representation of mux trees.
+  Evaluating internal representation of mux trees.
+  Analyzing evaluation results.
+Removed 0 multiplexer ports.
+<suppressed ~4 debug messages>
+
+4.18. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \calib_fsm.
+Performed a total of 0 changes.
+
+4.19. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\calib_fsm'.
+Removed a total of 0 cells.
+
+4.20. Executing OPT_DFF pass (perform DFF optimizations).
+
+4.21. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \calib_fsm..
+
+4.22. Executing OPT_EXPR pass (perform const folding).
+Optimizing module calib_fsm.
+
+4.23. Finished OPT passes. (There is nothing left to do.)
+
+5. Executing TECHMAP pass (map to technology primitives).
+
+5.1. Executing Verilog-2005 frontend: /usr/bin/../share/yosys/techmap.v
+Parsing Verilog input from `/usr/bin/../share/yosys/techmap.v' to AST representation.
+Generating RTLIL representation for module `\_90_simplemap_bool_ops'.
+Generating RTLIL representation for module `\_90_simplemap_reduce_ops'.
+Generating RTLIL representation for module `\_90_simplemap_logic_ops'.
+Generating RTLIL representation for module `\_90_simplemap_compare_ops'.
+Generating RTLIL representation for module `\_90_simplemap_various'.
+Generating RTLIL representation for module `\_90_simplemap_registers'.
+Generating RTLIL representation for module `\_90_shift_ops_shr_shl_sshl_sshr'.
+Generating RTLIL representation for module `\_90_shift_shiftx'.
+Generating RTLIL representation for module `\_90_fa'.
+Generating RTLIL representation for module `\_90_lcu_brent_kung'.
+Generating RTLIL representation for module `\_90_alu'.
+Generating RTLIL representation for module `\_90_macc'.
+Generating RTLIL representation for module `\_90_alumacc'.
+Generating RTLIL representation for module `\$__div_mod_u'.
+Generating RTLIL representation for module `\$__div_mod_trunc'.
+Generating RTLIL representation for module `\_90_div'.
+Generating RTLIL representation for module `\_90_mod'.
+Generating RTLIL representation for module `\$__div_mod_floor'.
+Generating RTLIL representation for module `\_90_divfloor'.
+Generating RTLIL representation for module `\_90_modfloor'.
+Generating RTLIL representation for module `\_90_pow'.
+Generating RTLIL representation for module `\_90_pmux'.
+Generating RTLIL representation for module `\_90_demux'.
+Generating RTLIL representation for module `\_90_lut'.
+Successfully finished Verilog frontend.
+
+5.2. Continuing TECHMAP pass.
+Using extmapper simplemap for cells of type $reduce_or.
+Using extmapper simplemap for cells of type $reduce_and.
+Using extmapper simplemap for cells of type $logic_and.
+Using extmapper simplemap for cells of type $adffe.
+Using extmapper simplemap for cells of type $ne.
+Using extmapper simplemap for cells of type $or.
+Using extmapper simplemap for cells of type $eq.
+Running "alumacc" on wrapper $extern:wrap:$add:A_SIGNED=0:A_WIDTH=2:B_SIGNED=0:B_WIDTH=2:Y_WIDTH=2:394426c56d1a028ba8fdd5469b163e04011def47.
+Using template $extern:wrap:$add:A_SIGNED=0:A_WIDTH=2:B_SIGNED=0:B_WIDTH=2:Y_WIDTH=2:394426c56d1a028ba8fdd5469b163e04011def47 for cells of type $extern:wrap:$add:A_SIGNED=0:A_WIDTH=2:B_SIGNED=0:B_WIDTH=2:Y_WIDTH=2:394426c56d1a028ba8fdd5469b163e04011def47.
+Using extmapper simplemap for cells of type $logic_not.
+Using extmapper simplemap for cells of type $logic_or.
+Running "alumacc" on wrapper $extern:wrap:$lt:A_SIGNED=0:A_WIDTH=2:B_SIGNED=0:B_WIDTH=32:Y_WIDTH=1:394426c56d1a028ba8fdd5469b163e04011def47.
+Using template $extern:wrap:$lt:A_SIGNED=0:A_WIDTH=2:B_SIGNED=0:B_WIDTH=32:Y_WIDTH=1:394426c56d1a028ba8fdd5469b163e04011def47 for cells of type $extern:wrap:$lt:A_SIGNED=0:A_WIDTH=2:B_SIGNED=0:B_WIDTH=32:Y_WIDTH=1:394426c56d1a028ba8fdd5469b163e04011def47.
+Using extmapper simplemap for cells of type $mux.
+Using template $paramod$068ad458e7761d78e5eed8238508872e7b0aef95\_90_pmux for cells of type $pmux.
+Using extmapper simplemap for cells of type $not.
+Using template $paramod$521ce43182eecb9f60c72393a788160d2c356bf5\_90_pmux for cells of type $pmux.
+Using template $paramod$57f63e8a3282e053be0430389b09fa050ac7dca0\_90_pmux for cells of type $pmux.
+Using extmapper simplemap for cells of type $reduce_bool.
+Using template $paramod$7e708ae28ab761f11d0fb59d3ffc72f6a4baf5d9\_90_alu for cells of type $alu.
+Using template $paramod$9fe62a4b81638d72bc060d25c78265035b9c879a\_90_alu for cells of type $alu.
+Using extmapper simplemap for cells of type $and.
+Using extmapper simplemap for cells of type $xor.
+Using template $paramod\_90_lcu_brent_kung\WIDTH=32'00000000000000000000000000000010 for cells of type $lcu.
+Using extmapper simplemap for cells of type $pos.
+Using template $paramod\_90_lcu_brent_kung\WIDTH=32'00000000000000000000000000100000 for cells of type $lcu.
+No more expansions possible.
+<suppressed ~686 debug messages>
+
+6. Executing OPT pass (performing simple optimizations).
+
+6.1. Executing OPT_EXPR pass (perform const folding).
+Optimizing module calib_fsm.
+<suppressed ~404 debug messages>
+
+6.2. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\calib_fsm'.
+<suppressed ~183 debug messages>
+Removed a total of 61 cells.
+
+6.3. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \calib_fsm..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+
+6.4. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \calib_fsm.
+Performed a total of 0 changes.
+
+6.5. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\calib_fsm'.
+Removed a total of 0 cells.
+
+6.6. Executing OPT_DFF pass (perform DFF optimizations).
+
+6.7. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \calib_fsm..
+Removed 2 unused cells and 359 unused wires.
+<suppressed ~3 debug messages>
+
+6.8. Executing OPT_EXPR pass (perform const folding).
+Optimizing module calib_fsm.
+
+6.9. Rerunning OPT passes. (Maybe there is more to do..)
+
+6.10. Executing OPT_MUXTREE pass (detect dead branches in mux trees).
+Running muxtree optimizer on module \calib_fsm..
+  Creating internal representation of mux trees.
+  No muxes found in this module.
+Removed 0 multiplexer ports.
+
+6.11. Executing OPT_REDUCE pass (consolidate $*mux and $reduce_* inputs).
+  Optimizing cells in module \calib_fsm.
+Performed a total of 0 changes.
+
+6.12. Executing OPT_MERGE pass (detect identical cells).
+Finding identical cells in module `\calib_fsm'.
+Removed a total of 0 cells.
+
+6.13. Executing OPT_DFF pass (perform DFF optimizations).
+
+6.14. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \calib_fsm..
+
+6.15. Executing OPT_EXPR pass (perform const folding).
+Optimizing module calib_fsm.
+
+6.16. Finished OPT passes. (There is nothing left to do.)
+
+7. Executing LTP pass (find longest path).
+Warning: Detected loop at $auto$rtlil.cc:3016:NotGate$1227 in calib_fsm
+Warning: Detected loop at $procmux$96.B_AND_S [5] in calib_fsm
+Warning: Detected loop at $auto$simplemap.cc:125:simplemap_reduce$485 in calib_fsm
+Warning: Detected loop at $auto$simplemap.cc:125:simplemap_reduce$650 [2] in calib_fsm
+Warning: Detected loop at $procmux$96.Y_B [2] in calib_fsm
+Warning: Detected loop at $procmux$96.Y_B [1] in calib_fsm
+Warning: Detected loop at $procmux$66.B_AND_S [5] in calib_fsm
+Warning: Detected loop at $auto$simplemap.cc:125:simplemap_reduce$638 in calib_fsm
+Warning: Detected loop at $procmux$96.Y_B [0] in calib_fsm
+Warning: Detected loop at $auto$simplemap.cc:125:simplemap_reduce$646 in calib_fsm
+Warning: Detected loop at $procmux$66.Y_B [1] in calib_fsm
+Warning: Detected loop at $procmux$66.B_AND_S [5] in calib_fsm
+Warning: Detected loop at $auto$rtlil.cc:3016:NotGate$1237 in calib_fsm
+Warning: Detected loop at $procmux$96.Y_B [1] in calib_fsm
+Warning: Detected loop at $auto$simplemap.cc:125:simplemap_reduce$650 [2] in calib_fsm
+Warning: Detected loop at $procmux$96.Y_B [2] in calib_fsm
+Warning: Detected loop at $procmux$66.Y_B [0] in calib_fsm
+Warning: Detected loop at \state [2] in calib_fsm
+Warning: Detected loop at \state [1] in calib_fsm
+Warning: Detected loop at \state [0] in calib_fsm
+Warning: Detected loop at $auto$simplemap.cc:125:simplemap_reduce$638 in calib_fsm
+Warning: Detected loop at $procmux$96.Y_B [0] in calib_fsm
+Warning: Detected loop at $auto$simplemap.cc:125:simplemap_reduce$638 in calib_fsm
+Warning: Detected loop at $procmux$96.Y_B [0] in calib_fsm
+Warning: Detected loop at \settle [1] in calib_fsm
+Warning: Detected loop at $procmux$96.Y [2] in calib_fsm
+Warning: Detected loop at $procmux$96.Y [1] in calib_fsm
+Warning: Detected loop at $procmux$96.Y [0] in calib_fsm
+Warning: Detected loop at $procmux$96.Y [2] in calib_fsm
+Warning: Detected loop at $procmux$96.Y [1] in calib_fsm
+Warning: Detected loop at $procmux$96.Y [0] in calib_fsm
+Warning: Detected loop at $procmux$96.Y [2] in calib_fsm
+Warning: Detected loop at $procmux$96.Y [1] in calib_fsm
+Warning: Detected loop at $procmux$96.Y [0] in calib_fsm
+Warning: Detected loop at $procmux$90.B_AND_S [1] in calib_fsm
+Warning: Detected loop at $procmux$96.B [5] in calib_fsm
+Warning: Detected loop at $auto$simplemap.cc:125:simplemap_reduce$485 in calib_fsm
+Warning: Detected loop at $auto$simplemap.cc:125:simplemap_reduce$646 in calib_fsm
+Warning: Detected loop at $procmux$66.Y_B [1] in calib_fsm
+Warning: Detected loop at $procmux$66.B_AND_S [5] in calib_fsm
+Warning: Detected loop at $auto$rtlil.cc:3016:NotGate$1237 in calib_fsm
+Warning: Detected loop at $procmux$96.Y_B [1] in calib_fsm
+Warning: Detected loop at $auto$simplemap.cc:125:simplemap_reduce$650 [2] in calib_fsm
+Warning: Detected loop at $procmux$96.Y_B [2] in calib_fsm
+Warning: Detected loop at $procmux$66.Y_B [0] in calib_fsm
+Warning: Detected loop at \state [2] in calib_fsm
+Warning: Detected loop at \state [1] in calib_fsm
+Warning: Detected loop at \state [0] in calib_fsm
+Warning: Detected loop at $auto$simplemap.cc:125:simplemap_reduce$638 in calib_fsm
+Warning: Detected loop at $procmux$96.Y_B [0] in calib_fsm
+Warning: Detected loop at $auto$simplemap.cc:125:simplemap_reduce$638 in calib_fsm
+Warning: Detected loop at $procmux$96.Y_B [0] in calib_fsm
+Warning: Detected loop at \settle [1] in calib_fsm
+Warning: Detected loop at $procmux$96.Y [2] in calib_fsm
+Warning: Detected loop at $procmux$96.Y [1] in calib_fsm
+Warning: Detected loop at $procmux$96.Y [0] in calib_fsm
+Warning: Detected loop at $procmux$96.Y [2] in calib_fsm
+Warning: Detected loop at $procmux$96.Y [1] in calib_fsm
+Warning: Detected loop at $procmux$96.Y [0] in calib_fsm
+Warning: Detected loop at $procmux$96.Y [2] in calib_fsm
+Warning: Detected loop at $procmux$96.Y [1] in calib_fsm
+Warning: Detected loop at $procmux$96.Y [0] in calib_fsm
+Warning: Detected loop at $procmux$90.B_AND_S [1] in calib_fsm
+Warning: Detected loop at $procmux$85_Y [0] in calib_fsm
+Warning: Detected loop at \retry_cnt [1] in calib_fsm
+
+Longest topological path in calib_fsm (length=51):
+    0: \verify_ok
+    1: $procmux$96.B [5] (via $auto$simplemap.cc:275:simplemap_mux$477)
+    2: $procmux$96.B_AND_S [5] (via $auto$simplemap.cc:83:simplemap_bitop$672)
+    3: $auto$simplemap.cc:125:simplemap_reduce$638 (via $auto$simplemap.cc:134:simplemap_reduce$639)
+    4: $procmux$96.Y_B [2] (via $auto$simplemap.cc:134:simplemap_reduce$641)
+    5: $procmux$96.Y [2] (via $auto$simplemap.cc:275:simplemap_mux$678)
+    6: \state [2] (via $auto$ff.cc:266:slice$578)
+    7: $auto$rtlil.cc:3016:NotGate$1227 (via $auto$simplemap.cc:175:logic_reduce$548)
+    8: $procmux$66.S [3] (via $auto$simplemap.cc:204:simplemap_lognot$549)
+    9: $procmux$96.B_AND_S [15] (via $auto$simplemap.cc:83:simplemap_bitop$658)
+   10: $auto$simplemap.cc:125:simplemap_reduce$650 [2] (via $auto$simplemap.cc:134:simplemap_reduce$653)
+   11: $procmux$96.Y_B [0] (via $auto$simplemap.cc:134:simplemap_reduce$657)
+   12: $procmux$96.Y [0] (via $auto$simplemap.cc:275:simplemap_mux$676)
+   13: \state [0] (via $auto$ff.cc:266:slice$576)
+   14: $auto$simplemap.cc:125:simplemap_reduce$485 (via $auto$simplemap.cc:175:logic_reduce$546)
+   15: $auto$rtlil.cc:3016:NotGate$1233 (via $auto$simplemap.cc:134:simplemap_reduce$488)
+   16: $procmux$90.S [0] (via $auto$simplemap.cc:204:simplemap_lognot$490)
+   17: $procmux$90.B_AND_S [1] (via $auto$simplemap.cc:83:simplemap_bitop$629)
+   18: $procmux$90.Y_B [1] (via $auto$simplemap.cc:134:simplemap_reduce$623)
+   19: $procmux$90.Y [1] (via $auto$simplemap.cc:275:simplemap_mux$631)
+   20: \retry_cnt [1] (via $auto$ff.cc:266:slice$573)
+   21: $procmux$96.B [4] (via $auto$simplemap.cc:275:simplemap_mux$476)
+   22: $procmux$96.B_AND_S [4] (via $auto$simplemap.cc:83:simplemap_bitop$671)
+   23: $auto$simplemap.cc:125:simplemap_reduce$646 (via $auto$simplemap.cc:134:simplemap_reduce$647)
+   24: $procmux$96.Y_B [1] (via $auto$simplemap.cc:134:simplemap_reduce$649)
+   25: $procmux$96.Y [1] (via $auto$simplemap.cc:275:simplemap_mux$677)
+   26: \state [1] (via $auto$ff.cc:266:slice$577)
+   27: $auto$simplemap.cc:125:simplemap_reduce$440 (via $auto$simplemap.cc:134:simplemap_reduce$537)
+   28: $auto$rtlil.cc:3016:NotGate$1235 (via $auto$simplemap.cc:134:simplemap_reduce$539)
+   29: $procmux$66.S [2] (via $auto$simplemap.cc:204:simplemap_lognot$541)
+   30: $procmux$66.B_AND_S [5] (via $auto$simplemap.cc:83:simplemap_bitop$610)
+   31: $auto$simplemap.cc:125:simplemap_reduce$597 [1] (via $auto$simplemap.cc:134:simplemap_reduce$599)
+   32: $procmux$66.Y_B [1] (via $auto$simplemap.cc:134:simplemap_reduce$601)
+   33: $procmux$66.Y [1] (via $auto$simplemap.cc:275:simplemap_mux$616)
+   34: \settle [1] (via $auto$ff.cc:266:slice$551)
+   35: $auto$rtlil.cc:3016:NotGate$1237 (via $auto$simplemap.cc:175:logic_reduce$319)
+   36: $procmux$66.B [0] (via $auto$simplemap.cc:275:simplemap_mux$397)
+   37: \consume (via $auto$simplemap.cc:83:simplemap_bitop$613)
+   38: \hist [7] (via $auto$ff.cc:266:slice$278)
+   39: \hist [15] (via $auto$ff.cc:266:slice$382)
+   40: $auto$simplemap.cc:248:simplemap_eqne$351 [7] (via $auto$simplemap.cc:83:simplemap_bitop$360)
+   41: $auto$simplemap.cc:125:simplemap_reduce$363 [3] (via $auto$simplemap.cc:134:simplemap_reduce$367)
+   42: $auto$simplemap.cc:125:simplemap_reduce$368 [1] (via $auto$simplemap.cc:134:simplemap_reduce$370)
+   43: $auto$simplemap.cc:254:simplemap_eqne$361 (via $auto$simplemap.cc:134:simplemap_reduce$372)
+   44: \dg_hit [1] (via $auto$simplemap.cc:204:simplemap_lognot$374)
+   45: \dg_match (via $auto$simplemap.cc:134:simplemap_reduce$267)
+   46: $logic_or$/home/yanlu/solver/results/fsm_h2.v:119$21_Y (via $auto$simplemap.cc:233:simplemap_logbin$317)
+   47: $procmux$110_Y [0] (via $auto$simplemap.cc:275:simplemap_mux$507)
+   48: $procmux$96.B [9] (via $auto$simplemap.cc:275:simplemap_mux$510)
+   49: $procmux$96.B_AND_S [9] (via $auto$simplemap.cc:83:simplemap_bitop$664)
+   50: $auto$simplemap.cc:125:simplemap_reduce$650 [1] (via $auto$simplemap.cc:134:simplemap_reduce$652)
+   51: $auto$simplemap.cc:125:simplemap_reduce$654 (via $auto$simplemap.cc:134:simplemap_reduce$655)
+
+8. Executing DFFLIBMAP pass (mapping DFF cells to sequential cells from liberty file).
+  cell gf180mcu_fd_sc_mcu7t5v0__dffnq_1 (noninv, pins=3, area=65.86) is a direct match for cell type $_DFF_N_.
+  cell gf180mcu_fd_sc_mcu7t5v0__dffq_1 (noninv, pins=3, area=63.66) is a direct match for cell type $_DFF_P_.
+  cell gf180mcu_fd_sc_mcu7t5v0__dffnrnq_1 (noninv, pins=4, area=74.64) is a direct match for cell type $_DFF_NN0_.
+  cell gf180mcu_fd_sc_mcu7t5v0__dffnsnq_1 (noninv, pins=4, area=79.03) is a direct match for cell type $_DFF_NN1_.
+  cell gf180mcu_fd_sc_mcu7t5v0__dffrnq_1 (noninv, pins=4, area=74.64) is a direct match for cell type $_DFF_PN0_.
+  cell gf180mcu_fd_sc_mcu7t5v0__dffsnq_1 (noninv, pins=4, area=79.03) is a direct match for cell type $_DFF_PN1_.
+  cell gf180mcu_fd_sc_mcu7t5v0__dffnrsnq_1 (noninv, pins=5, area=94.39) is a direct match for cell type $_DFFSR_NNN_.
+  cell gf180mcu_fd_sc_mcu7t5v0__dffrsnq_1 (noninv, pins=5, area=85.61) is a direct match for cell type $_DFFSR_PNN_.
+  final dff cell mappings:
+    \gf180mcu_fd_sc_mcu7t5v0__dffnq_1 _DFF_N_ (.CLKN( C), .D( D), .Q( Q));
+    \gf180mcu_fd_sc_mcu7t5v0__dffq_1 _DFF_P_ (.CLK( C), .D( D), .Q( Q));
+    \gf180mcu_fd_sc_mcu7t5v0__dffnrnq_1 _DFF_NN0_ (.CLKN( C), .D( D), .Q( Q), .RN( R));
+    \gf180mcu_fd_sc_mcu7t5v0__dffnsnq_1 _DFF_NN1_ (.CLKN( C), .D( D), .Q( Q), .SETN( R));
+    unmapped dff cell: $_DFF_NP0_
+    unmapped dff cell: $_DFF_NP1_
+    \gf180mcu_fd_sc_mcu7t5v0__dffrnq_1 _DFF_PN0_ (.CLK( C), .D( D), .Q( Q), .RN( R));
+    \gf180mcu_fd_sc_mcu7t5v0__dffsnq_1 _DFF_PN1_ (.CLK( C), .D( D), .Q( Q), .SETN( R));
+    unmapped dff cell: $_DFF_PP0_
+    unmapped dff cell: $_DFF_PP1_
+    unmapped dff cell: $_DFFE_NN_
+    unmapped dff cell: $_DFFE_NP_
+    unmapped dff cell: $_DFFE_PN_
+    unmapped dff cell: $_DFFE_PP_
+    \gf180mcu_fd_sc_mcu7t5v0__dffnrsnq_1 _DFFSR_NNN_ (.CLKN( C), .D( D), .Q( Q), .RN( R), .SETN( S));
+    unmapped dff cell: $_DFFSR_NNP_
+    unmapped dff cell: $_DFFSR_NPN_
+    unmapped dff cell: $_DFFSR_NPP_
+    \gf180mcu_fd_sc_mcu7t5v0__dffrsnq_1 _DFFSR_PNN_ (.CLK( C), .D( D), .Q( Q), .RN( R), .SETN( S));
+    unmapped dff cell: $_DFFSR_PNP_
+    unmapped dff cell: $_DFFSR_PPN_
+    unmapped dff cell: $_DFFSR_PPP_
+
+8.1. Executing DFFLEGALIZE pass (convert FFs to types supported by the target).
+<suppressed ~12 debug messages>
+Mapping DFF cells in module `\calib_fsm':
+  mapped 23 $_DFF_PN0_ cells to \gf180mcu_fd_sc_mcu7t5v0__dffrnq_1 cells.
+
+9. Executing ABC pass (technology mapping using ABC).
+
+9.1. Extracting gate netlist of module `\calib_fsm' to `<abc-temp-dir>/input.blif'..
+Replacing 17 occurrences of constant undef bits with constant zero bits
+Extracted 186 gates and 224 wires to a netlist network with 35 inputs and 29 outputs.
+
+9.1.1. Executing ABC.
+Running ABC command: "<yosys-exe-dir>/yosys-abc" -s -f <abc-temp-dir>/abc.script 2>&1
+ABC: ABC command line: "source <abc-temp-dir>/abc.script".
+ABC: 
+ABC: + read_blif <abc-temp-dir>/input.blif 
+ABC: + read_lib -w /home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.ref/gf180mcu_fd_sc_mcu7t5v0/lib/gf180mcu_fd_sc_mcu7t5v0__ss_125C_3v00.lib 
+ABC: Parsing finished successfully.  Parsing time =     0.19 sec
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__antenna" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "gf180mcu_fd_sc_mcu7t5v0__bufz_1".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "gf180mcu_fd_sc_mcu7t5v0__bufz_2".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "gf180mcu_fd_sc_mcu7t5v0__bufz_3".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "gf180mcu_fd_sc_mcu7t5v0__bufz_4".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "gf180mcu_fd_sc_mcu7t5v0__bufz_8".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "gf180mcu_fd_sc_mcu7t5v0__bufz_12".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "gf180mcu_fd_sc_mcu7t5v0__bufz_16".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffnq_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffnq_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffnq_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffnrnq_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffnrnq_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffnrnq_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffnrsnq_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffnrsnq_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffnrsnq_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffnsnq_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffnsnq_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffnsnq_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffq_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffq_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffq_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffrnq_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffrnq_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffrnq_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffrsnq_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffrsnq_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffrsnq_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffsnq_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffsnq_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__dffsnq_4".
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__endcap" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__fill_1" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__fill_2" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__fill_4" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__fill_8" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__fill_16" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__fill_32" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__fill_64" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__fillcap_4" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__fillcap_8" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__fillcap_16" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__fillcap_32" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__fillcap_64" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__filltie" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "gf180mcu_fd_sc_mcu7t5v0__hold".
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__icgtn_1" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__icgtn_2" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__icgtn_4" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__icgtp_1" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__icgtp_2" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped cell "gf180mcu_fd_sc_mcu7t5v0__icgtp_4" without logic function.
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "gf180mcu_fd_sc_mcu7t5v0__invz_1".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "gf180mcu_fd_sc_mcu7t5v0__invz_2".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "gf180mcu_fd_sc_mcu7t5v0__invz_3".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "gf180mcu_fd_sc_mcu7t5v0__invz_4".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "gf180mcu_fd_sc_mcu7t5v0__invz_8".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "gf180mcu_fd_sc_mcu7t5v0__invz_12".
+ABC: Scl_LibertyReadGenlib() skipped three-state cell "gf180mcu_fd_sc_mcu7t5v0__invz_16".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__latq_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__latq_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__latq_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__latrnq_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__latrnq_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__latrnq_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__latrsnq_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__latrsnq_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__latrsnq_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__latsnq_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__latsnq_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__latsnq_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__sdffq_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__sdffq_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__sdffq_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__sdffrnq_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__sdffrnq_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__sdffrnq_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__sdffrsnq_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__sdffrsnq_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__sdffrsnq_4".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__sdffsnq_1".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__sdffsnq_2".
+ABC: Scl_LibertyReadGenlib() skipped sequential cell "gf180mcu_fd_sc_mcu7t5v0__sdffsnq_4".
+ABC: Library "gf180mcu_fd_sc_mcu7t5v0__ss_125C_3v00" from "/home/yanlu/.ciel/ciel/gf180mcu/versions/792ef67037d74c8c51811eab3ce23cf793491296/gf180mcuD/libs.ref/gf180mcu_fd_sc_mcu7t5v0/lib/gf180mcu_fd_sc_mcu7t5v0__ss_125C_3v00.lib" has 145 cells (84 skipped: 48 seq; 15 tri-state; 21 no func; 0 dont_use).  Time =     0.32 sec
+ABC: Memory =   29.96 MB. Time =     0.32 sec
+ABC: Warning: Detected 6 multi-output gates (for example, "gf180mcu_fd_sc_mcu7t5v0__addf_1").
+ABC: + strash 
+ABC: + &get -n 
+ABC: + &fraig -x 
+ABC: + &put 
+ABC: + scorr 
+ABC: Warning: The network is combinational (run "fraig" or "fraig_sweep").
+ABC: + dc2 
+ABC: + dretime 
+ABC: + strash 
+ABC: + &get -n 
+ABC: + &dch -f 
+ABC: + &nf 
+ABC: + &put 
+ABC: + write_blif <abc-temp-dir>/output.blif 
+
+9.1.2. Re-integrating ABC results.
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__and2_1 cells:        3
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__and4_1 cells:        2
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__aoi211_1 cells:        1
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__aoi21_1 cells:        4
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__aoi221_1 cells:        4
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__aoi22_1 cells:        2
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__clkinv_1 cells:       18
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__mux2_1 cells:       17
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__nand2_1 cells:        6
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__nand3_1 cells:        3
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__nand4_1 cells:        3
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__nor2_1 cells:        9
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__nor3_1 cells:        6
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__nor4_1 cells:        1
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__oai211_1 cells:        3
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__oai21_1 cells:        1
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__oai221_1 cells:        2
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__oai22_1 cells:        1
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__or2_1 cells:        4
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__or4_1 cells:        1
+ABC RESULTS:   gf180mcu_fd_sc_mcu7t5v0__xor2_1 cells:       11
+ABC RESULTS:        internal signals:      160
+ABC RESULTS:           input signals:       35
+ABC RESULTS:          output signals:       29
+Removing temp directory.
+
+10. Executing OPT_CLEAN pass (remove unused cells and wires).
+Finding unused cells or wires in module \calib_fsm..
+Removed 0 unused cells and 147 unused wires.
+<suppressed ~3 debug messages>
+
+11. Printing statistics.
+
+=== calib_fsm ===
+
+   Number of wires:                114
+   Number of wire bits:            140
+   Number of public wires:          18
+   Number of public wire bits:      44
+   Number of ports:                 16
+   Number of port bits:             26
+   Number of memories:               0
+   Number of memory bits:            0
+   Number of processes:              0
+   Number of cells:                125
+     gf180mcu_fd_sc_mcu7t5v0__and2_1      3
+     gf180mcu_fd_sc_mcu7t5v0__and4_1      2
+     gf180mcu_fd_sc_mcu7t5v0__aoi211_1      1
+     gf180mcu_fd_sc_mcu7t5v0__aoi21_1      4
+     gf180mcu_fd_sc_mcu7t5v0__aoi221_1      4
+     gf180mcu_fd_sc_mcu7t5v0__aoi22_1      2
+     gf180mcu_fd_sc_mcu7t5v0__clkinv_1     18
+     gf180mcu_fd_sc_mcu7t5v0__dffrnq_1     23
+     gf180mcu_fd_sc_mcu7t5v0__mux2_1     17
+     gf180mcu_fd_sc_mcu7t5v0__nand2_1      6
+     gf180mcu_fd_sc_mcu7t5v0__nand3_1      3
+     gf180mcu_fd_sc_mcu7t5v0__nand4_1      3
+     gf180mcu_fd_sc_mcu7t5v0__nor2_1      9
+     gf180mcu_fd_sc_mcu7t5v0__nor3_1      6
+     gf180mcu_fd_sc_mcu7t5v0__nor4_1      1
+     gf180mcu_fd_sc_mcu7t5v0__oai211_1      3
+     gf180mcu_fd_sc_mcu7t5v0__oai21_1      1
+     gf180mcu_fd_sc_mcu7t5v0__oai221_1      2
+     gf180mcu_fd_sc_mcu7t5v0__oai22_1      1
+     gf180mcu_fd_sc_mcu7t5v0__or2_1      4
+     gf180mcu_fd_sc_mcu7t5v0__or4_1      1
+     gf180mcu_fd_sc_mcu7t5v0__xor2_1     11
+
+   Chip area for module '\calib_fsm': 3650.617600
+     of which used for sequential elements: 1716.646400 (47.02%)
+
+Warnings: 24 unique messages, 65 total
+End of script. Logfile hash: 4c6db86874, CPU: user 0.37s system 0.04s, MEM: 67.84 MB peak
+Yosys 0.52 (git sha1 fee39a3284c90249e1d9684cf6944ffbbcbb8f90)
+Time spent: 56% 1x abc (0 sec), 15% 1x stat (0 sec), ...

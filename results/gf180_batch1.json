@@ -215,11 +215,11 @@
   ],
   "status": "complete",
   "_meta": {
-    "git_sha": "78e02aef3b4cf35accc5855ad6fd16f841510990",
+    "git_sha": "556785a99679161fca80812e76fa313bf2d3120a",
     "git_dirty": true,
     "bench_module": "bench.run_gf180_batch1",
     "command": "python3 -m bench.run_gf180_batch1",
-    "timestamp_utc": "2026-11-27T16:39:36+00:00",
+    "timestamp_utc": "2026-11-27T20:29:12+00:00",
     "python_version": "3.14.7",
     "numpy_version": "2.5.4",
     "scipy_version": "1.18.1"

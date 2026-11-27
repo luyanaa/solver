@@ -1,0 +1,30 @@
+P0-B  T1 four-knob integrator cell -- gf180mcu batch-1
+gm_unit 0.2666 mS, a_ii 2.227e+08..3.326e+09 rad/s (14.93x), C_eff(1) 1.1973 pF (+17.8 % over the MIM), C_hold 1.1283 pF
+leak Vt 0.754 V k 133 uS/V at Vds=0.1, 4.19 decades; at the 1.2 V state the ground source is a sink (I/g 81 V) and the level-shifted one is a conductor (I/g 0.22 V, 131 uS)
+ports 0.2666/0.5332 mS (1:2), disabled 0.00000 mS; injection TG -0.105 mV (0.51 LSB12) vs NMOS -1.626 mV (7.93 LSB12); hold floor 23.2 pA = 18.9 ppm/us, collapse 19 ns
+PASS  A1 the binary weights are exact in gm: gm(k)/k is one number over the whole ladder  gm_u = 0.2666 mS, worst |gm/(k*gm_u)-1| = 1.17e-07 over codes [1, 2, 4, 8, 15]
+PASS  A2 with every drain attached (load m=15 fixed, bank gate-switched) the coefficient ladder is linear in k  span 14.934x vs 15.000 nominal (-0.44 %) -- the residual is the legs' Cgd, not the weights
+PASS  A3 a code-tracking load capacitance breaks the ladder: the same 15 codes come out 6.1 % short at the top  span 14.079x vs 15.000 (-6.14 %) because C grows 5.3 fF/code; the tile must switch the LOAD's gates too (drains stay attached) -- the bank already does
+PASS  A4 the ladder spans more than a decade and the top code is the tile's fastest coefficient  a_ii 2.227e+08 .. 3.326e+09 rad/s (14.9x); the top code is 529 MHz in rad/s, the bottom one 35.4 MHz
+PASS  A5 the node's parasitic capacitance is declared, not assumed away  C(1) 1.1973 pF over the isolated MIM 1.0163 pF = +17.8 % (bank legs + load + leak + switch drain junctions); a_ii is computed with C_eff from here on, never with the MIM alone
+PASS  B1 the leak is a triode conductance at Vds=0.1 V: g = k*(VGL-Vt) over the knee region  knee fit (VGL 0.8..1.5): Vt 0.754 V, k 133 uS/V, worst residual 5.7 % -- a continuous resistor the compiler can code, not a code
+PASS  B2 the knob spans four decades of conductance  0.017 uS (VGL 0.6) .. 256.3 uS (3.3) = 4.19 decades; below 0.6 V g is under the 0.01 uS probe floor, so the true span is larger (R 60006 kOhm .. 3.9 kOhm)
+PASS  B3 the triode law is not extrapolated past its data: the slope falls with VGL  116 -> 56 uS/V (0.48x)
+PASS  B4 a ground-source leak degenerates at the state voltage: I/g is tens of volts, i.e. a current sink, not a conductor  VGL 1.5: g 0.50 uS but I 40 uA (I/g 81 V); a proportional leak needs g, and at V=1.2 V the device is in saturation (Vov=0.75 < Vds)
+PASS  B5 the level-shifted source (VSB=1.0 V) is a conductor AT the 1.2 V state: I/g equals its own Vds, not tens of volts  g 0 -> 131 uS over VGL 2.0..3.3 with I/g 0.223 V (= Vds 0.2 V), and I(VGL<=1.6) under 1 nA; the body effect moves Vt to ~1.0 V so the useful range starts at 2.0 V
+PASS  B6 the knob's range depends on the state voltage (triode needs Vds < Vov), so one table cannot document the cell  same VGL=1.5: 99.5 uS at a 0.1 V state vs 0.50 uS at a 1.2 V state (199x); a compiled a_ii must be taken at the tile's declared state
+PASS  C1 the port weights are exact: m=2 gives exactly twice m=1  0.53321 vs 0.26661 mS (-0.000 %)
+PASS  C2 a port unit and a bank unit are the same device at the same bias (one replica rail)  gm_port1 0.26661 mS vs gm_unit 0.26661 mS (+0.00 %)
+PASS  C3 the port enable really disables (the gate goes to ground, it is not just a floating node)  disabled 0.000000 mS = 0.00 % of enabled
+PASS  C4 with both ports driven the node current is the sum (no cross-talk beyond the port ratio)  0.7998 vs 0.7998 mS (-0.00 %)
+PASS  D1 the ideal switch is a zero-injection reference and the TG beats the NMOS-only pass device by more than 5x  ideal -0.0012 mV, TG -0.105 mV, NMOS -1.626 mV -> NMOS/TG 15.4x
+PASS  D2 the injection is quoted in trim LSBs: the TG's is below one 12-bit LSB, the NMOS-only's is several  12-bit LSB 0.231 fC: TG 0.51 LSB, NMOS 7.93 LSB = 0.136 % of the 1.2 V state range per write
+PASS  D3 the hold floor is the off-state leakage of the write switches, and the same current is seen two ways  transient -22.73 V/s vs I/C 20.60 V/s (I 23.2 pA, C_hold 1.1283 pF) -> 10.3 %; the DC probe is at exactly 1.2 V, the transient window averages 1.2 -> 1.05 V
+PASS  D4 attribution: removing the three write devices and the leak device takes the floor to zero, so the 23 pA is theirs, not the MIM or the fixture  dv/dt -0.000 V/s with the write devices and the leak device removed (vs -22.73 V/s with them)
+PASS  D5 consequence for the calibration contract: at 12 bits the cell cannot hold its value across one ADC conversion  hold budget 6.4 us < ADC 12 us (1.9x short): the background loop must re-write (foreground, or a bigger C, or a lower-leakage switch), not just track -- a measured design gap for the B3 cell, not a bench failure
+PASS  D6 the hold droop is the DC leak current, not the small-signal conductance: dv/dt follows I/C  -249.7 kV/s vs I/C -250.1 kV/s (+0 %) and vs g*(V-1 V)/C -3.7 kV/s (67x); I 282 nA, g 21 nS -- in subthreshold I/g is 13 V, so the current is the right variable (window 1.02..1.10 us averages 1.2 -> 1.14 V, which is why the measured slope sits under the 1.2 V prediction)
+PASS  D7 the top of the ground-source knob is not a hold setting: the state collapses in tens of nanoseconds  19 ns to 5 % of the state vs C*V/I = 6 ns (229 uA sink) -- the knob's usable hold range is its low end, which is why D6 is measured at the level-shifted low end
+PASS  E1 one formula predicts the ladder: a_ii(k) = k*gm_u/C(k) reproduces the measured top and bottom  a_ii(1) 2.227e+08 (formula 2.227e+08), a_ii(15) 3.326e+09 (formula 3.326e+09)
+PASS  E2 the leak is a fine knob in a_ii units (about half a code), not a second coarse ladder  g_leak(max)/C_hold = 1.158e+08 rad/s = 0.52 of a_ii(code 1) (2.227e+08)
+
+24/24 checks pass

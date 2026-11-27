@@ -8,3 +8,6 @@ ref/pdfs/
 
 # run_all 的原始日志（机器相关、可重生成；run_all.json 才是记录）
 results/.run_all_logs/
+
+# iverilog 的可执行输出（ELF，机器相关、可重生成；.v/.log 才是记录）
+results/*.vvp

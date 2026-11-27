@@ -1043,7 +1043,7 @@
           "T": 0.3
         },
         "cfl": 0.2,
-        "rhs_func": "<function _burgers_fv.<locals>.rhs_func at 0x7fd8e27192d0>",
+        "rhs_func": "<function _burgers_fv.<locals>.rhs_func at 0x7f09387352d0>",
         "u0": "0.5+0.5 sin(2 pi x) point values (run_phase0/run_transform convention)",
         "reg": {
           "p": 1.4385004176399947,
@@ -1981,11 +1981,11 @@
     "n_passed": 34
   },
   "_meta": {
-    "git_sha": "78e02aef3b4cf35accc5855ad6fd16f841510990",
+    "git_sha": "556785a99679161fca80812e76fa313bf2d3120a",
     "git_dirty": true,
     "bench_module": "bench.run_pipeline",
     "command": "python3 -m bench.run_pipeline",
-    "timestamp_utc": "2026-11-27T16:28:02+00:00",
+    "timestamp_utc": "2026-11-27T20:22:25+00:00",
     "python_version": "3.14.7",
     "numpy_version": "2.5.4",
     "scipy_version": "1.18.1"

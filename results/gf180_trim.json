@@ -5944,14 +5944,14 @@
       "detail": "tol 373 ppm, sigma12 112 ppm, mean k 1.6 -> predicted 4.0 %, measured 5.0 % (ratio 1.26); the 10-bit sigma 221 ppm would put this gate at 1.7 sigma and reject most good chips"
     }
   ],
-  "total_seconds": 251.1651577949524,
+  "total_seconds": 213.50327944755554,
   "status": "complete",
   "_meta": {
-    "git_sha": "78e02aef3b4cf35accc5855ad6fd16f841510990",
+    "git_sha": "556785a99679161fca80812e76fa313bf2d3120a",
     "git_dirty": true,
     "bench_module": "bench.run_gf180_trim",
     "command": "python3 -m bench.run_gf180_trim",
-    "timestamp_utc": "2026-11-27T16:49:12+00:00",
+    "timestamp_utc": "2026-11-27T20:33:45+00:00",
     "python_version": "3.14.7",
     "numpy_version": "2.5.4",
     "scipy_version": "1.18.1"

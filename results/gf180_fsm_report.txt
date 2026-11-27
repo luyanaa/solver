@@ -1,0 +1,29 @@
+P0-B/G4  B3 supervisor calibration FSM -- gf180mcu batch-1
+pf fsm/calib_fsm.v -> gf180mcu_fd_sc_mcu7t5v0 (ss_125C_3v00); KMAX=2
+guard depth: HIST>=2 is the minimum sound depth; HIST=1 accepts a replay (measured, E14)
+area HIST=1: 2516um2/15ff/49lv  HIST=2: 3651um2/23ff/51lv  HIST=4: 5732um2/39ff/54lv
+B3 width DW=16: 5727 um2, 39 flops, path bound 957.84 ns
+PASS  E1 the RTL builds and every run reaches SIMDONE for HIST 1/2/4  HIST=1 rc=0 done=True scn=9; HIST=2 rc=0 done=True scn=9; HIST=4 rc=0 done=True scn=9
+PASS  E2 straight round: one stimulus, one conversion, one correction, ACCEPTED  st=5 stim/meas/corr/cons=1/1/1/1
+PASS  E3 every trigger is a one-cycle pulse (pulses == cycles high)  all triggers 1 cycle in every scenario of every build
+PASS  E4 stimulus < conversion < correction < verify in every round  strictly increasing in all accepted retry rounds
+PASS  E5 a failed held-out verify with budget left retries once and then accepts  st=5 attempts=2 retry_cnt=1
+PASS  E6 retry budget exhausted: FAILED after exactly KMAX+1 attempts and the counter saturates  st=6 attempts=3 retry_cnt=2 (KMAX=2; a 4th attempt would be an out-of-budget retry)
+PASS  E7 a conversion that produced no fresh reading fails without consuming anything  st=6 consumed=0 corrected=0
+PASS  E8 ACCEPTED is terminal: holding start high cannot re-enter a round  st=5 consumed=1 stim=1 after 10 cycles of start=1
+PASS  E9 FAILED is terminal too, and never turns into an accept  st=6 consumed=3 stim=3
+PASS  E10 reset in the middle of a round returns to IDLE with a cleared retry counter  st=0 retry_cnt=0
+PASS  E11 start held high for the whole round runs exactly one round  st=5 consumed=1 (one measurement)
+PASS  E12 HIST=4 refuses a third attempt that replays the first reading  st=6 consumed=2 of 3 stimulated: the replay is killed at MEASURE, before it can be corrected
+PASS  E13 HIST=2 (= KMAX, the minimum sound depth) refuses it as well  st=6 consumed=2: a round has KMAX+1 attempts, so KMAX remembered readings cover every in-round replay
+PASS  E14 negative control: HIST=1 accepts the replay, so the depth is load-bearing, not decoration  st=5 consumed=3: one stored digest cannot see attempt 3 == attempt 1
+PASS  E15 the guard depth changes nothing else: HIST=1 and HIST=2 agree on every other scenario  identical state/attempts/retry on 7 scenarios
+PASS  S1 yosys maps every variant without error  HIST=1 rc=0 cells=97 area=2516um2; HIST=2 rc=0 cells=125 area=3651um2; HIST=4 rc=0 cells=176 area=5732um2; DW=16 cells=172 area=5727um2
+PASS  S2 the netlist is library cells only: no generic gates left, no latches, no inferred memory  generic/latch/mem = 0/0/0 in all four mappings
+PASS  S3 the digest history is exactly HIST*DW flops (the rest is 7 control bits): no hidden state  flops {1: 15, 2: 23, 4: 39} vs 7+8*HIST = [15, 23, 39] (DW=8); at DW=16: 39 = 7+16*2
+PASS  S4 area grows with the guard depth, so the depth is a real cost line  HIST=1: 2516 um2 (2.52 kum2)  HIST=2: 3651 um2 (3.65 kum2)  HIST=4: 5732 um2 (5.73 kum2); the 8-bit step costs 142 um2/bit, and the B3 width (DW=16) is 5727 um2
+PASS  S5 the mapped critical path stays short in logic levels  levels HIST=1: 49  HIST=2: 51  HIST=4: 54 (generic 1-bit gates; every level is at most one library cell)
+PASS  S6 a full KMAX+1-attempt round fits inside one 12 us conversion slot even at the slow corner  33 cycles x 156 ns (fanout-4 node = 0.02 pF, the 1X pin is ~3-5 fF so this is a 4-6 load) = 5.2 us of the 12 us slot (2.3x margin, ~6 MHz); the absolute worst-entry bracket (every node at the table's max load and max slew) is 30 us and is not realizable inside this block
+PASS  S7 the supervisor at the B3 digest width fits the area budget  DW=16, HIST=KMAX: 5727 um2 of 10000 um2 (0.01 mm^2) = 57 %; for scale, one 1 pF MIM of the T1 tile is ~500 um2 (DESIGN 6.28)
+
+22/22 checks pass

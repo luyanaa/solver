@@ -96,6 +96,7 @@ B0-gf180 冻结修订（§7.5 一段） ──► G1 提取 ──► G2 macromo
 | P0-D | T7 线电容进网表（10 段 π 梯 80.4 fF），把「1 mm 线不可见」限界为「串联 R 不可见、并联 C 收 7.3 %」 | **完成** | §6.27(c)，极点 63.3 → 58.6 kHz（−7.31 % vs 预测 −7.33 %） |
 | P0-C | T5 的 G/C 矩阵直测：g=0.6929 mS、C_ii=1.0603 pF、τ₁=150.8 ns；×2.58 税分解为口径 1.955 × 结电容 1.043 × 栅过驱动 1.27–1.31，**无寄生项** | **完成** | §6.28（19/19，`bench/run_gf180_t5gc.py`） |
 | P0-E | trim 闭环重算 P 表：两级 DAC（±35 %、4+6/4+8）+ 48 draws → 读数噪声 → 有限码 → 执行器增益 → **QoI 空间**的 held-out verify | **完成** | §6.29（20/20，`bench/run_gf180_trim.py`）：范围 ±35 %、两轨两旋钮、12 位 DAC/ADC、k_max=2；burgers 1 % 列 0.000（系数 verify）→ **0.79–0.96**（QoI verify + 12 位），推翻 §6.26「3v3 一根旋钮够」 |
-| P0-B/G4 | T1 四旋钮（`a_ii`/leakage/`b_ports`/`STATE_WR`）+ supervisor 拓扑选型 | 待办 | G4 |
+| P0-B | T1 四旋钮（`a_ii`/leakage/`b_ports`/`STATE_WR`）：一个 tile 上同时成立 | **完成** | §6.30（24/24，`bench/run_gf180_t1knobs.py`）：`gm_u` 0.2666 mS、15 码梯子 2.23e8–3.33e9 rad/s、`C_eff` 1.1973 pF（+17.8 %）、leak 4.19 decades 且**表按状态电压分**（0.1 V vs 1.2 V 差 199×）、端口 1:2 精确、写开关 TG 0.51 LSB/write、保持 **18.9 ppm/µs ⇒ 6.4 µs < ADC 12 µs**（B3 缺口） |
+| G4（P0 段） | supervisor FSM 的 RTL + 拓扑（guard 深度）选型 | **完成** | §6.31（22/22，`bench/run_gf180_fsm.py`）：终态/预算/新鲜测量三条语义各一个场景；**HIST ≥ KMAX 是轮内充分条件**（HIST=1 接受重放＝负对照）；面积 2.5/3.7/5.7 kµm²（HIST 1/2/4），DW=16/HIST=2 ≈5.7 kµm²；33 拍一轮 = 5.2 µs @ss ⇒ 塞得进一个 12 µs 转换窗口。后仿/PEX 与编码比较仍留 G5/G6 |
 
 架构提案（State Cell → PAB-4 → Island → 64-state die）登记为 **B0-gf180 v2 候选**，不进本批冻结；与现有 compiler 的三条接口映射（四类连接 ↔ `Wire`/`coeff_edge`/`coupling.single_source`/`Buffer+route_contract`；`multiplier: continuous/shareable: conditional` 进 route-contract；MODE/TRIM/STATE_WR/EPOCH + shadow commit ↔ `twin/calib.py` FSM + `lowering/p7.py`，`ε_switch` 挂 `correction.py` 的 CorrectionOperator）已在评审回复中给出。
